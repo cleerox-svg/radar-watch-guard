@@ -117,35 +117,68 @@ Identify:
 3. Emerging trends in attack patterns
 4. Specific, actionable recommendations for the security team`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
+    // Multi-model failover for resilience
+    const models = [
+      'google/gemini-3-flash-preview',
+      'google/gemini-2.5-flash',
+      'openai/gpt-5-mini',
+    ];
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again shortly.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    let aiData: any = null;
+    let lastErr = '';
+
+    for (const model of models) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+            }),
+          });
+
+          if (aiResponse.status === 429) {
+            return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again shortly.' }), {
+              status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          if (aiResponse.status === 402) {
+            return new Response(JSON.stringify({ error: 'AI credits exhausted. Add funds in workspace settings.' }), {
+              status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          if (!aiResponse.ok) {
+            lastErr = `${model} returned ${aiResponse.status}: ${await aiResponse.text()}`;
+            console.error(lastErr);
+            if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+            continue;
+          }
+
+          aiData = await aiResponse.json();
+          break;
+        } catch (e) {
+          lastErr = `${model} error: ${e instanceof Error ? e.message : String(e)}`;
+          console.error(lastErr);
+          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        }
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted. Add funds in workspace settings.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      const errText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errText);
-      throw new Error(`AI gateway error: ${aiResponse.status}`);
+      if (aiData) break;
+    }
+
+    if (!aiData) {
+      return new Response(
+        JSON.stringify({ success: false, error: `All AI models failed. Last: ${lastErr}` }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await aiResponse.json();
