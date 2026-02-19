@@ -94,33 +94,49 @@ ${similarSummary || 'None found'}
 
 Provide a thorough analysis with MITRE ATT&CK mapping, campaign attribution assessment, and prioritized mitigations.`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
+    const models = ['openai/gpt-5-mini', 'google/gemini-2.5-flash', 'google/gemini-3-flash-preview'];
+    let aiResponse: Response | null = null;
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
+    for (const model of models) {
+      const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+      });
+
+      if (resp.ok) {
+        aiResponse = resp;
+        break;
+      }
+
+      if (resp.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Try again shortly.' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (aiResponse.status === 402) {
+      if (resp.status === 402) {
         return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), {
           status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`AI gateway error: ${aiResponse.status}`);
+
+      const errBody = await resp.text();
+      console.error(`Model ${model} failed (${resp.status}):`, errBody);
+    }
+
+    if (!aiResponse) {
+      return new Response(JSON.stringify({ success: false, error: 'All AI models failed. Please try again.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const aiData = await aiResponse.json();
