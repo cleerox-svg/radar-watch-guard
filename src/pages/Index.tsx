@@ -16,6 +16,7 @@ import { Sidebar, type TabKey } from "@/components/radar/Sidebar";
 import { ExposureEngine } from "@/components/radar/ExposureEngine";
 import { CorrelationMatrix } from "@/components/radar/CorrelationMatrix";
 import { ErasureOrchestrator } from "@/components/radar/ErasureOrchestrator";
+import { InvestigationTracker } from "@/components/radar/InvestigationTracker";
 import { KnowledgeBase } from "@/components/radar/KnowledgeBase";
 import { ThreatHeatmap } from "@/components/radar/ThreatHeatmap";
 import { AccountTakeover } from "@/components/radar/AccountTakeover";
@@ -32,12 +33,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "admin"];
+const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "admin"];
 
 const tabTitles: Record<TabKey, string> = {
   exposure: "Exposure & Context Engine",
   correlation: "Active Correlation Matrix",
   erasure: "Erasure & Interop Orchestrator",
+  investigations: "Investigation Tracker",
   knowledge: "Knowledge Base",
   briefing: "AI Intelligence Briefing",
   chat: "Threat Intelligence Q&A",
@@ -232,6 +234,7 @@ const Index = () => {
           {currentTab === "exposure" && <ExposureEngine />}
           {currentTab === "correlation" && <CorrelationMatrix />}
           {currentTab === "erasure" && <ErasureOrchestrator />}
+          {currentTab === "investigations" && <InvestigationTracker />}
           {currentTab === "knowledge" && <KnowledgeBase />}
           {currentTab === "briefing" && <ThreatBriefing />}
           {currentTab === "chat" && <ThreatChat />}

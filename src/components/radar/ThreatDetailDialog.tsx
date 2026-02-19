@@ -3,6 +3,7 @@
  */
 
 import { useState } from "react";
+import { useCreateInvestigationTicket } from "@/components/radar/InvestigationTracker";
 import {
   Dialog,
   DialogContent,
@@ -13,19 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Shield,
-  Globe,
-  Clock,
-  AlertTriangle,
-  Copy,
-  ExternalLink,
-  Ban,
-  Flag,
-  Server,
-  Brain,
-  Loader2,
-  Lightbulb,
-  Target,
+  Shield, Globe, Clock, AlertTriangle, Copy, ExternalLink, Ban, Flag, Server,
+  Brain, Loader2, Lightbulb, Target, Ticket,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -89,6 +79,7 @@ function InfoRow({ icon: Icon, label, value, mono = false }: { icon: typeof Glob
 export function ThreatDetailDialog({ threat, open, onOpenChange }: ThreatDetailDialogProps) {
   const [analysis, setAnalysis] = useState<any>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const createTicket = useCreateInvestigationTicket();
 
   if (!threat) return null;
 
@@ -296,6 +287,17 @@ export function ThreatDetailDialog({ threat, open, onOpenChange }: ThreatDetailD
             </Button>
             <Button variant="outline" size="sm" className="w-full" onClick={() => copyToClipboard(JSON.stringify(threat, null, 2), "Threat JSON")}>
               <Copy className="w-4 h-4 mr-2" /> Copy IOC JSON
+            </Button>
+            <Button variant="secondary" size="sm" className="w-full sm:col-span-2" onClick={() => createTicket({
+              title: `${threat.brand} — ${threat.domain}`,
+              source_type: "threat",
+              source_id: threat.id,
+              severity: threat.severity || "medium",
+              priority: threat.severity === "critical" ? "critical" : threat.severity === "high" ? "high" : "medium",
+              description: `${threat.attack_type} attack targeting ${threat.brand} via ${threat.domain}`,
+              tags: [threat.attack_type, threat.brand, threat.source || "manual"].filter(Boolean),
+            })}>
+              <Ticket className="w-4 h-4 mr-2" /> Create Investigation
             </Button>
           </div>
         </div>

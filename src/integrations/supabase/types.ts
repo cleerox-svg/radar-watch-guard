@@ -194,6 +194,66 @@ export type Database = {
         }
         Relationships: []
       }
+      investigation_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          notes: Json | null
+          priority: string
+          resolution: string | null
+          resolved_at: string | null
+          severity: string
+          source_id: string
+          source_type: string
+          status: string
+          tags: string[] | null
+          ticket_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: Json | null
+          priority?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_id: string
+          source_type: string
+          status?: string
+          tags?: string[] | null
+          ticket_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: Json | null
+          priority?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_id?: string
+          source_type?: string
+          status?: string
+          tags?: string[] | null
+          ticket_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
