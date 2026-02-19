@@ -3,7 +3,7 @@
  * Aggregates data from ALL feeds: threats, social_iocs, threat_news, tor_exit_nodes.
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Flame, Target, Crosshair, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import { useThreats, useThreatNews, useTorExitNodes } from "@/hooks/use-threat-data";
 import { useQuery } from "@tanstack/react-query";
@@ -104,8 +104,17 @@ export function ThreatMapWidget() {
   const { data: socialIocs } = useSocialIocs();
   const [viewMode, setViewMode] = useState<ViewMode>("targets");
   const [tooltipContent, setTooltipContent] = useState("");
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.25);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [center, setCenter] = useState<[number, number]>([10, 20]);
+
+  // Mouse drag panning state
+  const isDragging = useRef(false);
+  const dragStart = useRef<{ x: number; y: number; center: [number, number] } | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  // Pinch-to-zoom state
+  const lastPinchDist = useRef<number | null>(null);
 
   // Close fullscreen on Escape
   useEffect(() => {
@@ -121,6 +130,65 @@ export function ThreatMapWidget() {
       document.body.style.overflow = "";
     };
   }, [isFullscreen]);
+
+  // Mouse wheel zoom
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((z) => Math.min(Math.max(z + (e.deltaY > 0 ? -0.15 : 0.15), 1), 6));
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Pinch-to-zoom for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastPinchDist.current = Math.hypot(dx, dy);
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && lastPinchDist.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const delta = (dist - lastPinchDist.current) * 0.01;
+      setZoom((z) => Math.min(Math.max(z + delta, 1), 6));
+      lastPinchDist.current = dist;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    lastPinchDist.current = null;
+  }, []);
+
+  // Mouse click-drag panning for desktop
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY, center: [...center] as [number, number] };
+  }, [center]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !dragStart.current) return;
+    const sensitivity = 0.3 / zoom;
+    const dx = (e.clientX - dragStart.current.x) * sensitivity;
+    const dy = (e.clientY - dragStart.current.y) * sensitivity;
+    setCenter([
+      dragStart.current.center[0] - dx,
+      Math.max(-60, Math.min(80, dragStart.current.center[1] + dy)),
+    ]);
+  }, [zoom]);
+
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    dragStart.current = null;
+  }, []);
 
   // Aggregate all feeds by country ISO code
   const countryData = useMemo(() => {
@@ -228,15 +296,27 @@ export function ThreatMapWidget() {
 
   const zoomIn = () => setZoom((z) => Math.min(z + 0.5, 6));
   const zoomOut = () => setZoom((z) => Math.max(z - 0.5, 1));
-  const resetView = () => setZoom(1);
+  const resetView = () => { setZoom(1.25); setCenter([10, 20]); };
 
   return (
-    <div className={cn(
-      "bg-card rounded-lg border border-border relative overflow-hidden shadow-2xl select-none transition-all duration-300",
-      isFullscreen
-        ? "fixed inset-0 z-50 h-screen w-screen rounded-none border-none"
-        : "h-[400px] sm:h-[500px] lg:h-[650px]"
-    )}>
+    <div
+      ref={mapRef}
+      className={cn(
+        "bg-card rounded-lg border border-border relative overflow-hidden shadow-2xl select-none transition-all duration-300",
+        isFullscreen
+          ? "fixed inset-0 z-50 h-screen w-screen rounded-none border-none"
+          : "h-[400px] sm:h-[500px] lg:h-[650px]",
+        isDragging.current ? "cursor-grabbing" : "cursor-grab"
+      )}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ touchAction: "none" }}
+    >
       {/* Title + view toggle */}
       <div className="absolute top-3 left-3 lg:top-4 lg:left-4 z-10 flex flex-col gap-2">
         <div className="bg-background/80 p-2 lg:p-3 rounded border border-border backdrop-blur-sm">
@@ -325,7 +405,7 @@ export function ThreatMapWidget() {
         projection="geoMercator"
         projectionConfig={{
           scale: 120 * zoom,
-          center: [10, 20],
+          center: center,
         }}
         style={{ width: "100%", height: "100%" }}
       >

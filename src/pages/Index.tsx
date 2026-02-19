@@ -56,7 +56,11 @@ const tabTitles: Record<TabKey, string> = {
 const PULL_THRESHOLD = 80;
 
 const Index = () => {
-  const [currentTab, setCurrentTab] = useState<TabKey>("exposure");
+  const [currentTab, setCurrentTab] = useState<TabKey>(() => {
+    const saved = sessionStorage.getItem("lrx-current-tab");
+    if (saved && tabOrder.includes(saved as TabKey)) return saved as TabKey;
+    return "heatmap";
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -159,6 +163,7 @@ const Index = () => {
 
   const handleTabChange = (tab: TabKey) => {
     setCurrentTab(tab);
+    sessionStorage.setItem("lrx-current-tab", tab);
     setSidebarOpen(false);
   };
 
