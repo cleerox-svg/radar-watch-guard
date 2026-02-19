@@ -3,8 +3,8 @@
  * Aggregates data from ALL feeds: threats, social_iocs, threat_news, tor_exit_nodes.
  */
 
-import { useState, useMemo, useCallback } from "react";
-import { Flame, Target, Crosshair, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Flame, Target, Crosshair, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import { useThreats, useThreatNews, useTorExitNodes } from "@/hooks/use-threat-data";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,6 +105,22 @@ export function ThreatMapWidget() {
   const [viewMode, setViewMode] = useState<ViewMode>("targets");
   const [tooltipContent, setTooltipContent] = useState("");
   const [zoom, setZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Close fullscreen on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    if (isFullscreen) {
+      document.addEventListener("keydown", handleEsc);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "";
+    };
+  }, [isFullscreen]);
 
   // Aggregate all feeds by country ISO code
   const countryData = useMemo(() => {
@@ -215,7 +231,12 @@ export function ThreatMapWidget() {
   const resetView = () => setZoom(1);
 
   return (
-    <div className="bg-card rounded-lg border border-border relative overflow-hidden shadow-2xl h-[280px] sm:h-[350px] lg:h-[500px] select-none">
+    <div className={cn(
+      "bg-card rounded-lg border border-border relative overflow-hidden shadow-2xl select-none transition-all duration-300",
+      isFullscreen
+        ? "fixed inset-0 z-50 h-screen w-screen rounded-none border-none"
+        : "h-[400px] sm:h-[500px] lg:h-[650px]"
+    )}>
       {/* Title + view toggle */}
       <div className="absolute top-3 left-3 lg:top-4 lg:left-4 z-10 flex flex-col gap-2">
         <div className="bg-background/80 p-2 lg:p-3 rounded border border-border backdrop-blur-sm">
@@ -266,8 +287,12 @@ export function ThreatMapWidget() {
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <div className="border-t border-border" />
-          <button onClick={resetView} className="p-1.5 hover:bg-accent/50 rounded-b transition-colors text-muted-foreground hover:text-foreground" title="Reset view">
+          <button onClick={resetView} className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Reset view">
             <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+          <div className="border-t border-border" />
+          <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-1.5 hover:bg-accent/50 rounded-b transition-colors text-muted-foreground hover:text-foreground" title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
         {/* Legend */}
