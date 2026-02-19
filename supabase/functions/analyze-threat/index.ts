@@ -94,47 +94,58 @@ ${similarSummary || 'None found'}
 
 Provide a thorough analysis with MITRE ATT&CK mapping, campaign attribution assessment, and prioritized mitigations.`;
 
-    const models = ['openai/gpt-5-mini', 'google/gemini-2.5-flash', 'google/gemini-3-flash-preview'];
+    const models = ['openai/gpt-5-mini', 'google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite'];
     let aiResponse: Response | null = null;
+    const maxRetries = 2;
 
     for (const model of models) {
-      const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        }),
-      });
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (attempt > 0) {
+          await new Promise(r => setTimeout(r, 1000 * attempt)); // backoff
+        }
+        try {
+          const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+            }),
+          });
 
-      if (resp.ok) {
-        aiResponse = resp;
-        break;
-      }
+          if (resp.ok) {
+            aiResponse = resp;
+            break;
+          }
 
-      if (resp.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Try again shortly.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (resp.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+          if (resp.status === 429) {
+            return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded. Try again shortly.' }), {
+              status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          if (resp.status === 402) {
+            return new Response(JSON.stringify({ success: false, error: 'AI credits exhausted.' }), {
+              status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
 
-      const errBody = await resp.text();
-      console.error(`Model ${model} failed (${resp.status}):`, errBody);
+          const errBody = await resp.text();
+          console.error(`Model ${model} attempt ${attempt + 1} failed (${resp.status}):`, errBody);
+        } catch (fetchErr) {
+          console.error(`Model ${model} attempt ${attempt + 1} network error:`, fetchErr);
+        }
+      }
+      if (aiResponse) break;
     }
 
     if (!aiResponse) {
-      return new Response(JSON.stringify({ success: false, error: 'All AI models failed. Please try again.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'AI analysis temporarily unavailable. Please try again in a moment.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

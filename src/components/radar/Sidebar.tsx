@@ -7,7 +7,7 @@
  * Knowledge Base: Technical documentation & API instructions
  */
 
-import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound } from "lucide-react";
+import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,7 @@ export type TabKey =
   | "correlation"
   | "erasure"
   | "knowledge"
+  | "investigations"
   // Sub-views within modules (accessible from sidebar)
   | "heatmap"
   | "ato"
@@ -47,6 +48,7 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
       { key: "exposure", icon: Scan, label: "Exposure Engine", description: "Pre-attack brand risk & context mapping", accent: "text-cyan-500" },
       { key: "correlation", icon: Zap, label: "Correlation Matrix", description: "Unified cross-signal campaign detection", accent: "text-amber-500" },
       { key: "erasure", icon: Shield, label: "Erasure Orchestrator", description: "Automated mitigation & interop", accent: "text-rose-500" },
+      { key: "investigations", icon: Ticket, label: "Investigations", description: "Track & manage analyst investigations", accent: "text-violet-500" },
     ],
   },
   {
@@ -90,7 +92,7 @@ const themeOptions = [
 ];
 
 // Core modules get special visual treatment
-const coreModules = new Set<TabKey>(["exposure", "correlation", "erasure"]);
+const coreModules = new Set<TabKey>(["exposure", "correlation", "erasure", "investigations"]);
 
 export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplayName, onSignOut }: SidebarProps) {
   const { theme, setTheme } = useTheme();
