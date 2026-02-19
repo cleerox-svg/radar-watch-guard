@@ -1,0 +1,22 @@
+project_id = "ckoocdzeiclocwiscmic"
+
+[functions.invite-analyst]
+verify_jwt = false
+
+[functions.ingest-threatfox]
+verify_jwt = false
+
+[functions.ingest-sans-isc]
+verify_jwt = false
+
+[functions.ingest-ransomwatch]
+verify_jwt = false
+
+[functions.ingest-tor-exits]
+verify_jwt = false
+
+[functions.ingest-mastodon]
+verify_jwt = false
+
+[functions.check-pwned-password]
+verify_jwt = false
