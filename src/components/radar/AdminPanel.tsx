@@ -36,6 +36,7 @@ const ALL_MODULES = [
   { key: "stats", label: "Analytics", group: "Live Monitoring" },
   { key: "urgent", label: "Critical Alerts", group: "Live Monitoring" },
   { key: "knowledge", label: "Knowledge Base", group: "Help & Docs" },
+  { key: "spam-traps", label: "Spam Traps", group: "Platform Settings" },
   { key: "admin", label: "Admin Console", group: "Platform Settings" },
 ];
 
@@ -180,6 +181,7 @@ const FEEDS = [
   { id: "tor_exits", name: "Tor Exit Nodes", desc: "Live Tor exit IP list", trigger: triggerTorExitIngestion },
   { id: "mastodon", name: "Mastodon OSINT", desc: "infosec.exchange #ThreatIntel", trigger: triggerMastodonIngestion },
   { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }) },
+  { id: "spam_trap", name: "Spam Trap Demo", desc: "Generate synthetic honeypot data", trigger: () => supabase.functions.invoke("generate-spam-trap-demo").then(r => { if (r.error) throw r.error; return r.data; }) },
 ];
 
 function FeedManager() {

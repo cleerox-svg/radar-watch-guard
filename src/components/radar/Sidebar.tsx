@@ -2,7 +2,7 @@
  * Sidebar.tsx — Navigation filtered by user's access group module permissions.
  */
 
-import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket } from "lucide-react";
+import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket, MailWarning } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +24,7 @@ export type TabKey =
   | "chat"
   | "social-monitor"
   | "dark-web"
+  | "spam-traps"
   | "admin";
 
 interface SidebarProps {
@@ -77,6 +78,7 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
 const adminGroup = {
   label: "Platform Settings",
   items: [
+    { key: "spam-traps" as TabKey, icon: MailWarning, label: "Spam Traps", description: "Honeypot intelligence from trap email addresses" },
     { key: "admin" as TabKey, icon: Settings, label: "Admin Console", description: "Manage users, groups, and data feeds" },
   ],
 };

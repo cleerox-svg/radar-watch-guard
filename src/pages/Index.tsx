@@ -28,12 +28,13 @@ import { ThreatChat } from "@/components/radar/ThreatChat";
 import { SocialMediaMonitor } from "@/components/radar/SocialMediaMonitor";
 import { DarkWebMonitor } from "@/components/radar/DarkWebMonitor";
 import { AdminPanel } from "@/components/radar/AdminPanel";
+import { SpamTrapIntel } from "@/components/radar/SpamTrapIntel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "admin"];
+const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "spam-traps", "admin"];
 
 const tabTitles: Record<TabKey, string> = {
   exposure: "Brand Exposure Overview",
@@ -50,6 +51,7 @@ const tabTitles: Record<TabKey, string> = {
   email: "Email Security & DMARC",
   stats: "Threat Analytics",
   urgent: "Critical Alerts",
+  "spam-traps": "Spam Trap Intelligence",
   admin: "Admin Console",
 };
 
@@ -252,6 +254,7 @@ const Index = () => {
           {hasModuleAccess("email") && currentTab === "email" && <EmailAuth />}
           {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
           {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
+          {hasModuleAccess("spam-traps") && currentTab === "spam-traps" && <SpamTrapIntel />}
           {hasModuleAccess("admin") && currentTab === "admin" && <AdminPanel />}
         </div>
       </main>
