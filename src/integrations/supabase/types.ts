@@ -412,6 +412,60 @@ export type Database = {
         }
         Relationships: []
       }
+      spam_trap_hits: {
+        Row: {
+          brand_mentioned: string | null
+          category: string
+          confidence: number
+          country: string | null
+          created_at: string
+          dkim_pass: boolean | null
+          id: string
+          raw_headers: Json | null
+          received_at: string
+          sender_domain: string
+          sender_email: string
+          sender_ip: string | null
+          spf_pass: boolean | null
+          subject: string | null
+          trap_address: string
+        }
+        Insert: {
+          brand_mentioned?: string | null
+          category?: string
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          dkim_pass?: boolean | null
+          id?: string
+          raw_headers?: Json | null
+          received_at?: string
+          sender_domain: string
+          sender_email: string
+          sender_ip?: string | null
+          spf_pass?: boolean | null
+          subject?: string | null
+          trap_address: string
+        }
+        Update: {
+          brand_mentioned?: string | null
+          category?: string
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          dkim_pass?: boolean | null
+          id?: string
+          raw_headers?: Json | null
+          received_at?: string
+          sender_domain?: string
+          sender_email?: string
+          sender_ip?: string | null
+          spf_pass?: boolean | null
+          subject?: string | null
+          trap_address?: string
+        }
+        Relationships: []
+      }
       threat_news: {
         Row: {
           created_at: string
@@ -614,6 +668,7 @@ export type Database = {
         | "tor_nodes"
         | "mastodon"
         | "hibp"
+        | "spam_trap"
       threat_severity: "critical" | "high" | "medium" | "low" | "info"
       threat_status: "active" | "investigating" | "mitigated" | "resolved"
     }
@@ -757,6 +812,7 @@ export const Constants = {
         "tor_nodes",
         "mastodon",
         "hibp",
+        "spam_trap",
       ],
       threat_severity: ["critical", "high", "medium", "low", "info"],
       threat_status: ["active", "investigating", "mitigated", "resolved"],
