@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_groups: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ato_events: {
         Row: {
           created_at: string
@@ -193,6 +220,35 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      group_module_permissions: {
+        Row: {
+          group_id: string
+          has_access: boolean | null
+          id: string
+          module_key: string
+        }
+        Insert: {
+          group_id: string
+          has_access?: boolean | null
+          id?: string
+          module_key: string
+        }
+        Update: {
+          group_id?: string
+          has_access?: boolean | null
+          id?: string
+          module_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_module_permissions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "access_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       investigation_tickets: {
         Row: {
@@ -476,6 +532,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_group_assignments: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_group_assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "access_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -509,9 +594,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_module_access: {
+        Args: { _module_key: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin" | "analyst"
+      app_role: "admin" | "analyst" | "customer"
       feed_source_type:
         | "phishtank"
         | "urlhaus"
@@ -654,7 +743,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "analyst"],
+      app_role: ["admin", "analyst", "customer"],
       feed_source_type: [
         "phishtank",
         "urlhaus",

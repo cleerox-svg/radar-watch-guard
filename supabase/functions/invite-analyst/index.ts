@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -36,7 +35,6 @@ serve(async (req) => {
 
     const callerUserId = claimsData.user.id;
 
-    // Check admin role using service client
     const adminClient = createClient(supabaseUrl, serviceKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -46,12 +44,12 @@ serve(async (req) => {
       .single();
 
     if (!roleData) {
-      return new Response(JSON.stringify({ error: "Only admins can invite analysts" }), {
+      return new Response(JSON.stringify({ error: "Only admins can invite users" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { email, display_name } = await req.json();
+    const { email, display_name, role, group_id } = await req.json();
     if (!email) {
       return new Response(JSON.stringify({ error: "Email is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -69,12 +67,38 @@ serve(async (req) => {
       });
     }
 
-    // Assign analyst role
     if (inviteData.user) {
+      const userId = inviteData.user.id;
+
+      // Assign role (default to analyst)
+      const assignedRole = role || "analyst";
       await adminClient.from("user_roles").insert({
-        user_id: inviteData.user.id,
-        role: "analyst",
+        user_id: userId,
+        role: assignedRole,
       });
+
+      // Assign to access group
+      if (group_id) {
+        await adminClient.from("user_group_assignments").insert({
+          user_id: userId,
+          group_id: group_id,
+        });
+      } else {
+        // Auto-assign to matching default group
+        const groupName = assignedRole === "admin" ? "Admin" : assignedRole === "customer" ? "Customer" : "Analyst";
+        const { data: defaultGroup } = await adminClient
+          .from("access_groups")
+          .select("id")
+          .eq("name", groupName)
+          .single();
+
+        if (defaultGroup) {
+          await adminClient.from("user_group_assignments").insert({
+            user_id: userId,
+            group_id: defaultGroup.id,
+          });
+        }
+      }
     }
 
     return new Response(
@@ -82,7 +106,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
-    console.error("invite-analyst error:", e);
+    console.error("invite error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Invite failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

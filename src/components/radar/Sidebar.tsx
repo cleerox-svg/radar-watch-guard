@@ -1,10 +1,5 @@
 /**
- * Sidebar.tsx — Redesigned navigation for the unified attack lifecycle architecture.
- * 
- * Module A: Exposure & Context Engine (Pre-Attack)
- * Module B: Active Correlation Matrix (Core Engine)
- * Module C: Erasure & Interop Orchestrator (Mitigation)
- * Knowledge Base: Technical documentation & API instructions
+ * Sidebar.tsx — Navigation filtered by user's access group module permissions.
  */
 
 import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket } from "lucide-react";
@@ -20,7 +15,6 @@ export type TabKey =
   | "erasure"
   | "knowledge"
   | "investigations"
-  // Sub-views within modules (accessible from sidebar)
   | "heatmap"
   | "ato"
   | "email"
@@ -38,7 +32,9 @@ interface SidebarProps {
   onClose?: () => void;
   isAdmin?: boolean;
   userDisplayName?: string | null;
+  primaryGroup?: string;
   onSignOut?: () => void;
+  hasModuleAccess?: (moduleKey: string) => boolean;
 }
 
 const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; label: string; description: string; accent?: string }[] }[] = [
@@ -81,7 +77,7 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
 const adminGroup = {
   label: "Administration",
   items: [
-    { key: "admin" as TabKey, icon: Settings, label: "Admin Panel", description: "Invite & manage analysts" },
+    { key: "admin" as TabKey, icon: Settings, label: "Admin Panel", description: "Access groups, users & feeds" },
   ],
 };
 
@@ -91,12 +87,26 @@ const themeOptions = [
   { value: "system" as const, icon: Monitor, label: "System" },
 ];
 
-// Core modules get special visual treatment
 const coreModules = new Set<TabKey>(["exposure", "correlation", "erasure", "investigations"]);
 
-export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplayName, onSignOut }: SidebarProps) {
+export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplayName, primaryGroup, onSignOut, hasModuleAccess }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  // Filter nav groups based on module access
+  const filteredNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        hasModuleAccess ? hasModuleAccess(item.key) : true
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const allGroups = [
+    ...filteredNavGroups,
+    ...(isAdmin || (hasModuleAccess && hasModuleAccess("admin")) ? [adminGroup] : []),
+  ];
 
   return (
     <aside className="w-64 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col z-20 shadow-xl">
@@ -122,7 +132,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 lg:py-4 space-y-4 overflow-y-auto scrollbar-cyber">
-        {[...navGroups, ...(isAdmin ? [adminGroup] : [])].map((group) => (
+        {allGroups.map((group) => (
           <div key={group.label}>
             <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
               {group.label}
@@ -185,7 +195,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
         {userDisplayName && (
           <div className="px-3 py-2">
             <p className="text-xs font-medium text-foreground truncate">{userDisplayName}</p>
-            <p className="text-[10px] text-muted-foreground font-mono">{isAdmin ? "ADMIN" : "ANALYST"}</p>
+            <p className="text-[10px] text-muted-foreground font-mono">{primaryGroup?.toUpperCase() || "USER"}</p>
           </div>
         )}
 
@@ -234,7 +244,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
         )}
 
         <div className="flex items-center justify-between px-3">
-          <p className="text-[10px] text-muted-foreground font-mono">v3.0.0</p>
+          <p className="text-[10px] text-muted-foreground font-mono">v3.1.0</p>
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />

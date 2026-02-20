@@ -67,7 +67,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, signOut, hasModuleAccess, primaryGroup } = useAuth();
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -186,7 +186,9 @@ const Index = () => {
           onClose={() => setSidebarOpen(false)}
           isAdmin={isAdmin}
           userDisplayName={profile?.display_name}
+          primaryGroup={primaryGroup}
           onSignOut={handleSignOut}
+          hasModuleAccess={hasModuleAccess}
         />
       </div>
 
@@ -236,21 +238,21 @@ const Index = () => {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          {currentTab === "exposure" && <ExposureEngine />}
-          {currentTab === "correlation" && <CorrelationMatrix />}
-          {currentTab === "erasure" && <ErasureOrchestrator />}
-          {currentTab === "investigations" && <InvestigationTracker />}
-          {currentTab === "knowledge" && <KnowledgeBase />}
-          {currentTab === "briefing" && <ThreatBriefing />}
-          {currentTab === "chat" && <ThreatChat />}
-          {currentTab === "heatmap" && <ThreatHeatmap />}
-          {currentTab === "social-monitor" && <SocialMediaMonitor />}
-          {currentTab === "dark-web" && <DarkWebMonitor />}
-          {currentTab === "ato" && <AccountTakeover />}
-          {currentTab === "email" && <EmailAuth />}
-          {currentTab === "stats" && <ThreatStatistics />}
-          {currentTab === "urgent" && <UrgentThreatsNews />}
-          {currentTab === "admin" && isAdmin && <AdminPanel />}
+          {hasModuleAccess("exposure") && currentTab === "exposure" && <ExposureEngine />}
+          {hasModuleAccess("correlation") && currentTab === "correlation" && <CorrelationMatrix />}
+          {hasModuleAccess("erasure") && currentTab === "erasure" && <ErasureOrchestrator />}
+          {hasModuleAccess("investigations") && currentTab === "investigations" && <InvestigationTracker />}
+          {hasModuleAccess("knowledge") && currentTab === "knowledge" && <KnowledgeBase />}
+          {hasModuleAccess("briefing") && currentTab === "briefing" && <ThreatBriefing />}
+          {hasModuleAccess("chat") && currentTab === "chat" && <ThreatChat />}
+          {hasModuleAccess("heatmap") && currentTab === "heatmap" && <ThreatHeatmap />}
+          {hasModuleAccess("social-monitor") && currentTab === "social-monitor" && <SocialMediaMonitor />}
+          {hasModuleAccess("dark-web") && currentTab === "dark-web" && <DarkWebMonitor />}
+          {hasModuleAccess("ato") && currentTab === "ato" && <AccountTakeover />}
+          {hasModuleAccess("email") && currentTab === "email" && <EmailAuth />}
+          {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
+          {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
+          {hasModuleAccess("admin") && currentTab === "admin" && <AdminPanel />}
         </div>
       </main>
     </div>

@@ -12,7 +12,25 @@ interface Profile {
 }
 
 interface UserRole {
-  role: "admin" | "analyst";
+  role: "admin" | "analyst" | "customer";
+}
+
+interface AccessGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+}
+
+interface GroupAssignment {
+  group_id: string;
+  access_groups: AccessGroup;
+}
+
+interface ModulePermission {
+  module_key: string;
+  has_access: boolean;
+  group_id: string;
 }
 
 export function useAuth() {
@@ -20,15 +38,49 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [groups, setGroups] = useState<AccessGroup[]>([]);
+  const [allowedModules, setAllowedModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const [profileRes, rolesRes] = await Promise.all([
+    const [profileRes, rolesRes, groupsRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase
+        .from("user_group_assignments")
+        .select("group_id, access_groups(id, name, description, is_system)")
+        .eq("user_id", userId),
     ]);
+
     if (profileRes.data) setProfile(profileRes.data as Profile);
     if (rolesRes.data) setRoles((rolesRes.data as UserRole[]).map((r) => r.role));
+
+    // Process group assignments and module permissions
+    if (groupsRes.data && groupsRes.data.length > 0) {
+      const userGroups = (groupsRes.data as any[])
+        .map((ga: any) => ga.access_groups)
+        .filter(Boolean);
+      setGroups(userGroups);
+
+      // Fetch module permissions for all assigned groups
+      const groupIds = userGroups.map((g: AccessGroup) => g.id);
+      const { data: permsData } = await supabase
+        .from("group_module_permissions")
+        .select("module_key, has_access, group_id")
+        .in("group_id", groupIds)
+        .eq("has_access", true);
+
+      if (permsData) {
+        const modules = new Set<string>();
+        (permsData as ModulePermission[]).forEach((p) => {
+          if (p.has_access) modules.add(p.module_key);
+        });
+        setAllowedModules(modules);
+      }
+    } else {
+      setGroups([]);
+      setAllowedModules(new Set());
+    }
   }, []);
 
   useEffect(() => {
@@ -40,6 +92,8 @@ export function useAuth() {
       } else {
         setProfile(null);
         setRoles([]);
+        setGroups([]);
+        setAllowedModules(new Set());
       }
       setLoading(false);
     });
@@ -60,9 +114,34 @@ export function useAuth() {
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setGroups([]);
+    setAllowedModules(new Set());
   }, []);
 
   const isAdmin = roles.includes("admin");
 
-  return { user, session, profile, roles, isAdmin, loading, signOut, refetchProfile: () => user && fetchProfile(user.id) };
+  /** Check if user has access to a specific module */
+  const hasModuleAccess = useCallback((moduleKey: string) => {
+    // Admins always have full access
+    if (isAdmin) return true;
+    return allowedModules.has(moduleKey);
+  }, [isAdmin, allowedModules]);
+
+  /** Get the primary group name for display */
+  const primaryGroup = groups.length > 0 ? groups[0].name : (isAdmin ? "Admin" : roles.includes("analyst") ? "Analyst" : "User");
+
+  return {
+    user,
+    session,
+    profile,
+    roles,
+    groups,
+    allowedModules,
+    isAdmin,
+    loading,
+    signOut,
+    hasModuleAccess,
+    primaryGroup,
+    refetchProfile: () => user && fetchProfile(user.id),
+  };
 }
