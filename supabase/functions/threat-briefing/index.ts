@@ -181,7 +181,6 @@ Identify:
       );
     }
 
-    const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';
 
     // Parse the JSON from the AI response (handle markdown code blocks)

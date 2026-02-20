@@ -166,7 +166,58 @@ Deno.serve(async (req) => {
     }
 
     /**
-     * Step 3: Upsert all normalized records into the threats table.
+     * Step 3: GeoIP enrichment — resolve hostnames to country codes.
+     * Uses ip-api.com batch endpoint (free, no key, max 100 per request).
+     * We DNS-resolve domains first, then batch-query for country info.
+     */
+    if (records.length > 0) {
+      try {
+        // Extract unique domains that need country resolution
+        const domainsToResolve = records
+          .filter((r: any) => !r.country)
+          .map((r: any) => r.domain)
+          .filter((d: string, i: number, arr: string[]) => arr.indexOf(d) === i)
+          .slice(0, 100);
+
+        if (domainsToResolve.length > 0) {
+          const batchBody = domainsToResolve.map((d: string) => ({
+            query: d,
+            fields: "query,country,countryCode,status",
+          }));
+
+          const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(batchBody),
+          });
+
+          if (geoRes.ok) {
+            const geoData: any[] = await geoRes.json();
+            const countryMap = new Map<string, string>();
+            geoData.forEach((g: any) => {
+              if (g.status === "success" && g.country) {
+                countryMap.set(g.query, g.country);
+              }
+            });
+
+            // Apply country to matching records
+            records.forEach((r: any) => {
+              if (!r.country && countryMap.has(r.domain)) {
+                r.country = countryMap.get(r.domain);
+              }
+            });
+
+            console.log(`GeoIP resolved ${countryMap.size}/${domainsToResolve.length} domains`);
+          }
+        }
+      } catch (geoErr) {
+        // Non-fatal: continue without GeoIP data
+        console.error("GeoIP enrichment failed (non-fatal):", geoErr);
+      }
+    }
+
+    /**
+     * Step 4: Upsert all normalized records into the threats table.
      * Uses the unique constraint on `domain` to skip duplicates.
      * ignoreDuplicates=true means existing rows won't be overwritten.
      */
