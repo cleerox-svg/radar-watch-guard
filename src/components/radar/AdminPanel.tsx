@@ -22,21 +22,21 @@ import {
 
 // ─── Module definitions ───
 const ALL_MODULES = [
-  { key: "exposure", label: "Exposure Engine", group: "Attack Lifecycle" },
-  { key: "correlation", label: "Correlation Matrix", group: "Attack Lifecycle" },
-  { key: "erasure", label: "Erasure Orchestrator", group: "Attack Lifecycle" },
-  { key: "investigations", label: "Investigations", group: "Attack Lifecycle" },
-  { key: "briefing", label: "AI Briefing", group: "Intelligence" },
-  { key: "chat", label: "AI Q&A", group: "Intelligence" },
-  { key: "heatmap", label: "Threat Map", group: "Monitoring" },
-  { key: "social-monitor", label: "Social IOC Feed", group: "Monitoring" },
-  { key: "dark-web", label: "Dark Web Monitor", group: "Monitoring" },
-  { key: "ato", label: "ATO War Room", group: "Monitoring" },
-  { key: "email", label: "Email Auth (DMARC)", group: "Monitoring" },
-  { key: "stats", label: "Statistics", group: "Monitoring" },
-  { key: "urgent", label: "Urgent Threats", group: "Monitoring" },
-  { key: "knowledge", label: "Knowledge Base", group: "Resources" },
-  { key: "admin", label: "Admin Panel", group: "Administration" },
+  { key: "exposure", label: "Brand Exposure", group: "Detect & Respond" },
+  { key: "correlation", label: "Signal Correlation", group: "Detect & Respond" },
+  { key: "erasure", label: "Takedown & Response", group: "Detect & Respond" },
+  { key: "investigations", label: "Investigations", group: "Detect & Respond" },
+  { key: "briefing", label: "Daily Briefing", group: "AI Insights" },
+  { key: "chat", label: "Ask the AI", group: "AI Insights" },
+  { key: "heatmap", label: "Global Threat Map", group: "Live Monitoring" },
+  { key: "social-monitor", label: "Social Feed", group: "Live Monitoring" },
+  { key: "dark-web", label: "Dark Web Alerts", group: "Live Monitoring" },
+  { key: "ato", label: "Account Takeovers", group: "Live Monitoring" },
+  { key: "email", label: "Email Security", group: "Live Monitoring" },
+  { key: "stats", label: "Analytics", group: "Live Monitoring" },
+  { key: "urgent", label: "Critical Alerts", group: "Live Monitoring" },
+  { key: "knowledge", label: "Knowledge Base", group: "Help & Docs" },
+  { key: "admin", label: "Admin Console", group: "Platform Settings" },
 ];
 
 const MODULE_GROUPS = [...new Set(ALL_MODULES.map((m) => m.group))];
@@ -110,7 +110,7 @@ function DatabaseStatus() {
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Database className="w-5 h-5 text-primary" />Database Status
+          <Database className="w-5 h-5 text-primary" />Database Health
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -207,7 +207,7 @@ function FeedManager() {
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2"><Rss className="w-5 h-5 text-primary" />Feed Manager</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Rss className="w-5 h-5 text-primary" />Data Feeds</CardTitle>
           <Button size="sm" variant="outline" onClick={() => FEEDS.forEach(runFeed)} className="gap-1.5 text-xs"><Play className="w-3 h-3" />Run All</Button>
         </div>
       </CardHeader>
@@ -354,7 +354,7 @@ function AccessGroupsManager() {
           <Shield className="w-5 h-5 text-primary" />Access Groups
         </CardTitle>
         <p className="text-[10px] text-muted-foreground">
-          Define access groups with specific module permissions. Assign users to control what they can see.
+          Create groups with specific permissions, then assign users to control what they can access.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -423,7 +423,7 @@ function AccessGroupsManager() {
         <Dialog open={!!editingGroup} onOpenChange={(open) => { if (!open) setEditingGroup(null); }}>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-card">
             <DialogHeader>
-              <DialogTitle>Edit Permissions — {editingGroup?.name}</DialogTitle>
+              <DialogTitle>Manage Permissions — {editingGroup?.name}</DialogTitle>
             </DialogHeader>
             {editingGroup && (
               <div className="space-y-4">
@@ -548,10 +548,10 @@ function TeamManager() {
       <Card className="border-primary/20 bg-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />Invite User
+            <UserPlus className="w-5 h-5 text-primary" />Invite a New User
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Invite a new user by email. Choose their role and access group.
+            Send an invitation by email. Pick their role and which group they belong to.
           </p>
         </CardHeader>
         <CardContent>
@@ -607,7 +607,7 @@ function TeamManager() {
       <Card className="border-border bg-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Users className="w-5 h-5 text-muted-foreground" />Team Roster
+            <Users className="w-5 h-5 text-muted-foreground" />Your Team
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -667,13 +667,13 @@ export function AdminPanel() {
     <Tabs defaultValue="team" className="space-y-6">
       <TabsList className="bg-card border border-border">
         <TabsTrigger value="team" className="gap-1.5 text-xs">
-          <Users className="w-3.5 h-3.5" /> Team & Users
+          <Users className="w-3.5 h-3.5" /> People
         </TabsTrigger>
         <TabsTrigger value="groups" className="gap-1.5 text-xs">
-          <Shield className="w-3.5 h-3.5" /> Access Groups
+          <Shield className="w-3.5 h-3.5" /> Permissions
         </TabsTrigger>
         <TabsTrigger value="feeds" className="gap-1.5 text-xs">
-          <Rss className="w-3.5 h-3.5" /> Feeds & Data
+          <Rss className="w-3.5 h-3.5" /> Data Sources
         </TabsTrigger>
       </TabsList>
 
