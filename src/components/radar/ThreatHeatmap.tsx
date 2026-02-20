@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ThreatMapWidget } from "./ThreatMapWidget";
 import { ThreatDetailDialog } from "./ThreatDetailDialog";
+import { HostingProviderIntel } from "./HostingProviderIntel";
 import {
   useThreats, useEmailAuthReports, useThreatNews, useTorExitNodes,
   triggerIngestion,
@@ -56,7 +57,6 @@ export function ThreatHeatmap() {
   const { data: socialIocs, isLoading: iocsLoading } = useSocialIocsFullList();
   const [ingesting, setIngesting] = useState(false);
   const [selectedThreat, setSelectedThreat] = useState<any>(null);
-  const [showAllVectors, setShowAllVectors] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
   const { toast } = useToast();
@@ -138,26 +138,6 @@ export function ThreatHeatmap() {
     return torNodes.filter((n: any) => (n.ip_address || "").includes(q));
   }, [torNodes, searchQuery]);
 
-  // ─── Attack Vectors ───
-  const allCategories = useMemo(() => {
-    if (!liveThreats || liveThreats.length === 0) return [];
-    const typeMap = new Map<string, number>();
-    liveThreats.forEach((t: any) => {
-      const type = t.attack_type || "Unknown";
-      typeMap.set(type, (typeMap.get(type) || 0) + 1);
-    });
-    const total = liveThreats.length;
-    return Array.from(typeMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({
-        name,
-        count,
-        percent: Math.round((count / total) * 100),
-      }));
-  }, [liveThreats]);
-
-  const categories = showAllVectors ? allCategories : allCategories.slice(0, 5);
-  const barColors = ["bg-destructive", "bg-warning", "bg-warning", "bg-info", "bg-muted-foreground"];
 
   const handleThreatClick = (t: any) => setSelectedThreat(t);
 
@@ -203,43 +183,8 @@ export function ThreatHeatmap() {
         </div>
 
         <div className="lg:col-span-5 flex flex-col gap-4 lg:gap-6">
-          {/* Attack Vectors */}
-          <div className="bg-card rounded-lg border border-border shadow-xl overflow-hidden flex-1 flex flex-col">
-            <div className="px-4 lg:px-5 py-3 border-b border-border bg-surface-elevated flex justify-between items-center">
-              <h3 className="font-bold text-foreground uppercase text-xs lg:text-sm flex items-center">
-                <Layers className="w-4 h-4 mr-2 text-primary shrink-0" />Attack Vectors
-              </h3>
-              <span className="text-[10px] font-mono text-muted-foreground">{allCategories.length} TYPES</span>
-            </div>
-            <div className="flex-1 p-3 lg:p-4 overflow-auto bg-surface-overlay/50 space-y-3 lg:space-y-4">
-              {categories.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">No live data — pull a feed to populate</p>
-              ) : (
-                <>
-                  {categories.map((cat, i) => (
-                    <div key={cat.name}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-foreground font-bold">{cat.name}</span>
-                        <span className="text-muted-foreground">{cat.count.toLocaleString()} ({cat.percent}%)</span>
-                      </div>
-                      <div className="h-1.5 bg-accent rounded-full overflow-hidden mb-1">
-                        <div className={`h-full rounded-full ${barColors[i % barColors.length]}`} style={{ width: `${cat.percent}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                  {allCategories.length > 5 && (
-                    <button
-                      onClick={() => setShowAllVectors(!showAllVectors)}
-                      className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors w-full justify-center pt-1"
-                    >
-                      {showAllVectors ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      {showAllVectors ? "Show Top 5" : `Show All ${allCategories.length} Vectors`}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+          {/* Hosting Provider Intelligence */}
+          <HostingProviderIntel />
 
           {/* Email Auth Stats */}
           <div className="bg-card rounded-lg border border-border shadow-xl overflow-hidden flex flex-col">

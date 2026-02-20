@@ -513,6 +513,8 @@ export type Database = {
       }
       threats: {
         Row: {
+          abuse_contact: string | null
+          asn: string | null
           attack_type: string
           brand: string
           confidence: number
@@ -522,14 +524,18 @@ export type Database = {
           first_seen: string
           id: string
           ip_address: string | null
+          isp: string | null
           last_seen: string
           metadata: Json | null
+          org_name: string | null
           severity: Database["public"]["Enums"]["threat_severity"]
           source: Database["public"]["Enums"]["feed_source_type"]
           status: Database["public"]["Enums"]["threat_status"]
           updated_at: string
         }
         Insert: {
+          abuse_contact?: string | null
+          asn?: string | null
           attack_type: string
           brand: string
           confidence?: number
@@ -539,14 +545,18 @@ export type Database = {
           first_seen?: string
           id?: string
           ip_address?: string | null
+          isp?: string | null
           last_seen?: string
           metadata?: Json | null
+          org_name?: string | null
           severity?: Database["public"]["Enums"]["threat_severity"]
           source?: Database["public"]["Enums"]["feed_source_type"]
           status?: Database["public"]["Enums"]["threat_status"]
           updated_at?: string
         }
         Update: {
+          abuse_contact?: string | null
+          asn?: string | null
           attack_type?: string
           brand?: string
           confidence?: number
@@ -556,8 +566,10 @@ export type Database = {
           first_seen?: string
           id?: string
           ip_address?: string | null
+          isp?: string | null
           last_seen?: string
           metadata?: Json | null
+          org_name?: string | null
           severity?: Database["public"]["Enums"]["threat_severity"]
           source?: Database["public"]["Enums"]["feed_source_type"]
           status?: Database["public"]["Enums"]["threat_status"]

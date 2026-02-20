@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
 
           const ipsToQuery = [...domainToIp.values()].slice(0, 100);
           if (ipsToQuery.length > 0) {
-            const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,status", {
+          const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,status,as,org,isp", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(ipsToQuery),
@@ -207,25 +207,29 @@ Deno.serve(async (req) => {
 
             if (geoRes.ok) {
               const geoData: any[] = await geoRes.json();
-              const ipToCountry = new Map<string, string>();
+              const ipGeoMap = new Map<string, any>();
               geoData.forEach((g: any) => {
-                if (g.status === "success" && g.country) {
-                  ipToCountry.set(g.query, g.country);
+                if (g.status === "success") {
+                  ipGeoMap.set(g.query, g);
                 }
               });
 
-              // Map back: domain -> IP -> country
+              // Map back: domain -> IP -> country + ASN/org/ISP
               records.forEach((r: any) => {
-                if (!r.country && domainToIp.has(r.domain)) {
+                if (domainToIp.has(r.domain)) {
                   const ip = domainToIp.get(r.domain)!;
-                  if (ipToCountry.has(ip)) {
-                    r.country = ipToCountry.get(ip);
+                  const geo = ipGeoMap.get(ip);
+                  if (geo) {
+                    if (!r.country && geo.country) r.country = geo.country;
                     r.ip_address = ip;
+                    if (geo.as) r.asn = geo.as;
+                    if (geo.org) r.org_name = geo.org;
+                    if (geo.isp) r.isp = geo.isp;
                   }
                 }
               });
 
-              console.log(`GeoIP: DNS resolved ${domainToIp.size}/${domainsToResolve.length}, geo resolved ${ipToCountry.size}/${ipsToQuery.length}`);
+              console.log(`GeoIP: DNS resolved ${domainToIp.size}/${domainsToResolve.length}, geo resolved ${ipGeoMap.size}/${ipsToQuery.length}`);
             }
           } else {
             console.log(`GeoIP: DNS resolved 0/${domainsToResolve.length} domains`);
