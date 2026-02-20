@@ -39,45 +39,45 @@ interface SidebarProps {
 
 const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; label: string; description: string; accent?: string }[] }[] = [
   {
-    label: "Attack Lifecycle",
+    label: "Detect & Respond",
     items: [
-      { key: "exposure", icon: Scan, label: "Exposure Engine", description: "Pre-attack brand risk & context mapping", accent: "text-cyan-500" },
-      { key: "correlation", icon: Zap, label: "Correlation Matrix", description: "Unified cross-signal campaign detection", accent: "text-amber-500" },
-      { key: "erasure", icon: Shield, label: "Erasure Orchestrator", description: "Automated mitigation & interop", accent: "text-rose-500" },
-      { key: "investigations", icon: Ticket, label: "Investigations", description: "Track & manage analyst investigations", accent: "text-violet-500" },
+      { key: "exposure", icon: Scan, label: "Brand Exposure", description: "See where your brand is being targeted before attacks hit", accent: "text-cyan-500" },
+      { key: "correlation", icon: Zap, label: "Signal Correlation", description: "Connect the dots across multiple threat signals", accent: "text-amber-500" },
+      { key: "erasure", icon: Shield, label: "Takedown & Response", description: "Remove threats and coordinate your response", accent: "text-rose-500" },
+      { key: "investigations", icon: Ticket, label: "Investigations", description: "Track ongoing cases and analyst work", accent: "text-violet-500" },
     ],
   },
   {
-    label: "Intelligence",
+    label: "AI Insights",
     items: [
-      { key: "briefing", icon: Brain, label: "AI Briefing", description: "AI-generated threat report" },
-      { key: "chat", icon: MessageSquare, label: "AI Q&A", description: "Ask about your threats" },
+      { key: "briefing", icon: Brain, label: "Daily Briefing", description: "Your AI-written summary of today's threats" },
+      { key: "chat", icon: MessageSquare, label: "Ask the AI", description: "Get instant answers about your threat landscape" },
     ],
   },
   {
-    label: "Monitoring",
+    label: "Live Monitoring",
     items: [
-      { key: "heatmap", icon: Globe, label: "Threat Map", description: "Global threat visualization" },
-      { key: "social-monitor", icon: Radio, label: "Social IOC Feed", description: "Community IOC monitor" },
-      { key: "dark-web", icon: Skull, label: "Dark Web Monitor", description: "Breach & credential checks" },
-      { key: "ato", icon: UsersRound, label: "ATO War Room", description: "Account takeover tracking" },
-      { key: "email", icon: ShieldCheck, label: "Email Auth (DMARC)", description: "SPF/DKIM/DMARC reports" },
-      { key: "stats", icon: BarChart3, label: "Statistics", description: "Analytics dashboard" },
-      { key: "urgent", icon: AlertTriangle, label: "Urgent Threats", description: "Critical advisories" },
+      { key: "heatmap", icon: Globe, label: "Global Threat Map", description: "See threats plotted around the world in real time" },
+      { key: "social-monitor", icon: Radio, label: "Social Feed", description: "Indicators shared by the security community" },
+      { key: "dark-web", icon: Skull, label: "Dark Web Alerts", description: "Check for leaked credentials and breach exposure" },
+      { key: "ato", icon: UsersRound, label: "Account Takeovers", description: "Track suspicious logins and hijacked accounts" },
+      { key: "email", icon: ShieldCheck, label: "Email Security", description: "Monitor SPF, DKIM, and DMARC compliance" },
+      { key: "stats", icon: BarChart3, label: "Analytics", description: "Charts and trends across your threat data" },
+      { key: "urgent", icon: AlertTriangle, label: "Critical Alerts", description: "High-priority advisories that need attention now" },
     ],
   },
   {
-    label: "Resources",
+    label: "Help & Docs",
     items: [
-      { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Platform docs & API reference" },
+      { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Guides, documentation, and API reference" },
     ],
   },
 ];
 
 const adminGroup = {
-  label: "Administration",
+  label: "Platform Settings",
   items: [
-    { key: "admin" as TabKey, icon: Settings, label: "Admin Panel", description: "Access groups, users & feeds" },
+    { key: "admin" as TabKey, icon: Settings, label: "Admin Console", description: "Manage users, groups, and data feeds" },
   ],
 };
 
@@ -120,7 +120,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
           </div>
           <div>
             <span className="block text-lg font-extrabold tracking-wider text-foreground">LRX RADAR</span>
-            <span className="block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Unified Defense</span>
+            <span className="block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Threat Intelligence</span>
           </div>
         </div>
         {onClose && (
@@ -250,7 +250,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
             </span>
-            <p className="text-[10px] text-primary font-mono">SIGNALS OK</p>
+            <p className="text-[10px] text-primary font-mono">ALL SYSTEMS OK</p>
           </div>
         </div>
       </div>
