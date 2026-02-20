@@ -36,21 +36,21 @@ import { toast } from "sonner";
 const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "admin"];
 
 const tabTitles: Record<TabKey, string> = {
-  exposure: "Exposure & Context Engine",
-  correlation: "Active Correlation Matrix",
-  erasure: "Erasure & Interop Orchestrator",
-  investigations: "Investigation Tracker",
+  exposure: "Brand Exposure Overview",
+  correlation: "Signal Correlation",
+  erasure: "Takedown & Response",
+  investigations: "Active Investigations",
   knowledge: "Knowledge Base",
-  briefing: "AI Intelligence Briefing",
-  chat: "Threat Intelligence Q&A",
+  briefing: "Today's Threat Briefing",
+  chat: "Ask the AI",
   heatmap: "Global Threat Map",
-  "social-monitor": "Social Media IOC Monitor",
-  "dark-web": "Dark Web Monitor",
-  ato: "Account Takeover War Room",
-  email: "Email Auth Center",
-  stats: "Threat Statistics",
-  urgent: "Urgent Threats",
-  admin: "Admin Panel",
+  "social-monitor": "Community Threat Feed",
+  "dark-web": "Dark Web Alerts",
+  ato: "Account Takeover Tracking",
+  email: "Email Security & DMARC",
+  stats: "Threat Analytics",
+  urgent: "Critical Alerts",
+  admin: "Admin Console",
 };
 
 const PULL_THRESHOLD = 80;
@@ -213,7 +213,7 @@ const Index = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              <span className="text-[10px] lg:text-xs font-mono text-primary font-medium hidden sm:inline">MONITORING</span>
+              <span className="text-[10px] lg:text-xs font-mono text-primary font-medium hidden sm:inline">WATCHING</span>
               <span className="text-[10px] font-mono text-primary sm:hidden">LIVE</span>
             </div>
           </div>
