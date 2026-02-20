@@ -58,24 +58,32 @@ Deno.serve(async (req) => {
      * Each record maps to: brand (tags), domain (hostname), attack_type (threat category).
      */
     if (source === 'urlhaus' || !source) {
-      const res = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/limit/50/', {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-      });
-      
       let data: any = {};
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        data = await res.json();
-      } else {
-        // Fallback: POST endpoint (older API format)
-        const res2 = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/', {
+      try {
+        const res = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: 'limit=50',
         });
-        data = await res2.json();
+        const text = await res.text();
+        console.log(`URLhaus POST status=${res.status} len=${text.length} preview=${text.substring(0, 300)}`);
+        try { data = JSON.parse(text); } catch { console.error('URLhaus parse error'); }
+      } catch (e) {
+        console.error('URLhaus POST failed:', e);
       }
+      
+      if (!data.urls) {
+        try {
+          const res2 = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/limit/50/');
+          const text2 = await res2.text();
+          console.log(`URLhaus GET status=${res2.status} len=${text2.length} preview=${text2.substring(0, 300)}`);
+          try { data = JSON.parse(text2); } catch { console.error('URLhaus GET parse error'); }
+        } catch (e) {
+          console.error('URLhaus GET failed:', e);
+        }
+      }
+      
+      console.log(`URLhaus keys=${Object.keys(data).join(',')}, urls=${data.urls?.length || 0}`);
       fetchedCount = data.urls?.length || 0;
 
       if (data.urls) {
@@ -167,70 +175,87 @@ Deno.serve(async (req) => {
 
     /**
      * Step 3: GeoIP enrichment — resolve hostnames to country codes.
-     * Uses ip-api.com batch endpoint (free, no key, max 100 per request).
-     * We DNS-resolve domains first, then batch-query for country info.
+     * First DNS-resolve domains to IPs, then batch-query ip-api.com for country.
      */
     if (records.length > 0) {
       try {
-        // Extract unique domains that need country resolution
         const domainsToResolve = records
           .filter((r: any) => !r.country)
           .map((r: any) => r.domain)
           .filter((d: string, i: number, arr: string[]) => arr.indexOf(d) === i)
-          .slice(0, 100);
+          .slice(0, 50);
 
         if (domainsToResolve.length > 0) {
-          const batchBody = domainsToResolve.map((d: string) => ({
-            query: d,
-            fields: "query,country,countryCode,status",
-          }));
+          // DNS resolve domains to IPs using Deno.resolveDns
+          const domainToIp = new Map<string, string>();
+          await Promise.allSettled(
+            domainsToResolve.map(async (domain: string) => {
+              try {
+                const ips = await Deno.resolveDns(domain, "A");
+                if (ips.length > 0) domainToIp.set(domain, ips[0]);
+              } catch { /* DNS resolution failed for this domain */ }
+            })
+          );
 
-          const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(batchBody),
-          });
-
-          if (geoRes.ok) {
-            const geoData: any[] = await geoRes.json();
-            const countryMap = new Map<string, string>();
-            geoData.forEach((g: any) => {
-              if (g.status === "success" && g.country) {
-                countryMap.set(g.query, g.country);
-              }
+          const ipsToQuery = [...domainToIp.values()].slice(0, 100);
+          if (ipsToQuery.length > 0) {
+            const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(ipsToQuery),
             });
 
-            // Apply country to matching records
-            records.forEach((r: any) => {
-              if (!r.country && countryMap.has(r.domain)) {
-                r.country = countryMap.get(r.domain);
-              }
-            });
+            if (geoRes.ok) {
+              const geoData: any[] = await geoRes.json();
+              const ipToCountry = new Map<string, string>();
+              geoData.forEach((g: any) => {
+                if (g.status === "success" && g.country) {
+                  ipToCountry.set(g.query, g.country);
+                }
+              });
 
-            console.log(`GeoIP resolved ${countryMap.size}/${domainsToResolve.length} domains`);
+              // Map back: domain -> IP -> country
+              records.forEach((r: any) => {
+                if (!r.country && domainToIp.has(r.domain)) {
+                  const ip = domainToIp.get(r.domain)!;
+                  if (ipToCountry.has(ip)) {
+                    r.country = ipToCountry.get(ip);
+                    r.ip_address = ip;
+                  }
+                }
+              });
+
+              console.log(`GeoIP: DNS resolved ${domainToIp.size}/${domainsToResolve.length}, geo resolved ${ipToCountry.size}/${ipsToQuery.length}`);
+            }
+          } else {
+            console.log(`GeoIP: DNS resolved 0/${domainsToResolve.length} domains`);
           }
         }
       } catch (geoErr) {
-        // Non-fatal: continue without GeoIP data
         console.error("GeoIP enrichment failed (non-fatal):", geoErr);
       }
     }
 
     /**
      * Step 4: Upsert all normalized records into the threats table.
-     * Uses the unique constraint on `domain` to skip duplicates.
-     * ignoreDuplicates=true means existing rows won't be overwritten.
+     * Uses the unique constraint on `domain`. Updates country, ip_address,
+     * last_seen, and metadata on conflict so GeoIP data persists.
      */
     if (records.length > 0) {
+      // Deduplicate records by domain (keep last occurrence which has GeoIP data)
+      const deduped = new Map<string, any>();
+      records.forEach((r: any) => deduped.set(r.domain, r));
+      const uniqueRecords = [...deduped.values()];
+
       const { data: inserted, error } = await supabase.from('threats').upsert(
-        records,
-        { onConflict: 'domain', ignoreDuplicates: true }
+        uniqueRecords,
+        { onConflict: 'domain', ignoreDuplicates: false }
       );
       
       if (error) {
         console.error('Insert error:', error);
       }
-      newCount = records.length;
+      newCount = uniqueRecords.length;
     }
 
     // Step 4: Finalize the audit record with results
