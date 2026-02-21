@@ -13,14 +13,14 @@
 
 import { motion } from "framer-motion";
 import {
-  Crosshair, Layers, MailCheck, Database, ChevronDown, ChevronUp,
-  Search, Shield, Rss, Globe2, AlertTriangle, Copy,
+  Crosshair, Layers, Database, ChevronDown, ChevronUp,
+  Search, Shield, Rss, Globe2, AlertTriangle, Copy, BarChart3,
 } from "lucide-react";
 import { ThreatMapWidget } from "./ThreatMapWidget";
 import { ThreatDetailDialog } from "./ThreatDetailDialog";
 import { HostingProviderIntel } from "./HostingProviderIntel";
 import {
-  useThreats, useEmailAuthReports, useThreatNews, useTorExitNodes,
+  useThreats, useThreatNews, useTorExitNodes,
   triggerIngestion,
 } from "@/hooks/use-threat-data";
 import { useState, useMemo } from "react";
@@ -51,7 +51,7 @@ function useSocialIocsFullList() {
 
 export function ThreatHeatmap() {
   const { data: liveThreats, isLoading, refetch } = useThreats();
-  const { data: emailReports } = useEmailAuthReports();
+  
   const { data: threatNews, isLoading: newsLoading } = useThreatNews();
   const { data: torNodes, isLoading: torLoading } = useTorExitNodes();
   const { data: socialIocs, isLoading: iocsLoading } = useSocialIocsFullList();
@@ -61,20 +61,18 @@ export function ThreatHeatmap() {
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // ─── Email Stats ───
-  const emailStats = useMemo(() => {
-    if (!emailReports || emailReports.length === 0) return null;
-    const total = emailReports.reduce((sum: number, r: any) => sum + (r.volume || 0), 0);
-    const spfFail = emailReports.filter((r: any) => !r.spf_pass).reduce((s: number, r: any) => s + (r.volume || 0), 0);
-    const dkimFail = emailReports.filter((r: any) => !r.dkim_pass).reduce((s: number, r: any) => s + (r.volume || 0), 0);
-    const dmarcFail = emailReports.filter((r: any) => !r.dmarc_aligned).reduce((s: number, r: any) => s + (r.volume || 0), 0);
-    return {
-      spfFail: total > 0 ? Math.round((spfFail / total) * 100) : 0,
-      dkimFail: total > 0 ? Math.round((dkimFail / total) * 100) : 0,
-      dmarcFail: total > 0 ? Math.round((dmarcFail / total) * 100) : 0,
-      totalRejects: spfFail + dkimFail,
-    };
-  }, [emailReports]);
+  // ─── Threat Source Breakdown ───
+  const sourceBreakdown = useMemo(() => {
+    if (!liveThreats || liveThreats.length === 0) return [];
+    const counts = new Map<string, number>();
+    liveThreats.forEach((t: any) => {
+      const src = t.source || "unknown";
+      counts.set(src, (counts.get(src) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([source, count]) => ({ source, count, pct: Math.round((count / liveThreats.length) * 100) }))
+      .sort((a, b) => b.count - a.count);
+  }, [liveThreats]);
 
   // ─── Filtered Active Threats ───
   const filteredThreats = useMemo(() => {
@@ -186,32 +184,35 @@ export function ThreatHeatmap() {
           {/* Hosting Provider Intelligence */}
           <HostingProviderIntel />
 
-          {/* Email Auth Stats */}
+          {/* Threat Source Breakdown */}
           <div className="bg-card rounded-lg border border-border shadow-xl overflow-hidden flex flex-col">
             <div className="px-4 lg:px-5 py-3 border-b border-border bg-surface-elevated flex justify-between items-center">
               <h3 className="font-bold text-foreground uppercase text-xs lg:text-sm flex items-center">
-                <MailCheck className="w-4 h-4 mr-2 text-warning shrink-0" />
-                <span className="hidden sm:inline">Email Auth Stats</span>
-                <span className="sm:hidden">Auth Stats</span>
+                <BarChart3 className="w-4 h-4 mr-2 text-primary shrink-0" />
+                <span className="hidden sm:inline">Threat Source Breakdown</span>
+                <span className="sm:hidden">Sources</span>
               </h3>
-              <span className="text-[10px] lg:text-xs text-warning font-mono">
-                {emailStats ? `${emailStats.totalRejects.toLocaleString()} REJECTS` : "NO DATA"}
+              <span className="text-[10px] lg:text-xs text-primary font-mono">
+                {sourceBreakdown.length} FEEDS
               </span>
             </div>
-            <div className="p-3 lg:p-4 grid grid-cols-3 gap-2 lg:gap-4 text-center bg-surface-overlay/50 items-center">
-              {emailStats ? (
-                [
-                  { label: "SPF Fail", value: `${emailStats.spfFail}%`, color: "text-destructive" },
-                  { label: "DKIM Fail", value: `${emailStats.dkimFail}%`, color: "text-warning" },
-                  { label: "DMARC Fail", value: `${emailStats.dmarcFail}%`, color: "text-warning" },
-                ].map((stat) => (
-                  <div key={stat.label} className="p-2 rounded bg-card border border-border">
-                    <div className={`text-lg lg:text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                    <div className="text-[9px] lg:text-[10px] text-muted-foreground uppercase tracking-widest">{stat.label}</div>
+            <div className="p-3 lg:p-4 bg-surface-overlay/50 space-y-2 max-h-[160px] overflow-y-auto">
+              {sourceBreakdown.length > 0 ? (
+                sourceBreakdown.map((s) => (
+                  <div key={s.source} className="flex items-center gap-2">
+                    <span className="text-[10px] lg:text-xs font-mono text-muted-foreground w-24 truncate uppercase">{s.source}</span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${Math.max(s.pct, 2)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-foreground w-12 text-right">{s.count}</span>
+                    <span className="text-[9px] font-mono text-muted-foreground w-8 text-right">{s.pct}%</span>
                   </div>
                 ))
               ) : (
-                <div className="col-span-3 py-3 text-xs text-muted-foreground">No email auth data yet</div>
+                <div className="py-3 text-xs text-muted-foreground text-center">No threat data yet</div>
               )}
             </div>
           </div>
