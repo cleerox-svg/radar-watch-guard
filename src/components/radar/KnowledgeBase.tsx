@@ -2,11 +2,11 @@
  * KnowledgeBase.tsx — Documentation & API reference for the LRX Radar platform.
  *
  * Describes each module, edge function, technical capabilities,
- * and API integration instructions.
+ * and API integration instructions. Synced with platform v3.1.
  */
 
 import { useState } from "react";
-import { BookOpen, ChevronRight, Zap, Scan, Shield, Globe, Brain, MessageSquare, Radio, Skull, UsersRound, ShieldCheck, BarChart3, AlertTriangle, Server, Code, Database, Key, ExternalLink, Search } from "lucide-react";
+import { BookOpen, ChevronRight, Zap, Scan, Shield, Globe, Brain, MessageSquare, Radio, Skull, UsersRound, ShieldCheck, BarChart3, AlertTriangle, Server, Code, Database, Key, ExternalLink, Search, Ticket, Workflow } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -30,8 +30,8 @@ const sections: DocSection[] = [
   {
     id: "exposure",
     icon: Scan,
-    title: "Exposure & Context Engine",
-    category: "Core Module A",
+    title: "Brand Exposure Engine",
+    category: "Detect & Respond",
     description: "Pre-attack brand risk mapping that identifies your organization's attack surface before threat actors exploit it. Scans domains for email spoofing risk, typosquat domains, certificate transparency abuse, credential exposure, and dangling DNS.",
     capabilities: [
       "DMARC/SPF/DKIM configuration analysis",
@@ -51,16 +51,18 @@ const sections: DocSection[] = [
   {
     id: "correlation",
     icon: Zap,
-    title: "Active Correlation Matrix",
-    category: "Core Module B",
-    description: "The core intelligence engine that replaces siloed dashboards with a unified timeline tracking entities across the full attack lifecycle. Correlates external threats with DMARC failures, ATO events, social IOCs, and breach data to generate high-confidence Campaign Alerts.",
+    title: "Signal Correlation Matrix",
+    category: "Detect & Respond",
+    description: "The core intelligence engine that replaces siloed dashboards with a unified timeline tracking entities across the full attack lifecycle. Correlates external threats with DMARC failures, ATO events, social IOCs, and breach data to generate high-confidence Campaign Alerts with kill-chain stage classification.",
     capabilities: [
       "Cross-signal correlation: threats ↔ DMARC ↔ ATO ↔ Social IOCs ↔ Breaches",
       "AI-powered campaign attribution (Lovable AI / Gemini)",
       "Kill chain stage classification (Preparation → Exploitation)",
+      "Kill-chain pipeline visualization with stage-by-stage breakdown",
       "Gap analysis: blind spots and coverage strengths",
       "Automated action recommendations with urgency prioritization",
       "Convergence scoring (0-100) with executive summaries",
+      "Cross-signal timeline showing correlated events chronologically",
     ],
     apiEndpoint: "/functions/v1/converged-intel",
     apiMethod: "POST",
@@ -72,26 +74,44 @@ const sections: DocSection[] = [
   {
     id: "erasure",
     icon: Shield,
-    title: "Erasure & Interop Orchestrator",
-    category: "Core Module C",
-    description: "Automated response layer that uses API orchestration to neutralize threats at network, infrastructure, and identity levels. Pushes blocklists to SEGs, fires takedown requests, and severs compromised sessions — without building a global takedown team.",
+    title: "Takedown & Response Orchestrator",
+    category: "Detect & Respond",
+    description: "Database-backed response layer for logging and tracking mitigation actions across network, infrastructure, and identity levels. Records blocklist pushes, takedown requests, and session revocations with full audit trail and status tracking.",
     capabilities: [
-      "Network Level: Dynamic blocklist push to Proofpoint/Mimecast SEGs",
-      "Infrastructure Level: Automated takedown via Netcraft/Bolster with forensic evidence",
-      "Identity Level: Okta session revocation, step-up MFA, account lockout",
-      "Multi-provider orchestration with unified audit trail",
-      "Approval workflows for high-impact actions",
-      "Integration health monitoring and action statistics",
+      "Network Level: Blocklist push logging for Proofpoint/Mimecast SEGs",
+      "Infrastructure Level: Takedown request tracking via Netcraft/Bolster",
+      "Identity Level: Okta session revocation and step-up MFA logging",
+      "Live database-backed action tracking (erasure_actions table)",
+      "Status workflow: pending → executing → completed/failed",
+      "Analyst attribution — actions tied to authenticated user",
+      "Filterable audit timeline with provider and type breakdown",
     ],
-    apiEndpoint: "Mock — requires provider API keys",
+    apiEndpoint: "Database-backed — CRUD via Supabase SDK",
     apiMethod: "POST",
-    dataSources: ["Proofpoint API", "Mimecast API", "Netcraft API", "Bolster API", "Okta API"],
+    dataSources: ["erasure_actions table", "Proofpoint API", "Mimecast API", "Netcraft API", "Bolster API", "Okta API"],
+  },
+  {
+    id: "investigations",
+    icon: Ticket,
+    title: "Investigation Tracker",
+    category: "Detect & Respond",
+    description: "Full-lifecycle case management system for tracking security investigations from detection through resolution. Create tickets from any threat, assign analysts, add notes, and maintain a complete audit trail.",
+    capabilities: [
+      "Create investigation tickets from any threat or event",
+      "Assign to analysts with role-based access",
+      "Priority and severity classification",
+      "Status workflow: open → in_progress → resolved → closed",
+      "Notes and resolution tracking with timestamps",
+      "Tag-based categorization for cross-referencing",
+      "Source linking — tickets reference originating threat/event",
+    ],
+    dataSources: ["investigation_tickets table"],
   },
   {
     id: "briefing",
     icon: Brain,
     title: "AI Intelligence Briefing",
-    category: "Intelligence",
+    category: "AI Insights",
     description: "AI-generated threat intelligence report that synthesizes all platform data into analyst-ready briefings. Covers threat landscape overview, MITRE ATT&CK mapping, and prioritized recommendations.",
     capabilities: [
       "Natural language threat landscape summary",
@@ -108,7 +128,7 @@ const sections: DocSection[] = [
     id: "chat",
     icon: MessageSquare,
     title: "Threat Intelligence Q&A",
-    category: "Intelligence",
+    category: "AI Insights",
     description: "Streaming AI chat interface for natural language threat data queries. Ask about specific threats, brands, attack types, or trends and get real-time answers from platform data.",
     capabilities: [
       "Natural language threat queries",
@@ -125,7 +145,7 @@ const sections: DocSection[] = [
     id: "threat-map",
     icon: Globe,
     title: "Global Threat Map",
-    category: "Monitoring",
+    category: "Live Monitoring",
     description: "Geographically accurate world map with heat map overlays showing threat density by country. Uses react-simple-maps with interactive zoom, pan, and toggleable Targets/Origins views.",
     capabilities: [
       "Geographic threat density visualization",
@@ -140,7 +160,7 @@ const sections: DocSection[] = [
     id: "social-ioc",
     icon: Radio,
     title: "Social Media IOC Monitor",
-    category: "Monitoring",
+    category: "Live Monitoring",
     description: "Monitors social media feeds for Indicators of Compromise shared by the threat intelligence community. Ingests from TweetFeed and Mastodon hashtag feeds.",
     capabilities: [
       "TweetFeed IOC ingestion (domains, IPs, URLs, hashes)",
@@ -156,7 +176,7 @@ const sections: DocSection[] = [
     id: "dark-web",
     icon: Skull,
     title: "Dark Web Monitor",
-    category: "Monitoring",
+    category: "Live Monitoring",
     description: "Checks emails and domains against breach databases, monitors Tor exit node infrastructure, and tracks ransomware group activity.",
     capabilities: [
       "Have I Been Pwned breach lookup",
@@ -172,7 +192,7 @@ const sections: DocSection[] = [
     id: "ato",
     icon: UsersRound,
     title: "Account Takeover War Room",
-    category: "Monitoring",
+    category: "Live Monitoring",
     description: "Tracks impossible travel events, credential stuffing attempts, and session hijacking. Displays ATO timeline, risk scoring, and resolution status.",
     capabilities: [
       "Impossible travel detection",
@@ -187,7 +207,7 @@ const sections: DocSection[] = [
     id: "email-auth",
     icon: ShieldCheck,
     title: "Email Authentication Center",
-    category: "Monitoring",
+    category: "Live Monitoring",
     description: "DMARC/SPF/DKIM aggregate report viewer showing authentication funnel pass rates, policy enforcement status, and shadow-IT source detection.",
     capabilities: [
       "SPF → DKIM → DMARC pass rate funnel",
@@ -202,7 +222,7 @@ const sections: DocSection[] = [
     icon: Database,
     title: "Threat Feed Ingestion",
     category: "Data Pipeline",
-    description: "Edge functions that pull from external threat intelligence feeds and upsert into the platform database with deduplication.",
+    description: "Edge functions that pull from external threat intelligence feeds and upsert into the platform database with deduplication and batch processing.",
     capabilities: [
       "URLhaus — Malicious URL database",
       "OpenPhish — Phishing URL feed",
@@ -212,6 +232,7 @@ const sections: DocSection[] = [
       "CISA KEV — Known Exploited Vulnerabilities catalog",
       "OTX — AlienVault Open Threat Exchange pulses",
       "Ransomwatch — Ransomware group tracking",
+      "Chunked batch upserts (200 records/chunk) for high-volume processing",
     ],
     apiEndpoint: "/functions/v1/ingest-threats",
     apiMethod: "POST",
@@ -219,9 +240,28 @@ const sections: DocSection[] = [
     apiResponse: '{\n  "fetched": 250,\n  "new": 12\n}',
     edgeFunction: "ingest-threats, ingest-cisa-kev, ingest-otx-pulses, ingest-threatfox, ingest-sans-isc, ingest-ransomwatch, ingest-tor-exits, ingest-tweetfeed, ingest-mastodon",
   },
+  {
+    id: "coordinator",
+    icon: Workflow,
+    title: "Ingestion Coordinator",
+    category: "Data Pipeline",
+    description: "Orchestration function that dispatches all 10 feed workers in parallel with priority-based scheduling. Runs automatically every 15 minutes via pg_cron and tracks job state in the ingestion_jobs table.",
+    capabilities: [
+      "Priority-based parallel dispatch of 10 feed workers",
+      "Automatic 15-minute scheduling via pg_cron + pg_net",
+      "Job state tracking with retry logic (max 3 retries)",
+      "Performance metrics: records processed, execution time",
+      "Batch size configuration (up to 2000 records)",
+      "Error logging and failure recovery",
+    ],
+    apiEndpoint: "/functions/v1/ingest-coordinator",
+    apiMethod: "POST",
+    edgeFunction: "ingest-coordinator",
+    dataSources: ["ingestion_jobs table", "All feed sources"],
+  },
 ];
 
-const categories = ["Core Module A", "Core Module B", "Core Module C", "Intelligence", "Monitoring", "Data Pipeline"];
+const categories = ["Detect & Respond", "AI Insights", "Live Monitoring", "Data Pipeline"];
 
 export function KnowledgeBase() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -310,12 +350,10 @@ export function KnowledgeBase() {
 
             {expandedSection === section.id && (
               <div className="px-4 pb-4 pt-0 space-y-4 border-t border-border">
-                {/* Description */}
                 <div className="pt-3">
                   <p className="text-xs text-foreground leading-relaxed">{section.description}</p>
                 </div>
 
-                {/* Capabilities */}
                 <div>
                   <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">Capabilities</h4>
                   <div className="space-y-1">
@@ -328,7 +366,6 @@ export function KnowledgeBase() {
                   </div>
                 </div>
 
-                {/* API Details */}
                 {section.apiEndpoint && (
                   <div>
                     <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">API Integration</h4>
@@ -353,7 +390,6 @@ export function KnowledgeBase() {
                   </div>
                 )}
 
-                {/* Edge Functions */}
                 {section.edgeFunction && (
                   <div>
                     <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">Edge Functions</h4>
@@ -367,7 +403,6 @@ export function KnowledgeBase() {
                   </div>
                 )}
 
-                {/* Data Sources */}
                 {section.dataSources && (
                   <div>
                     <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">Data Sources</h4>
@@ -395,9 +430,10 @@ export function KnowledgeBase() {
           </h4>
           <div className="space-y-2 text-xs text-muted-foreground">
             <p><strong className="text-foreground">Philosophy:</strong> LRX Radar is the connective tissue — the intelligence layer that correlates threats across vectors and uses incumbent security tools (Proofpoint, Netcraft, Okta) as the muscle for automated erasure.</p>
-            <p><strong className="text-foreground">Data Flow:</strong> External feeds → Edge function ingestion → Database (with deduplication) → React Query hooks (auto-refresh) → Real-time UI updates + Supabase Realtime for toast notifications.</p>
+            <p><strong className="text-foreground">Data Flow:</strong> External feeds → Ingestion Coordinator (15-min cron) → Parallel edge function workers → Database (batch upsert with dedup) → React Query hooks (auto-refresh) → Real-time UI + toast notifications.</p>
             <p><strong className="text-foreground">AI Integration:</strong> Lovable AI Gateway (google/gemini-3-flash-preview) powers briefings, chat Q&A, and correlation analysis without requiring external API keys.</p>
-            <p><strong className="text-foreground">Auth:</strong> Email + password authentication via Supabase Auth. Role-based access (admin/analyst) controls Admin Panel visibility.</p>
+            <p><strong className="text-foreground">Auth:</strong> Email + password + Google OAuth via Lovable Cloud Auth. Role-based access (admin/analyst/customer) controls module visibility through access groups.</p>
+            <p><strong className="text-foreground">Response Layer:</strong> Erasure actions are persisted to the erasure_actions table with analyst attribution, status workflows, and provider tracking for full audit compliance.</p>
           </div>
         </CardContent>
       </Card>

@@ -1,0 +1,306 @@
+/**
+ * Landing.tsx — Public-facing sales pitch page for LRX Radar.
+ * Showcases top platform features with hero, feature grid, stats, and CTA.
+ */
+
+import { Link } from "react-router-dom";
+import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+
+const features = [
+  {
+    icon: Scan,
+    title: "Brand Exposure Mapping",
+    description: "Pre-attack surface analysis — typosquats, spoofing risk, credential leaks, and dangling DNS — scored into a single Brand Exposure Index.",
+    accent: "text-cyan-500",
+    accentBg: "bg-cyan-500/10",
+  },
+  {
+    icon: Zap,
+    title: "Cross-Signal Correlation",
+    description: "AI-powered engine that connects DMARC failures, ATO events, social IOCs, and breach data into high-confidence campaign alerts with kill-chain mapping.",
+    accent: "text-amber-500",
+    accentBg: "bg-amber-500/10",
+  },
+  {
+    icon: Shield,
+    title: "Automated Takedown & Response",
+    description: "Orchestrate blocklist pushes to Proofpoint/Mimecast, fire takedown requests via Netcraft/Bolster, and revoke sessions through Okta — all from one console.",
+    accent: "text-rose-500",
+    accentBg: "bg-rose-500/10",
+  },
+  {
+    icon: Brain,
+    title: "AI Threat Briefings",
+    description: "Daily AI-generated intelligence reports with MITRE ATT&CK mapping, trend analysis, and prioritized recommendations — ready for your exec team.",
+    accent: "text-violet-500",
+    accentBg: "bg-violet-500/10",
+  },
+  {
+    icon: Globe,
+    title: "Global Threat Heatmap",
+    description: "Real-time geographic visualization of threat origins and targets across 10+ intelligence feeds, with interactive drill-down by country and source.",
+    accent: "text-emerald-500",
+    accentBg: "bg-emerald-500/10",
+  },
+  {
+    icon: Skull,
+    title: "Dark Web & Breach Monitoring",
+    description: "Continuous credential exposure checks, Tor exit node tracking, and ransomware group activity monitoring — all correlated against your brand assets.",
+    accent: "text-orange-500",
+    accentBg: "bg-orange-500/10",
+  },
+  {
+    icon: Radio,
+    title: "Social IOC Intelligence",
+    description: "Automated ingestion from TweetFeed and Mastodon threat intel communities — IOCs classified, tagged, and scored in real time.",
+    accent: "text-sky-500",
+    accentBg: "bg-sky-500/10",
+  },
+  {
+    icon: UsersRound,
+    title: "Account Takeover War Room",
+    description: "Impossible travel detection, credential stuffing identification, and session hijack tracking with geolocation risk scoring and resolution workflows.",
+    accent: "text-pink-500",
+    accentBg: "bg-pink-500/10",
+  },
+  {
+    icon: Ticket,
+    title: "Investigation Tracker",
+    description: "Full-lifecycle case management — create tickets from any threat, assign analysts, track resolution, and maintain an audit trail across investigations.",
+    accent: "text-indigo-500",
+    accentBg: "bg-indigo-500/10",
+  },
+];
+
+const stats = [
+  { value: "10+", label: "Intelligence Feeds" },
+  { value: "15min", label: "Auto-Refresh Cycle" },
+  { value: "3", label: "Core Modules" },
+  { value: "24/7", label: "Continuous Monitoring" },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.5, ease: "easeOut" as const },
+  }),
+};
+
+export default function Landing() {
+  return (
+    <div className="min-h-screen bg-background bg-noise">
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
+          <div className="flex items-center gap-3">
+            <div className="relative w-9 h-9 flex items-center justify-center">
+              <div className="absolute inset-0 bg-primary/20 rounded-xl animate-pulse" />
+              <Satellite className="w-5 h-5 text-primary relative z-10" />
+            </div>
+            <div>
+              <span className="text-lg font-extrabold tracking-wider text-foreground">LRX RADAR</span>
+              <span className="hidden sm:block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Threat Intelligence</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/scan">
+              <Button variant="ghost" size="sm" className="text-xs gap-1.5">
+                <Scan className="w-3.5 h-3.5" />
+                Free Scan
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button size="sm" className="text-xs gap-1.5">
+                Sign In
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-32 lg:pb-24 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-mono">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              LIVE THREAT INTELLIGENCE
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+              See Threats Before<br />
+              <span className="text-gradient-radar">They See You</span>
+            </h1>
+
+            <p className="max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground leading-relaxed">
+              LRX Radar is the intelligence layer that correlates threats across your entire attack surface — and uses your existing security tools to neutralize them automatically.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link to="/scan">
+                <Button size="lg" className="gap-2 text-sm px-8 glow-primary">
+                  <Scan className="w-4 h-4" />
+                  Try Free Domain Scan
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button size="lg" variant="outline" className="gap-2 text-sm px-8">
+                  Access Platform
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Stats Strip */}
+      <section className="border-y border-border bg-card/50">
+        <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              custom={i}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              className="text-center"
+            >
+              <p className="text-3xl font-extrabold text-gradient-radar">{stat.value}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
+            Full-Spectrum Threat Intelligence
+          </h2>
+          <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+            Three core modules cover the entire attack lifecycle — from pre-attack reconnaissance through active correlation to automated response.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((feature, i) => (
+            <motion.div
+              key={feature.title}
+              custom={i}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-40px" }}
+              variants={fadeUp}
+              className="group bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all duration-300 card-interactive"
+            >
+              <div className={`w-10 h-10 rounded-lg ${feature.accentBg} flex items-center justify-center mb-4`}>
+                <feature.icon className={`w-5 h-5 ${feature.accent}`} />
+              </div>
+              <h3 className="text-sm font-bold text-foreground mb-2">{feature.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="border-t border-border bg-card/30">
+        <div className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">How It Works</h2>
+            <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
+              Three stages, one unified timeline — from detection to neutralization.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { step: "01", title: "Detect", desc: "Continuous ingestion from 10+ threat feeds with automated brand exposure scanning and dark web monitoring.", color: "text-cyan-500" },
+              { step: "02", title: "Correlate", desc: "AI connects signals across DMARC, ATO, social IOCs, and breach data — surfacing campaigns humans would miss.", color: "text-amber-500" },
+              { step: "03", title: "Respond", desc: "One-click orchestration pushes blocklists, fires takedowns, and revokes compromised sessions through your existing tools.", color: "text-rose-500" },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="relative bg-card border border-border rounded-xl p-6"
+              >
+                <span className={`text-5xl font-extrabold ${item.color} opacity-20 absolute top-4 right-4`}>{item.step}</span>
+                <h3 className={`text-lg font-bold ${item.color} mb-2`}>{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 text-center overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+          <div className="relative">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-4">
+              Start With a Free Domain Scan
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
+              See your brand's exposure score in seconds — no account required. Check email spoofing risk, typosquat domains, credential leaks, and more.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/scan">
+                <Button size="lg" className="gap-2 px-8 glow-primary">
+                  <Scan className="w-4 h-4" />
+                  Scan Your Domain
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button size="lg" variant="outline" className="gap-2 px-8">
+                  Request Platform Access
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card/50">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Satellite className="w-4 h-4 text-primary" />
+            <span className="text-sm font-bold text-foreground tracking-wider">LRX RADAR</span>
+            <span className="text-[10px] text-muted-foreground font-mono ml-2">v3.1.0</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground font-mono">
+            © {new Date().getFullYear()} LRX Radar · Threat Intelligence Platform
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
