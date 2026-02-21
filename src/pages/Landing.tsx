@@ -85,11 +85,11 @@ const features = [
 
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.06, duration: 0.5, ease: "easeOut" as const },
+    transition: { delay: i * 0.04, duration: 0.4, ease: "easeOut" as const },
   }),
 };
 
