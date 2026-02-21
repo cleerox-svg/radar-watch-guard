@@ -80,13 +80,11 @@ const INTEGRATIONS: Integration[] = [
   {
     id: "google-oauth",
     name: "Sign in with Google",
-    description: "Allow users to authenticate using their Google Workspace or personal Google accounts.",
+    description: "Users can authenticate using their Google Workspace or personal Google accounts. Managed by Lovable Cloud — no API keys required.",
     icon: Chrome,
     category: "Identity & SSO",
-    status: "not_configured",
+    status: "connected",
     fields: [
-      { key: "google_client_id", label: "OAuth Client ID", type: "text", placeholder: "xxxx.apps.googleusercontent.com", required: true },
-      { key: "google_client_secret", label: "OAuth Client Secret", type: "password", placeholder: "GOCSPX-xxxxx", required: true },
       { key: "google_hd", label: "Restrict to Domain (optional)", type: "text", placeholder: "example.com" },
     ],
   },
