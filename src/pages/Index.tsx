@@ -21,7 +21,7 @@ import { KnowledgeBase } from "@/components/radar/KnowledgeBase";
 import { ThreatHeatmap } from "@/components/radar/ThreatHeatmap";
 import { AccountTakeover } from "@/components/radar/AccountTakeover";
 import { EmailAuth } from "@/components/radar/EmailAuth";
-import { ThreatStatistics } from "@/components/radar/ThreatStatistics";
+import { FeedAnalyticsDashboard } from "@/components/radar/FeedAnalyticsDashboard";
 import { UrgentThreatsNews } from "@/components/radar/UrgentThreatsNews";
 import { ThreatBriefing } from "@/components/radar/ThreatBriefing";
 import { ThreatChat } from "@/components/radar/ThreatChat";
@@ -52,7 +52,7 @@ const tabTitles: Record<TabKey, string> = {
   "dark-web": "Dark Web Alerts",
   ato: "Account Takeover Tracking",
   email: "Email Security & DMARC",
-  stats: "Threat Analytics",
+  stats: "Feed Analytics",
   urgent: "Critical Alerts",
   "spam-traps": "Spam Trap Intelligence",
   leads: "Lead Submissions",
@@ -288,7 +288,7 @@ const Index = () => {
             {hasModuleAccess("dark-web") && currentTab === "dark-web" && <DarkWebMonitor />}
             {hasModuleAccess("ato") && currentTab === "ato" && <AccountTakeover />}
             {hasModuleAccess("email") && currentTab === "email" && <EmailAuth />}
-            {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
+            {hasModuleAccess("stats") && currentTab === "stats" && <FeedAnalyticsDashboard />}
             {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
             {hasModuleAccess("spam-traps") && currentTab === "spam-traps" && <SpamTrapIntel />}
             {hasModuleAccess("leads") && currentTab === "leads" && <LeadsFeed />}
