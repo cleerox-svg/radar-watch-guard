@@ -9,6 +9,8 @@ interface Profile {
   avatar_url: string | null;
   title: string | null;
   team: string | null;
+  idle_timeout_minutes: number | null;
+  revoked_at: string | null;
 }
 
 interface UserRole {
@@ -88,6 +90,13 @@ export function useAuth() {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Log login event on SIGNED_IN
+        if (_event === "SIGNED_IN") {
+          supabase.from("session_events").insert({
+            user_id: session.user.id,
+            event_type: "login",
+          }).then(() => {});
+        }
         setTimeout(() => fetchProfile(session.user.id), 0);
       } else {
         setProfile(null);
@@ -109,6 +118,13 @@ export function useAuth() {
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    // Log session event before signing out
+    if (user) {
+      await supabase.from("session_events").insert({
+        user_id: user.id,
+        event_type: "logout",
+      }).then(() => {});
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -116,7 +132,7 @@ export function useAuth() {
     setRoles([]);
     setGroups([]);
     setAllowedModules(new Set());
-  }, []);
+  }, [user]);
 
   const isAdmin = roles.includes("admin");
 

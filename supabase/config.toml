@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.ingest-threats]
 verify_jwt = false
+
+[functions.revoke-sessions]
+verify_jwt = false
