@@ -24,6 +24,10 @@ import {
   Clock,
   Zap,
   Eye,
+  Activity,
+  CheckCircle,
+  XCircle,
+  Database,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,11 +58,18 @@ interface Trend {
   significance: string;
 }
 
+interface FeedHealth {
+  healthy_feeds: number;
+  stale_feeds: string[];
+  recommendations: string[];
+}
+
 interface Briefing {
   executive_summary: string;
   campaigns: Campaign[];
   top_risks: Risk[];
   trends: Trend[];
+  feed_health?: FeedHealth;
   recommendations: string[];
 }
 
@@ -69,6 +80,11 @@ interface BriefingResponse {
     threats_analyzed: number;
     news_analyzed: number;
     metrics_analyzed: number;
+    social_iocs_analyzed?: number;
+    ato_events_analyzed?: number;
+    breach_checks_analyzed?: number;
+    tor_nodes_tracked?: number;
+    erasure_actions_analyzed?: number;
   };
   generated_at: string;
   error?: string;
@@ -172,9 +188,13 @@ export function ThreatBriefing() {
               <p className="text-sm text-foreground leading-relaxed">
                 {briefing.briefing.executive_summary}
               </p>
-              <div className="flex gap-4 mt-3 text-[11px] text-muted-foreground font-mono">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-muted-foreground font-mono">
                 <span>{briefing.data_summary.threats_analyzed} threats</span>
                 <span>{briefing.data_summary.news_analyzed} advisories</span>
+                <span>{briefing.data_summary.social_iocs_analyzed || 0} IOCs</span>
+                <span>{briefing.data_summary.ato_events_analyzed || 0} ATO events</span>
+                <span>{briefing.data_summary.breach_checks_analyzed || 0} breaches</span>
+                <span>{briefing.data_summary.tor_nodes_tracked || 0} Tor nodes</span>
                 <span>{briefing.data_summary.metrics_analyzed} metrics</span>
                 <span>Generated {new Date(briefing.generated_at).toLocaleTimeString()}</span>
               </div>
@@ -280,6 +300,43 @@ export function ThreatBriefing() {
                     </div>
                   );
                 })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Feed Health */}
+          {briefing.briefing.feed_health && (
+            <Card className="bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" />
+                  Feed Health Status
+                  {briefing.briefing.feed_health.healthy_feeds > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 bg-primary/10 text-primary border-primary/20">
+                      {briefing.briefing.feed_health.healthy_feeds} healthy
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {briefing.briefing.feed_health.stale_feeds?.length > 0 && (
+                  <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
+                    <p className="text-xs font-medium text-warning flex items-center gap-1.5 mb-1.5">
+                      <AlertTriangle className="w-3 h-3" /> Stale Feeds
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {briefing.briefing.feed_health.stale_feeds.map((feed, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">{feed}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {briefing.briefing.feed_health.recommendations?.map((rec, i) => (
+                  <p key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <Database className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                    {rec}
+                  </p>
+                ))}
               </CardContent>
             </Card>
           )}

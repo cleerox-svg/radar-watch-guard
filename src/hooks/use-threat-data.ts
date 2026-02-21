@@ -96,14 +96,10 @@ export function useEmailAuthReports() {
 }
 
 /**
- * Fetches the 10 most recent feed ingestion audit records.
- * No auto-refresh — pulled on-demand. Used to show ingestion history
- * (which feeds were pulled, how many records were fetched/new, status).
+ * Fetches the 30 most recent feed ingestion audit records.
+ * Refreshes every 30 seconds. Used to show ingestion history and data freshness.
  *
  * DB table: public.feed_ingestions
- *   - Created by the ingest-threats edge function at the start of each pull.
- *   - Updated with records_fetched, records_new, completed_at on completion.
- *   - RLS: public SELECT; INSERT/UPDATE restricted to service role.
  */
 export function useFeedIngestions() {
   return useQuery({
@@ -113,10 +109,39 @@ export function useFeedIngestions() {
         .from("feed_ingestions")
         .select("*")
         .order("started_at", { ascending: false })
-        .limit(10);
+        .limit(30);
       if (error) throw error;
       return data;
     },
+    refetchInterval: 30000,
+  });
+}
+
+/**
+ * Fetches latest ingestion job status per feed source for data freshness indicators.
+ * Returns the most recent job per unique feed_source.
+ * Refreshes every 30 seconds.
+ */
+export function useIngestionJobsFreshness() {
+  return useQuery({
+    queryKey: ["ingestion_jobs_freshness"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ingestion_jobs")
+        .select("feed_source, status, records_processed, completed_at, error_message, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      // Deduplicate to latest per feed source
+      const latest = new Map<string, typeof data[0]>();
+      (data || []).forEach((job) => {
+        if (!latest.has(job.feed_source)) {
+          latest.set(job.feed_source, job);
+        }
+      });
+      return Array.from(latest.values());
+    },
+    refetchInterval: 30000,
   });
 }
 

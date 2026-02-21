@@ -13,16 +13,16 @@
  */
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
   BarChart, Bar, PieChart, Pie, Cell, Tooltip, Legend,
 } from "recharts";
-import { TrendingUp, ShieldAlert, Target, Database, AlertCircle } from "lucide-react";
-import { useThreats, useAttackMetrics, useThreatNews } from "@/hooks/use-threat-data";
+import { TrendingUp, ShieldAlert, Target, Database, AlertCircle, Clock, CheckCircle, XCircle, Filter } from "lucide-react";
+import { useThreats, useAttackMetrics, useThreatNews, useIngestionJobsFreshness } from "@/hooks/use-threat-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 /** HSL colors mapped to each threat severity level for chart fills */
 const SEVERITY_COLORS: Record<string, string> = {
@@ -47,6 +47,8 @@ export function ThreatStatistics() {
   const { data: threats, isLoading } = useThreats();
   const { data: metrics } = useAttackMetrics();
   const { data: threatNews } = useThreatNews();
+  const { data: feedJobs } = useIngestionJobsFreshness();
+  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const { data: socialIocs } = useQuery({
     queryKey: ["social_iocs_brands"],
     queryFn: async () => {
@@ -249,6 +251,62 @@ export function ThreatStatistics() {
           </motion.div>
         ))}
       </div>
+
+      {/* Data Freshness Indicators */}
+      {feedJobs && feedJobs.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-4 lg:p-6 shadow-lg mb-6">
+          <h3 className="font-bold text-foreground flex items-center text-sm lg:text-base mb-3">
+            <Clock className="w-4 h-4 text-primary mr-2 shrink-0" />
+            Feed Data Freshness
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {feedJobs.map((job: any) => {
+              const isHealthy = job.status === 'completed';
+              const isFailed = job.status === 'failed';
+              const timeAgo = job.completed_at
+                ? formatDistanceToNow(new Date(job.completed_at), { addSuffix: true })
+                : 'never';
+              return (
+                <div
+                  key={job.feed_source}
+                  className={`rounded-lg border p-2.5 text-center cursor-pointer transition-colors ${
+                    sourceFilter === job.feed_source
+                      ? 'border-primary bg-primary/10'
+                      : isHealthy
+                      ? 'border-border bg-background hover:border-primary/30'
+                      : isFailed
+                      ? 'border-destructive/30 bg-destructive/5'
+                      : 'border-warning/30 bg-warning/5'
+                  }`}
+                  onClick={() => setSourceFilter(sourceFilter === job.feed_source ? null : job.feed_source)}
+                >
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    {isHealthy ? (
+                      <CheckCircle className="w-3 h-3 text-primary" />
+                    ) : isFailed ? (
+                      <XCircle className="w-3 h-3 text-destructive" />
+                    ) : (
+                      <Clock className="w-3 h-3 text-warning" />
+                    )}
+                    <span className="text-[10px] font-mono font-bold text-foreground uppercase truncate">
+                      {job.feed_source}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground">{timeAgo}</p>
+                  <p className="text-[9px] font-mono text-muted-foreground">{job.records_processed || 0} rec</p>
+                </div>
+              );
+            })}
+          </div>
+          {sourceFilter && (
+            <div className="mt-2 flex items-center gap-2">
+              <Filter className="w-3 h-3 text-primary" />
+              <span className="text-xs text-primary font-mono">Filtering by: {sourceFilter}</span>
+              <button onClick={() => setSourceFilter(null)} className="text-xs text-muted-foreground hover:text-foreground ml-2">Clear</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Row 1: Threat trend area chart + Severity donut */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
