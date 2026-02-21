@@ -19,6 +19,9 @@ import {
   triggerIngestion, triggerCisaKevIngestion, triggerOtxIngestion,
   triggerThreatFoxIngestion, triggerSansIscIngestion, triggerRansomwatchIngestion,
   triggerTorExitIngestion, triggerMastodonIngestion,
+  triggerFeodoIngestion, triggerMalBazaarIngestion, triggerBlocklistDeIngestion,
+  triggerSslBlocklistIngestion, triggerSpamhausDropIngestion, triggerCertstreamIngestion,
+  useFeedSchedules,
 } from "@/hooks/use-threat-data";
 import { AdminIntegrations } from "@/components/radar/AdminIntegrations";
 import { AdminAutomations } from "@/components/radar/AdminAutomations";
@@ -215,6 +218,8 @@ function DatabaseStatus() {
       { name: "Email Auth Reports", table: "email_auth_reports" as const },
       { name: "Feed Ingestions", table: "feed_ingestions" as const },
       { name: "Tor Exit Nodes", table: "tor_exit_nodes" as const },
+      { name: "Spam Trap Hits", table: "spam_trap_hits" as const },
+      { name: "Scan Leads", table: "scan_leads" as const },
     ];
     try {
       const results = await Promise.all(
@@ -298,18 +303,24 @@ function DatabaseStatus() {
 
 // ─── FeedManager (unchanged) ───
 const FEEDS = [
-  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus") },
-  { id: "openphish", name: "OpenPhish", desc: "Phishing URLs", trigger: () => triggerIngestion("openphish") },
-  { id: "phishtank", name: "PhishTank", desc: "Verified phishing DB", trigger: () => triggerIngestion("phishtank") },
-  { id: "cisa_kev", name: "CISA KEV", desc: "Known Exploited Vulns", trigger: triggerCisaKevIngestion },
-  { id: "otx", name: "AlienVault OTX", desc: "Community threat pulses", trigger: triggerOtxIngestion },
-  { id: "threatfox", name: "ThreatFox", desc: "C2 servers & botnet IOCs", trigger: triggerThreatFoxIngestion },
-  { id: "sans_isc", name: "SANS ISC", desc: "Global port scanning trends", trigger: triggerSansIscIngestion },
-  { id: "ransomwatch", name: "Ransomwatch", desc: "Ransomware leak site victims", trigger: triggerRansomwatchIngestion },
-  { id: "tor_exits", name: "Tor Exit Nodes", desc: "Live Tor exit IP list", trigger: triggerTorExitIngestion },
-  { id: "mastodon", name: "Mastodon OSINT", desc: "infosec.exchange #ThreatIntel", trigger: triggerMastodonIngestion },
-  { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }) },
-  { id: "spam_trap", name: "Spam Trap Demo", desc: "Generate synthetic honeypot data", trigger: () => supabase.functions.invoke("generate-spam-trap-demo").then(r => { if (r.error) throw r.error; return r.data; }) },
+  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus"), schedule: "*/15 * * * *" },
+  { id: "openphish", name: "OpenPhish", desc: "Phishing URLs", trigger: () => triggerIngestion("openphish"), schedule: "*/15 * * * *" },
+  { id: "phishtank", name: "PhishTank", desc: "Verified phishing DB", trigger: () => triggerIngestion("phishtank"), schedule: "*/15 * * * *" },
+  { id: "cisa_kev", name: "CISA KEV", desc: "Known Exploited Vulns", trigger: triggerCisaKevIngestion, schedule: "0 */6 * * *" },
+  { id: "otx", name: "AlienVault OTX", desc: "Community threat pulses", trigger: triggerOtxIngestion, schedule: "*/30 * * * *" },
+  { id: "threatfox", name: "ThreatFox", desc: "C2 servers & botnet IOCs", trigger: triggerThreatFoxIngestion, schedule: "*/15 * * * *" },
+  { id: "sans_isc", name: "SANS ISC", desc: "Global port scanning trends", trigger: triggerSansIscIngestion, schedule: "0 */4 * * *" },
+  { id: "ransomwatch", name: "Ransomwatch", desc: "Ransomware leak site victims", trigger: triggerRansomwatchIngestion, schedule: "*/30 * * * *" },
+  { id: "tor_exits", name: "Tor Exit Nodes", desc: "Live Tor exit IP list", trigger: triggerTorExitIngestion, schedule: "0 */2 * * *" },
+  { id: "mastodon", name: "Mastodon OSINT", desc: "infosec.exchange #ThreatIntel", trigger: triggerMastodonIngestion, schedule: "*/15 * * * *" },
+  { id: "feodo", name: "Feodo Tracker", desc: "Emotet/Dridex/TrickBot C2", trigger: triggerFeodoIngestion, schedule: "0 */3 * * *" },
+  { id: "malbazaar", name: "MalBazaar", desc: "Malware sample hashes & YARA", trigger: triggerMalBazaarIngestion, schedule: "0 */6 * * *" },
+  { id: "blocklist_de", name: "Blocklist.de", desc: "Attacking IPs (SSH/mail/web)", trigger: triggerBlocklistDeIngestion, schedule: "0 */4 * * *" },
+  { id: "ssl_blocklist", name: "SSL Blocklist", desc: "Botnet SSL certificates", trigger: triggerSslBlocklistIngestion, schedule: "0 */6 * * *" },
+  { id: "spamhaus_drop", name: "Spamhaus DROP", desc: "Known spam/botnet CIDR blocks", trigger: triggerSpamhausDropIngestion, schedule: "0 */12 * * *" },
+  { id: "certstream", name: "CertStream", desc: "Certificate transparency monitoring", trigger: triggerCertstreamIngestion, schedule: "*/30 * * * *" },
+  { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "*/15 * * * *" },
+  { id: "spam_trap", name: "Spam Trap Demo", desc: "Generate synthetic honeypot data", trigger: () => supabase.functions.invoke("generate-spam-trap-demo").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "manual" },
 ];
 
 function FeedManager() {
@@ -342,14 +353,20 @@ function FeedManager() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {FEEDS.map((feed) => {
             const isRunning = runningFeeds.has(feed.id);
             const result = results[feed.id];
+            const isManual = feed.schedule === "manual";
             return (
               <div key={feed.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2.5">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground">{feed.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-medium text-foreground">{feed.name}</p>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5">
+                      {isManual ? "manual" : feed.schedule}
+                    </Badge>
+                  </div>
                   <p className="text-[10px] text-muted-foreground truncate">{feed.desc}</p>
                   {result && <p className={`text-[10px] mt-0.5 ${result.success ? "text-emerald-400" : "text-destructive"}`}>{result.message}</p>}
                 </div>

@@ -266,6 +266,60 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_schedules: {
+        Row: {
+          api_key_configured: boolean
+          created_at: string
+          cron_expression: string | null
+          description: string | null
+          enabled: boolean
+          feed_name: string
+          feed_source: string
+          id: string
+          interval_minutes: number | null
+          last_records: number | null
+          last_run_at: string | null
+          last_status: string | null
+          pull_type: string
+          requires_api_key: boolean
+          updated_at: string
+        }
+        Insert: {
+          api_key_configured?: boolean
+          created_at?: string
+          cron_expression?: string | null
+          description?: string | null
+          enabled?: boolean
+          feed_name: string
+          feed_source: string
+          id?: string
+          interval_minutes?: number | null
+          last_records?: number | null
+          last_run_at?: string | null
+          last_status?: string | null
+          pull_type?: string
+          requires_api_key?: boolean
+          updated_at?: string
+        }
+        Update: {
+          api_key_configured?: boolean
+          created_at?: string
+          cron_expression?: string | null
+          description?: string | null
+          enabled?: boolean
+          feed_name?: string
+          feed_source?: string
+          id?: string
+          interval_minutes?: number | null
+          last_records?: number | null
+          last_run_at?: string | null
+          last_status?: string | null
+          pull_type?: string
+          requires_api_key?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       group_module_permissions: {
         Row: {
           group_id: string
@@ -828,6 +882,14 @@ export type Database = {
         | "mastodon"
         | "hibp"
         | "spam_trap"
+        | "feodo"
+        | "malbazaar"
+        | "blocklist_de"
+        | "ssl_blocklist"
+        | "spamhaus_drop"
+        | "certstream"
+        | "phishtank_community"
+        | "greynoise"
       threat_severity: "critical" | "high" | "medium" | "low" | "info"
       threat_status: "active" | "investigating" | "mitigated" | "resolved"
     }
@@ -972,6 +1034,14 @@ export const Constants = {
         "mastodon",
         "hibp",
         "spam_trap",
+        "feodo",
+        "malbazaar",
+        "blocklist_de",
+        "ssl_blocklist",
+        "spamhaus_drop",
+        "certstream",
+        "phishtank_community",
+        "greynoise",
       ],
       threat_severity: ["critical", "high", "medium", "low", "info"],
       threat_status: ["active", "investigating", "mitigated", "resolved"],
