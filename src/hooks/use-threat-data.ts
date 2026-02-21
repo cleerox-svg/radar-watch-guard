@@ -251,6 +251,46 @@ export async function checkPwnedPassword(password: string) {
   return data;
 }
 
+// ─── New Feed Triggers (v2) ───
+
+export async function triggerFeodoIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-feodo");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerMalBazaarIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-malbazaar");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerBlocklistDeIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-blocklist-de");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerSslBlocklistIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-ssl-blocklist");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerSpamhausDropIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-spamhaus-drop");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerCertstreamIngestion(keywords?: string[]) {
+  const { data, error } = await supabase.functions.invoke("ingest-certstream", {
+    body: keywords ? { keywords } : {},
+  });
+  if (error) throw error;
+  return data;
+}
+
 export function useTorExitNodes() {
   return useQuery({
     queryKey: ["tor_exit_nodes"],
@@ -266,3 +306,20 @@ export function useTorExitNodes() {
     refetchInterval: 120000,
   });
 }
+
+/** Hook to query feed schedule metadata for admin UI */
+export function useFeedSchedules() {
+  return useQuery({
+    queryKey: ["feed_schedules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("feed_schedules")
+        .select("*")
+        .order("feed_source");
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30000,
+  });
+}
+

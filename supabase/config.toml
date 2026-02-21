@@ -35,3 +35,21 @@ verify_jwt = false
 
 [functions.revoke-sessions]
 verify_jwt = false
+
+[functions.ingest-feodo]
+verify_jwt = false
+
+[functions.ingest-malbazaar]
+verify_jwt = false
+
+[functions.ingest-blocklist-de]
+verify_jwt = false
+
+[functions.ingest-ssl-blocklist]
+verify_jwt = false
+
+[functions.ingest-spamhaus-drop]
+verify_jwt = false
+
+[functions.ingest-certstream]
+verify_jwt = false
