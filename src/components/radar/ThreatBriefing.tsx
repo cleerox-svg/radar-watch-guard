@@ -35,6 +35,7 @@ import {
   Play,
   ChevronDown,
   ChevronUp,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -300,6 +301,134 @@ export function ThreatBriefing() {
   const allActions = briefing?.briefing?.action_playbook || [];
   const filteredActions = playbookFilter === "all" ? allActions : allActions.filter(a => a.category === playbookFilter);
 
+  /** Export briefing as a print-friendly PDF via browser print dialog */
+  const exportAsPdf = () => {
+    if (!briefing?.success) return;
+    const b = briefing.briefing;
+    const ds = briefing.data_summary;
+    const now = new Date(briefing.generated_at).toLocaleString();
+
+    const sevBadge = (s: string) => {
+      const colors: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#6b7280' };
+      return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;color:#fff;background:${colors[s] || colors.medium}">${(s || '').toUpperCase()}</span>`;
+    };
+
+    const urgBorder: Record<string, string> = { immediate: '#ef4444', short_term: '#eab308', ongoing: '#d1d5db' };
+    const catEmoji: Record<string, string> = { investigate: '🔍', escalate: '📤', defend: '🛡️', track: '📌' };
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Threat Intelligence Briefing — ${now}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#1a1a2e; padding:40px; font-size:13px; line-height:1.5; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  h2 { font-size:15px; margin:24px 0 8px; padding-bottom:4px; border-bottom:2px solid #10b981; color:#0f172a; }
+  h3 { font-size:13px; margin:12px 0 4px; }
+  .subtitle { font-size:11px; color:#64748b; margin-bottom:20px; }
+  .stats { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .stat { background:#f1f5f9; border-radius:6px; padding:4px 10px; font-size:11px; font-family:monospace; }
+  .card { border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin:8px 0; page-break-inside:avoid; }
+  .card-title { font-weight:600; font-size:13px; }
+  .card-desc { font-size:12px; color:#475569; margin-top:4px; }
+  .rec { font-size:12px; color:#10b981; margin-top:6px; }
+  .brand-tag { display:inline-block; background:#e2e8f0; border-radius:4px; padding:1px 6px; font-size:10px; margin:2px 2px 2px 0; }
+  .action-card { border-left:3px solid; border-radius:6px; padding:10px 12px; margin:6px 0; background:#fafafa; page-break-inside:avoid; }
+  .action-title { font-weight:600; font-size:12px; }
+  .action-meta { font-size:10px; color:#64748b; margin-top:2px; }
+  .action-desc { font-size:11px; color:#334155; margin-top:4px; }
+  .template-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:8px; margin-top:6px; font-family:monospace; font-size:10px; white-space:pre-wrap; }
+  .priority-label { font-size:10px; font-weight:700; font-family:monospace; letter-spacing:0.5px; }
+  .trend-row { display:flex; align-items:flex-start; gap:8px; margin:6px 0; }
+  .trend-arrow { font-size:16px; line-height:1; }
+  ol { padding-left:20px; }
+  ol li { margin:4px 0; font-size:12px; }
+  .footer { margin-top:30px; padding-top:12px; border-top:1px solid #e2e8f0; font-size:10px; color:#94a3b8; text-align:center; }
+  @media print { body { padding:20px; } .action-card { break-inside:avoid; } }
+</style></head><body>
+<h1>🛡️ Threat Intelligence Briefing</h1>
+<div class="subtitle">Generated: ${now} | LRX Radar Platform</div>
+
+<h2>Executive Summary</h2>
+<p style="font-size:13px">${b.executive_summary || 'N/A'}</p>
+<div class="stats">
+  <span class="stat">${ds.threats_analyzed} threats</span>
+  <span class="stat">${ds.news_analyzed} advisories</span>
+  <span class="stat">${ds.social_iocs_analyzed || 0} IOCs</span>
+  <span class="stat">${ds.ato_events_analyzed || 0} ATO events</span>
+  <span class="stat">${ds.breach_checks_analyzed || 0} breaches</span>
+  <span class="stat">${ds.tor_nodes_tracked || 0} Tor nodes</span>
+  <span class="stat">${ds.metrics_analyzed} metrics</span>
+</div>
+
+${b.campaigns?.length ? `<h2>Identified Campaigns (${b.campaigns.length})</h2>
+${b.campaigns.map(c => `<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span class="card-title">${c.name}</span>${sevBadge(c.severity)}
+  </div>
+  <div class="card-desc">${c.description}</div>
+  <div style="margin-top:6px">${(c.brands_targeted || []).map(br => `<span class="brand-tag">${br}</span>`).join('')}
+  ${c.domains_count ? `<span class="brand-tag" style="font-family:monospace">${c.domains_count} domains</span>` : ''}</div>
+  <div class="rec">💡 ${c.recommendation}</div>
+</div>`).join('')}` : ''}
+
+${b.top_risks?.length ? `<h2>Priority Risks (${b.top_risks.length})</h2>
+${b.top_risks.map(r => {
+  const pLabels: Record<string, string> = { immediate: '⚡ IMMEDIATE', short_term: '🕐 SHORT TERM', monitor: '👁️ MONITOR' };
+  const pColors: Record<string, string> = { immediate: '#ef4444', short_term: '#eab308', monitor: '#6b7280' };
+  return `<div class="card">
+  <span class="priority-label" style="color:${pColors[r.priority] || '#6b7280'}">${pLabels[r.priority] || r.priority}</span>
+  <h3>${r.title}</h3>
+  <div class="card-desc">${r.detail}</div>
+  <div class="rec">💡 ${r.action}</div>
+</div>`;
+}).join('')}` : ''}
+
+${b.trends?.length ? `<h2>Trend Analysis</h2>
+${b.trends.map(t => {
+  const arrows: Record<string, string> = { increasing: '📈', decreasing: '📉', stable: '➡️' };
+  return `<div class="trend-row">
+  <span class="trend-arrow">${arrows[t.direction] || '➡️'}</span>
+  <div><strong>${t.observation}</strong><br><span style="font-size:11px;color:#64748b">${t.significance}</span></div>
+</div>`;
+}).join('')}` : ''}
+
+${b.feed_health ? `<h2>Feed Health</h2>
+<p style="font-size:12px">✅ ${b.feed_health.healthy_feeds || 0} healthy feeds</p>
+${b.feed_health.stale_feeds?.length ? `<p style="font-size:12px;color:#eab308;margin-top:4px">⚠️ Stale: ${b.feed_health.stale_feeds.join(', ')}</p>` : ''}
+${(b.feed_health.recommendations || []).map(r => `<p style="font-size:11px;color:#64748b;margin-top:2px">• ${r}</p>`).join('')}` : ''}
+
+${b.recommendations?.length ? `<h2>Recommendations</h2>
+<ol>${b.recommendations.map(r => `<li>${r}</li>`).join('')}</ol>` : ''}
+
+${allActions.length ? `<h2>Action Playbook (${allActions.length} actions)</h2>
+<div class="stats">
+  <span class="stat">🟢 ${allActions.filter(a => a.executable).length} executable</span>
+  <span class="stat">📋 ${allActions.filter(a => !a.executable).length} advisory</span>
+</div>
+${allActions.map(a => `<div class="action-card" style="border-color:${urgBorder[a.urgency] || '#d1d5db'}">
+  <div class="action-title">${catEmoji[a.category] || '📌'} ${a.title}</div>
+  <div class="action-meta">${(a.category || '').toUpperCase()} · ${(a.urgency || '').replace('_', ' ').toUpperCase()} · ${a.executable ? '🟢 Executable' : '📋 Advisory'} · Target: ${a.action_data?.target || 'N/A'}</div>
+  <div class="action-desc">${a.description}</div>
+  ${!a.executable && a.action_data?.template ? `<div class="template-box">${a.action_data.template}</div>` : ''}
+</div>`).join('')}` : ''}
+
+<div class="footer">
+  LRX Radar — Threat Intelligence Briefing Report · Classified: INTERNAL · Generated ${now}
+</div>
+</body></html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Pop-up blocked", { description: "Please allow pop-ups to export the report." });
+      return;
+    }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+    toast.success("PDF export ready", { description: "Use your browser's Save as PDF option." });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header card with generate button */}
@@ -310,10 +439,18 @@ export function ThreatBriefing() {
               <Brain className="w-5 h-5 text-primary" />
               AI Threat Intelligence Briefing
             </CardTitle>
-            <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2">
-              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-              {loading ? "Analyzing…" : briefing ? "Refresh" : "Generate Briefing"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {briefing?.success && (
+                <Button onClick={exportAsPdf} variant="outline" size="sm" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </Button>
+              )}
+              <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2">
+                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                {loading ? "Analyzing…" : briefing ? "Refresh" : "Generate Briefing"}
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             AI analyzes all ingested threats, vulnerabilities, and metrics to produce actionable intelligence with executable response actions.
