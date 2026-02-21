@@ -12,11 +12,10 @@
  * registrar reporting instructions, and investigation ticket creation.
  */
 
-import { useState, useMemo } from "react";
-import { useThreats } from "@/hooks/use-threat-data";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Server, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   History, ExternalLink, Ticket, AlertTriangle, Shield, Copy, Info,
@@ -75,8 +74,25 @@ function getAbuseInfo(orgName: string) {
   return null;
 }
 
+/** Map RPC result rows into ProviderStats shape */
+function mapRpcProvider(p: any): ProviderStats {
+  return {
+    org: p.org || "Unknown",
+    totalThreats: p.total_threats || 0,
+    recentThreats: p.recent_threats || 0,
+    olderThreats: p.older_threats || 0,
+    ips: p.ips || [],
+    asns: p.asns || [],
+    isps: p.isps || [],
+    abuseContacts: p.abuse_contacts || [],
+    domains: p.domains || [],
+    severityCounts: p.severity_counts || {},
+    attackTypes: p.attack_types || [],
+    countries: p.countries || [],
+  };
+}
+
 export function HostingProviderIntel() {
-  const { data: threats } = useThreats();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
@@ -84,74 +100,26 @@ export function HostingProviderIntel() {
   const [ticketOpen, setTicketOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({ title: "", description: "", severity: "medium", priority: "medium" });
 
-  const now = Date.now();
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  // Server-side aggregation via RPC — replaces client-side iteration over 200 threats
+  const { data: providerData } = useQuery({
+    queryKey: ["hosting_provider_stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_hosting_provider_stats");
+      if (error) throw error;
+      return data as unknown as {
+        worst_now: ProviderStats[];
+        previously_bad: ProviderStats[];
+        most_improved: ProviderStats[];
+        provider_count: number;
+      };
+    },
+    refetchInterval: 60000,
+  });
 
-  // Build provider stats from threats data
-  const providerMap = useMemo(() => {
-    if (!threats) return new Map<string, ProviderStats>();
-    const map = new Map<string, ProviderStats>();
-
-    threats.forEach((t: any) => {
-      const org = t.org_name || t.isp || "Unknown Provider";
-      if (org === "Unknown Provider") return;
-
-      if (!map.has(org)) {
-        map.set(org, {
-          org, totalThreats: 0, recentThreats: 0, olderThreats: 0,
-          ips: [], asns: [], isps: [], abuseContacts: [], domains: [],
-          severityCounts: {}, attackTypes: [], countries: [],
-        });
-      }
-      const stats = map.get(org)!;
-      stats.totalThreats++;
-
-      const lastSeen = new Date(t.last_seen).getTime();
-      if (now - lastSeen <= SEVEN_DAYS) stats.recentThreats++;
-      else if (now - lastSeen <= THIRTY_DAYS) stats.olderThreats++;
-
-      if (t.ip_address && !stats.ips.includes(t.ip_address)) stats.ips.push(t.ip_address);
-      if (t.asn && !stats.asns.includes(t.asn)) stats.asns.push(t.asn);
-      if (t.isp && !stats.isps.includes(t.isp)) stats.isps.push(t.isp);
-      if (t.abuse_contact && !stats.abuseContacts.includes(t.abuse_contact)) stats.abuseContacts.push(t.abuse_contact);
-      if (t.domain && !stats.domains.includes(t.domain)) stats.domains.push(t.domain);
-      if (t.country && !stats.countries.includes(t.country)) stats.countries.push(t.country);
-
-      const sev = t.severity || "medium";
-      stats.severityCounts[sev] = (stats.severityCounts[sev] || 0) + 1;
-
-      if (t.attack_type && !stats.attackTypes.includes(t.attack_type)) stats.attackTypes.push(t.attack_type);
-    });
-
-    return map;
-  }, [threats, now]);
-
-  // Categorize providers
-  const { worstNow, previouslyBad, mostImproved } = useMemo(() => {
-    const providers = Array.from(providerMap.values());
-
-    // Worst Now: most recent threats
-    const worstNow = [...providers]
-      .filter((p) => p.recentThreats > 0)
-      .sort((a, b) => b.recentThreats - a.recentThreats);
-
-    // Previously Bad: had significant older threats but few recent
-    const previouslyBad = [...providers]
-      .filter((p) => p.olderThreats > 0 && p.recentThreats <= 1)
-      .sort((a, b) => b.olderThreats - a.olderThreats);
-
-    // Most Improved: had older threats, recent count dropped significantly
-    const mostImproved = [...providers]
-      .filter((p) => p.olderThreats > 2 && p.recentThreats < p.olderThreats)
-      .sort((a, b) => {
-        const dropA = a.olderThreats - a.recentThreats;
-        const dropB = b.olderThreats - b.recentThreats;
-        return dropB - dropA;
-      });
-
-    return { worstNow, previouslyBad, mostImproved };
-  }, [providerMap]);
+  const worstNow: ProviderStats[] = (providerData?.worst_now || []).map(mapRpcProvider);
+  const previouslyBad: ProviderStats[] = (providerData?.previously_bad || []).map(mapRpcProvider);
+  const mostImproved: ProviderStats[] = (providerData?.most_improved || []).map(mapRpcProvider);
+  const providerCount = providerData?.provider_count ?? 0;
 
   const categoryData: Record<Category, ProviderStats[]> = {
     worst_now: worstNow,
@@ -197,7 +165,7 @@ export function HostingProviderIntel() {
           <h3 className="font-bold text-foreground uppercase text-xs lg:text-sm flex items-center">
             <Server className="w-4 h-4 mr-2 text-primary shrink-0" />Hosting Provider Intel
           </h3>
-          <span className="text-[10px] font-mono text-muted-foreground">{providerMap.size} PROVIDERS</span>
+          <span className="text-[10px] font-mono text-muted-foreground">{providerCount} PROVIDERS</span>
         </div>
 
         <div className="flex-1 overflow-auto bg-surface-overlay/50">
