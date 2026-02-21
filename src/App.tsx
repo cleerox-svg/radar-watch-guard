@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/use-auth";
 import Index from "./pages/Index";
 import PublicScanner from "./pages/PublicScanner";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -37,10 +38,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/scan" element={<PublicScanner />} />
-            <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
+            <Route path="/dashboard" element={<AuthGuard><Index /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
