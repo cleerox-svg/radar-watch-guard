@@ -188,6 +188,51 @@ export type Database = {
         }
         Relationships: []
       }
+      erasure_actions: {
+        Row: {
+          action: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          id: string
+          metadata: Json | null
+          provider: string
+          status: string
+          target: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          provider: string
+          status?: string
+          target: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          provider?: string
+          status?: string
+          target?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feed_ingestions: {
         Row: {
           completed_at: string | null
