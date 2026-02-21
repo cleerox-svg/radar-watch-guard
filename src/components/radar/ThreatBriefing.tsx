@@ -1,13 +1,11 @@
 /**
- * ThreatBriefing.tsx — AI-powered threat intelligence briefing widget.
+ * ThreatBriefing.tsx — AI-powered threat intelligence briefing with actionable outcomes.
  *
- * Calls the threat-briefing edge function which analyzes all ingested
- * threat data and returns a structured intelligence report with:
- *   - Executive summary
- *   - Identified campaigns
- *   - Top risks with priority levels
- *   - Trend observations
- *   - Actionable recommendations
+ * Features:
+ *   - Inline action buttons on campaigns and risks
+ *   - Consolidated Action Playbook panel
+ *   - Executable actions: create tickets, erasure requests, blocklist entries
+ *   - Advisory actions: templates for law enforcement, abuse reports, ISAC sharing
  */
 
 import { useState } from "react";
@@ -25,9 +23,18 @@ import {
   Zap,
   Eye,
   Activity,
-  CheckCircle,
-  XCircle,
   Database,
+  Search,
+  Send,
+  ShieldBan,
+  Bookmark,
+  ExternalLink,
+  FileText,
+  Copy,
+  CheckCircle2,
+  Play,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +71,21 @@ interface FeedHealth {
   recommendations: string[];
 }
 
+interface PlaybookAction {
+  finding_ref: string;
+  category: "investigate" | "escalate" | "defend" | "track";
+  title: string;
+  description: string;
+  executable: boolean;
+  action_type: string;
+  action_data: {
+    target: string;
+    severity: string;
+    template?: string;
+  };
+  urgency: "immediate" | "short_term" | "ongoing";
+}
+
 interface Briefing {
   executive_summary: string;
   campaigns: Campaign[];
@@ -71,6 +93,7 @@ interface Briefing {
   trends: Trend[];
   feed_health?: FeedHealth;
   recommendations: string[];
+  action_playbook?: PlaybookAction[];
 }
 
 interface BriefingResponse {
@@ -109,9 +132,88 @@ const trendIcons: Record<string, typeof TrendingUp> = {
   stable: Minus,
 };
 
+const categoryConfig: Record<string, { icon: typeof Search; label: string; color: string }> = {
+  investigate: { icon: Search, label: "Investigate", color: "text-primary" },
+  escalate: { icon: Send, label: "Escalate", color: "text-destructive" },
+  defend: { icon: ShieldBan, label: "Defend", color: "text-warning" },
+  track: { icon: Bookmark, label: "Track", color: "text-muted-foreground" },
+};
+
+const urgencyStyles: Record<string, string> = {
+  immediate: "border-destructive/30 bg-destructive/5",
+  short_term: "border-warning/30 bg-warning/5",
+  ongoing: "border-border bg-background/50",
+};
+
+// --- Inline Action Buttons for campaigns/risks ---
+function InlineActions({ findingName, actions, onExecute }: {
+  findingName: string;
+  actions: PlaybookAction[];
+  onExecute: (action: PlaybookAction) => void;
+}) {
+  const related = actions.filter(a =>
+    a.finding_ref?.toLowerCase().includes(findingName?.toLowerCase()?.slice(0, 20))
+  );
+  if (related.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
+      {related.slice(0, 4).map((action, i) => {
+        const cat = categoryConfig[action.category] || categoryConfig.investigate;
+        const CatIcon = cat.icon;
+        return (
+          <Button
+            key={i}
+            variant="outline"
+            size="sm"
+            className={cn("h-6 text-[10px] gap-1 px-2", cat.color)}
+            onClick={() => onExecute(action)}
+          >
+            <CatIcon className="w-3 h-3" />
+            {action.title.length > 30 ? action.title.slice(0, 28) + "…" : action.title}
+            {action.executable && <Play className="w-2.5 h-2.5 ml-0.5" />}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Template Viewer for advisory actions ---
+function TemplateViewer({ template, title }: { template: string; title: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(template);
+    setCopied(true);
+    toast.success("Template copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="mt-2 rounded-md border border-border bg-muted/30 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {title}
+        </span>
+        <Button variant="ghost" size="sm" className="h-5 text-[10px] gap-1 px-1.5" onClick={handleCopy}>
+          {copied ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <pre className="text-[11px] text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed max-h-32 overflow-y-auto">
+        {template}
+      </pre>
+    </div>
+  );
+}
+
 export function ThreatBriefing() {
   const [briefing, setBriefing] = useState<BriefingResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expandedActions, setExpandedActions] = useState<Set<number>>(new Set());
+  const [executingAction, setExecutingAction] = useState<number | null>(null);
+  const [playbookFilter, setPlaybookFilter] = useState<string>("all");
 
   const generateBriefing = async () => {
     setLoading(true);
@@ -128,6 +230,76 @@ export function ThreatBriefing() {
     }
   };
 
+  const executeAction = async (action: PlaybookAction, index: number) => {
+    if (!action.executable) {
+      // Advisory action — just toggle the template
+      setExpandedActions(prev => {
+        const next = new Set(prev);
+        next.has(index) ? next.delete(index) : next.add(index);
+        return next;
+      });
+      return;
+    }
+
+    setExecutingAction(index);
+    try {
+      switch (action.action_type) {
+        case "open_ticket": {
+          const { error } = await supabase.from("investigation_tickets").insert({
+            title: action.title,
+            description: `${action.description}\n\nTarget: ${action.action_data.target}`,
+            severity: action.action_data.severity || "medium",
+            priority: action.urgency === "immediate" ? "critical" : action.urgency === "short_term" ? "high" : "medium",
+            source_type: "briefing",
+            source_id: "00000000-0000-0000-0000-000000000000",
+            ticket_id: "",
+            tags: [action.category, "ai-briefing"],
+          });
+          if (error) throw error;
+          toast.success("Investigation ticket created", { description: action.title });
+          break;
+        }
+        case "create_erasure": {
+          const { error } = await supabase.from("erasure_actions").insert({
+            action: "takedown_request",
+            provider: "AI Briefing",
+            target: action.action_data.target,
+            type: "domain",
+            details: action.description,
+          });
+          if (error) throw error;
+          toast.success("Erasure action created", { description: `Target: ${action.action_data.target}` });
+          break;
+        }
+        case "block_domain":
+        case "add_watchlist": {
+          const { error } = await supabase.from("investigation_tickets").insert({
+            title: `[${action.action_type === "block_domain" ? "BLOCK" : "WATCH"}] ${action.action_data.target}`,
+            description: action.description,
+            severity: action.action_data.severity || "high",
+            priority: "high",
+            source_type: "briefing",
+            source_id: "00000000-0000-0000-0000-000000000000",
+            ticket_id: "",
+            tags: [action.action_type, action.category, "ai-briefing"],
+          });
+          if (error) throw error;
+          toast.success(`${action.action_type === "block_domain" ? "Block" : "Watchlist"} ticket created`);
+          break;
+        }
+        default:
+          toast.info("Action noted", { description: action.title });
+      }
+    } catch (err: any) {
+      toast.error("Action failed", { description: err.message });
+    } finally {
+      setExecutingAction(null);
+    }
+  };
+
+  const allActions = briefing?.briefing?.action_playbook || [];
+  const filteredActions = playbookFilter === "all" ? allActions : allActions.filter(a => a.category === playbookFilter);
+
   return (
     <div className="space-y-6">
       {/* Header card with generate button */}
@@ -138,18 +310,13 @@ export function ThreatBriefing() {
               <Brain className="w-5 h-5 text-primary" />
               AI Threat Intelligence Briefing
             </CardTitle>
-            <Button
-              onClick={generateBriefing}
-              disabled={loading}
-              size="sm"
-              className="gap-2"
-            >
+            <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2">
               <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
               {loading ? "Analyzing…" : briefing ? "Refresh" : "Generate Briefing"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            AI analyzes all ingested threats, vulnerabilities, and metrics to produce actionable intelligence.
+            AI analyzes all ingested threats, vulnerabilities, and metrics to produce actionable intelligence with executable response actions.
           </p>
         </CardHeader>
 
@@ -198,10 +365,20 @@ export function ThreatBriefing() {
                 <span>{briefing.data_summary.metrics_analyzed} metrics</span>
                 <span>Generated {new Date(briefing.generated_at).toLocaleTimeString()}</span>
               </div>
+              {allActions.length > 0 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                    {allActions.filter(a => a.executable).length} executable actions
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+                    {allActions.filter(a => !a.executable).length} advisory actions
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Campaigns */}
+          {/* Campaigns with inline actions */}
           {briefing.briefing.campaigns?.length > 0 && (
             <Card className="bg-card">
               <CardHeader className="pb-2">
@@ -234,13 +411,18 @@ export function ThreatBriefing() {
                       <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
                       <span>{campaign.recommendation}</span>
                     </div>
+                    <InlineActions
+                      findingName={campaign.name}
+                      actions={allActions}
+                      onExecute={(a) => executeAction(a, allActions.indexOf(a))}
+                    />
                   </div>
                 ))}
               </CardContent>
             </Card>
           )}
 
-          {/* Top Risks */}
+          {/* Top Risks with inline actions */}
           {briefing.briefing.top_risks?.length > 0 && (
             <Card className="bg-card">
               <CardHeader className="pb-2">
@@ -257,7 +439,7 @@ export function ThreatBriefing() {
                     <div key={i} className="rounded-lg border border-border bg-background/50 p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <PriorityIcon className={cn("w-3.5 h-3.5", config.className)} />
-                        <span className="text-xs font-mono font-bold tracking-wider" style={{ color: `hsl(var(--${risk.priority === 'immediate' ? 'destructive' : risk.priority === 'short_term' ? 'warning' : 'muted-foreground'}))` }}>
+                        <span className={cn("text-xs font-mono font-bold tracking-wider", config.className)}>
                           {config.label}
                         </span>
                       </div>
@@ -267,6 +449,11 @@ export function ThreatBriefing() {
                         <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
                         <span>{risk.action}</span>
                       </div>
+                      <InlineActions
+                        findingName={risk.title}
+                        actions={allActions}
+                        onExecute={(a) => executeAction(a, allActions.indexOf(a))}
+                      />
                     </div>
                   );
                 })}
@@ -359,6 +546,159 @@ export function ThreatBriefing() {
                     </li>
                   ))}
                 </ol>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ═══ ACTION PLAYBOOK ═══ */}
+          {allActions.length > 0 && (
+            <Card className="bg-card border-primary/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  Action Playbook ({allActions.length} actions)
+                </CardTitle>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {["all", "investigate", "escalate", "defend", "track"].map((cat) => {
+                    const count = cat === "all" ? allActions.length : allActions.filter(a => a.category === cat).length;
+                    if (count === 0 && cat !== "all") return null;
+                    const catConf = cat !== "all" ? categoryConfig[cat] : null;
+                    return (
+                      <Button
+                        key={cat}
+                        variant={playbookFilter === cat ? "default" : "outline"}
+                        size="sm"
+                        className="h-6 text-[10px] gap-1 px-2"
+                        onClick={() => setPlaybookFilter(cat)}
+                      >
+                        {catConf && (() => { const I = catConf.icon; return <I className="w-3 h-3" />; })()}
+                        {cat === "all" ? "All" : catConf?.label} ({count})
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {filteredActions.map((action, i) => {
+                  const globalIdx = allActions.indexOf(action);
+                  const cat = categoryConfig[action.category] || categoryConfig.investigate;
+                  const CatIcon = cat.icon;
+                  const isExpanded = expandedActions.has(globalIdx);
+                  const isExecuting = executingAction === globalIdx;
+
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "rounded-lg border p-3 transition-colors",
+                        urgencyStyles[action.urgency] || urgencyStyles.ongoing
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <CatIcon className={cn("w-4 h-4 mt-0.5 shrink-0", cat.color)} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-foreground">{action.title}</span>
+                              <Badge variant="outline" className={cn("text-[9px] px-1 py-0", cat.color)}>
+                                {cat.label}
+                              </Badge>
+                              {action.executable ? (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 bg-primary/10 text-primary border-primary/20">
+                                  Executable
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 bg-muted text-muted-foreground">
+                                  Advisory
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
+                            {action.action_data?.target && (
+                              <p className="text-[11px] font-mono text-foreground/60 mt-1">
+                                Target: {action.action_data.target}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {action.executable ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-7 text-[11px] gap-1 px-2"
+                              disabled={isExecuting}
+                              onClick={() => executeAction(action, globalIdx)}
+                            >
+                              {isExecuting ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Play className="w-3 h-3" />
+                              )}
+                              Execute
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] gap-1 px-2"
+                              onClick={() => executeAction(action, globalIdx)}
+                            >
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              {action.action_type === "law_enforcement" ? "View LE Template" :
+                               action.action_type === "abuse_report" ? "View Report" :
+                               action.action_type === "isac_share" ? "View Format" :
+                               "View Guidance"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Advisory template expansion */}
+                      {isExpanded && !action.executable && action.action_data?.template && (
+                        <TemplateViewer
+                          template={action.action_data.template}
+                          title={
+                            action.action_type === "law_enforcement" ? "Law Enforcement Referral Template" :
+                            action.action_type === "abuse_report" ? "Abuse Report Template" :
+                            action.action_type === "isac_share" ? "ISAC Sharing Format" :
+                            "OSINT Guidance"
+                          }
+                        />
+                      )}
+
+                      {/* OSINT guidance without template */}
+                      {isExpanded && !action.executable && action.action_type === "osint_lookup" && !action.action_data?.template && (
+                        <div className="mt-2 rounded-md border border-border bg-muted/30 p-3">
+                          <p className="text-[11px] text-muted-foreground">
+                            Recommended tools: WHOIS lookup, Shodan, VirusTotal, URLScan.io, SecurityTrails
+                          </p>
+                          <div className="flex gap-2 mt-2">
+                            {action.action_data?.target && (
+                              <>
+                                <Button variant="outline" size="sm" className="h-5 text-[10px] gap-1 px-1.5" asChild>
+                                  <a href={`https://www.virustotal.com/gui/search/${encodeURIComponent(action.action_data.target)}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-2.5 h-2.5" /> VirusTotal
+                                  </a>
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-5 text-[10px] gap-1 px-1.5" asChild>
+                                  <a href={`https://urlscan.io/search/#${encodeURIComponent(action.action_data.target)}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-2.5 h-2.5" /> URLScan
+                                  </a>
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-5 text-[10px] gap-1 px-1.5" asChild>
+                                  <a href={`https://www.shodan.io/search?query=${encodeURIComponent(action.action_data.target)}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-2.5 h-2.5" /> Shodan
+                                  </a>
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}

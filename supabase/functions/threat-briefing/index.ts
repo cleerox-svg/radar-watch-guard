@@ -151,8 +151,33 @@ Format your response as JSON matching this exact structure:
   "recommendations": [
     "Actionable recommendation 1",
     "Actionable recommendation 2"
+  ],
+  "action_playbook": [
+    {
+      "finding_ref": "Name of the campaign or risk this relates to",
+      "category": "investigate|escalate|defend|track",
+      "title": "Short action title (e.g. 'WHOIS lookup on suspicious domain')",
+      "description": "What to do and why, with specific targets",
+      "executable": true,
+      "action_type": "open_ticket|create_erasure|block_domain|osint_lookup|abuse_report|law_enforcement|isac_share|add_watchlist",
+      "action_data": {
+        "target": "specific domain, IP, actor, or brand name",
+        "severity": "critical|high|medium|low",
+        "template": "For advisory actions only: pre-filled template text (e.g. abuse report email body, law enforcement referral letter, ISAC sharing format). Leave empty for executable actions."
+      },
+      "urgency": "immediate|short_term|ongoing"
+    }
   ]
-}`;
+}
+
+IMPORTANT for action_playbook:
+- Generate 5-15 specific, actionable items based on the actual data
+- executable=true for: open_ticket, create_erasure, block_domain, add_watchlist (these trigger platform functions)
+- executable=false for: abuse_report, law_enforcement, isac_share, osint_lookup (these provide templates/guidance)
+- For law_enforcement actions, include IC3/CISA contact info in template
+- For abuse_report actions, include a draft email template with the specific domain/IP
+- For osint_lookup actions, suggest specific tools (WHOIS, Shodan, VirusTotal, URLScan)
+- Reference specific domains, IPs, brands, and CVEs from the data — never be generic`;
 
     const userPrompt = `Analyze the following multi-source threat intelligence data:
 
