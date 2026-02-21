@@ -147,7 +147,7 @@ const ACTIONS: ActionDef[] = [
         { label: "Medium", value: "medium" }, { label: "Low", value: "low" },
       ]},
       { key: "assign_to", label: "Auto-assign to", type: "select", options: [
-        { label: "Unassigned", value: "" }, { label: "On-call Analyst", value: "oncall" },
+        { label: "Unassigned", value: "unassigned" }, { label: "On-call Analyst", value: "oncall" },
       ]},
     ],
   },
