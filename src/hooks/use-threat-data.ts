@@ -291,6 +291,44 @@ export async function triggerCertstreamIngestion(keywords?: string[]) {
   return data;
 }
 
+// ─── API-Key Feed Triggers (v3) ───
+
+export async function triggerGoogleSafeBrowsingIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-google-safebrowsing");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerGreyNoiseIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-greynoise");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerPhishTankCommunityIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-phishtank-community");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerAbuseIPDBIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-abuseipdb");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerVirusTotalIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-virustotal");
+  if (error) throw error;
+  return data;
+}
+
+export async function triggerIPQualityScoreIngestion() {
+  const { data, error } = await supabase.functions.invoke("ingest-ipqualityscore");
+  if (error) throw error;
+  return data;
+}
+
 export function useTorExitNodes() {
   return useQuery({
     queryKey: ["tor_exit_nodes"],

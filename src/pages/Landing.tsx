@@ -108,7 +108,7 @@ export default function Landing() {
 
   const stats = [
     { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Tracked" },
-    { value: "18+", label: "Intelligence Feeds" },
+    { value: "24+", label: "Intelligence Feeds" },
     { value: "3", label: "Core Modules" },
     { value: "24/7", label: "Continuous Monitoring" },
   ];

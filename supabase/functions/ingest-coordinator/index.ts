@@ -21,22 +21,30 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /** Feed worker configuration — priority 1 = highest */
 const FEED_WORKERS = [
-  { source: 'urlhaus',       function_name: 'ingest-threats',        priority: 1, batch_size: 500 },
-  { source: 'phishtank',     function_name: 'ingest-threats',        priority: 1, batch_size: 500 },
-  { source: 'openphish',     function_name: 'ingest-threats',        priority: 2, batch_size: 500 },
-  { source: 'threatfox',     function_name: 'ingest-threatfox',      priority: 2, batch_size: 500 },
-  { source: 'ransomwatch',   function_name: 'ingest-ransomwatch',    priority: 1, batch_size: 500 },
-  { source: 'cisa_kev',      function_name: 'ingest-cisa-kev',       priority: 1, batch_size: 100 },
-  { source: 'otx',           function_name: 'ingest-otx-pulses',     priority: 3, batch_size: 50  },
-  { source: 'sans_isc',      function_name: 'ingest-sans-isc',       priority: 3, batch_size: 100 },
-  { source: 'tor_nodes',     function_name: 'ingest-tor-exits',      priority: 4, batch_size: 2000 },
-  { source: 'mastodon',      function_name: 'ingest-mastodon',       priority: 4, batch_size: 200 },
-  { source: 'feodo',         function_name: 'ingest-feodo',          priority: 1, batch_size: 500 },
-  { source: 'malbazaar',     function_name: 'ingest-malbazaar',      priority: 2, batch_size: 500 },
-  { source: 'blocklist_de',  function_name: 'ingest-blocklist-de',   priority: 3, batch_size: 400 },
-  { source: 'ssl_blocklist', function_name: 'ingest-ssl-blocklist',  priority: 3, batch_size: 300 },
-  { source: 'spamhaus_drop', function_name: 'ingest-spamhaus-drop',  priority: 2, batch_size: 500 },
-  { source: 'certstream',    function_name: 'ingest-certstream',     priority: 4, batch_size: 200 },
+  // Open feeds (no API key required)
+  { source: 'urlhaus',       function_name: 'ingest-threats',             priority: 1, batch_size: 500, requires_key: false },
+  { source: 'phishtank',     function_name: 'ingest-threats',             priority: 1, batch_size: 500, requires_key: false },
+  { source: 'openphish',     function_name: 'ingest-threats',             priority: 2, batch_size: 500, requires_key: false },
+  { source: 'threatfox',     function_name: 'ingest-threatfox',           priority: 2, batch_size: 500, requires_key: false },
+  { source: 'ransomwatch',   function_name: 'ingest-ransomwatch',         priority: 1, batch_size: 500, requires_key: false },
+  { source: 'cisa_kev',      function_name: 'ingest-cisa-kev',            priority: 1, batch_size: 100, requires_key: false },
+  { source: 'otx',           function_name: 'ingest-otx-pulses',          priority: 3, batch_size: 50,  requires_key: false },
+  { source: 'sans_isc',      function_name: 'ingest-sans-isc',            priority: 3, batch_size: 100, requires_key: false },
+  { source: 'tor_nodes',     function_name: 'ingest-tor-exits',           priority: 4, batch_size: 2000,requires_key: false },
+  { source: 'mastodon',      function_name: 'ingest-mastodon',            priority: 4, batch_size: 200, requires_key: false },
+  { source: 'feodo',         function_name: 'ingest-feodo',               priority: 1, batch_size: 500, requires_key: false },
+  { source: 'malbazaar',     function_name: 'ingest-malbazaar',           priority: 2, batch_size: 500, requires_key: false },
+  { source: 'blocklist_de',  function_name: 'ingest-blocklist-de',        priority: 3, batch_size: 400, requires_key: false },
+  { source: 'ssl_blocklist', function_name: 'ingest-ssl-blocklist',       priority: 3, batch_size: 300, requires_key: false },
+  { source: 'spamhaus_drop', function_name: 'ingest-spamhaus-drop',       priority: 2, batch_size: 500, requires_key: false },
+  { source: 'certstream',    function_name: 'ingest-certstream',          priority: 4, batch_size: 200, requires_key: false },
+  // API-key feeds (auto-pull when key is configured)
+  { source: 'google_safebrowsing', function_name: 'ingest-google-safebrowsing', priority: 2, batch_size: 500, requires_key: true, key_env: 'GOOGLE_SAFEBROWSING_API_KEY' },
+  { source: 'greynoise',           function_name: 'ingest-greynoise',           priority: 3, batch_size: 45,  requires_key: true, key_env: 'GREYNOISE_API_KEY' },
+  { source: 'phishtank_community', function_name: 'ingest-phishtank-community', priority: 2, batch_size: 500, requires_key: true, key_env: 'PHISHTANK_API_KEY' },
+  { source: 'abuseipdb',           function_name: 'ingest-abuseipdb',           priority: 2, batch_size: 200, requires_key: true, key_env: 'ABUSEIPDB_API_KEY' },
+  { source: 'virustotal',          function_name: 'ingest-virustotal',          priority: 3, batch_size: 20,  requires_key: true, key_env: 'VIRUSTOTAL_API_KEY' },
+  { source: 'ipqualityscore',      function_name: 'ingest-ipqualityscore',      priority: 3, batch_size: 15,  requires_key: true, key_env: 'IPQUALITYSCORE_API_KEY' },
 ];
 
 Deno.serve(async (req) => {
@@ -50,13 +58,23 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Optional: only run specific feeds
-    let selectedFeeds = FEED_WORKERS;
+    let selectedFeeds = [...FEED_WORKERS];
+    let runApiFeeds = false;
     try {
       const body = await req.json();
       if (body?.sources && Array.isArray(body.sources)) {
         selectedFeeds = FEED_WORKERS.filter(w => body.sources.includes(w.source));
       }
+      if (body?.include_api_feeds) runApiFeeds = true;
     } catch { /* no body = run all */ }
+
+    // Filter out API-key feeds unless their key is available
+    selectedFeeds = selectedFeeds.filter(feed => {
+      if (!feed.requires_key) return true;
+      if (!runApiFeeds) return false; // Skip API feeds unless explicitly requested
+      const keyEnv = (feed as any).key_env;
+      return keyEnv ? !!Deno.env.get(keyEnv) : false;
+    });
 
     // Sort by priority (highest first)
     selectedFeeds.sort((a, b) => a.priority - b.priority);

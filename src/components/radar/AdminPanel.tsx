@@ -3,7 +3,7 @@ import {
   UserPlus, Shield, Trash2, Loader2, Users, Copy, Database, Activity,
   TrendingUp, BarChart3, Rss, Play, CheckCircle2, AlertTriangle,
   Settings, Plus, Save, X, ChevronDown, ChevronUp, Pencil,
-  Link2, Zap, Lock, ShieldCheck, LogOut, Clock, Eye,
+  Link2, Zap, Lock, ShieldCheck, LogOut, Clock, Eye, Key, RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,9 @@ import {
   triggerTorExitIngestion, triggerMastodonIngestion,
   triggerFeodoIngestion, triggerMalBazaarIngestion, triggerBlocklistDeIngestion,
   triggerSslBlocklistIngestion, triggerSpamhausDropIngestion, triggerCertstreamIngestion,
+  triggerGoogleSafeBrowsingIngestion, triggerGreyNoiseIngestion,
+  triggerPhishTankCommunityIngestion, triggerAbuseIPDBIngestion,
+  triggerVirusTotalIngestion, triggerIPQualityScoreIngestion,
   useFeedSchedules,
 } from "@/hooks/use-threat-data";
 import { AdminIntegrations } from "@/components/radar/AdminIntegrations";
@@ -301,38 +304,62 @@ function DatabaseStatus() {
   );
 }
 
-// ─── FeedManager (unchanged) ───
-const FEEDS = [
-  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus"), schedule: "*/15 * * * *" },
-  { id: "openphish", name: "OpenPhish", desc: "Phishing URLs", trigger: () => triggerIngestion("openphish"), schedule: "*/15 * * * *" },
-  { id: "phishtank", name: "PhishTank", desc: "Verified phishing DB", trigger: () => triggerIngestion("phishtank"), schedule: "*/15 * * * *" },
-  { id: "cisa_kev", name: "CISA KEV", desc: "Known Exploited Vulns", trigger: triggerCisaKevIngestion, schedule: "0 */6 * * *" },
-  { id: "otx", name: "AlienVault OTX", desc: "Community threat pulses", trigger: triggerOtxIngestion, schedule: "*/30 * * * *" },
-  { id: "threatfox", name: "ThreatFox", desc: "C2 servers & botnet IOCs", trigger: triggerThreatFoxIngestion, schedule: "*/15 * * * *" },
-  { id: "sans_isc", name: "SANS ISC", desc: "Global port scanning trends", trigger: triggerSansIscIngestion, schedule: "0 */4 * * *" },
-  { id: "ransomwatch", name: "Ransomwatch", desc: "Ransomware leak site victims", trigger: triggerRansomwatchIngestion, schedule: "*/30 * * * *" },
-  { id: "tor_exits", name: "Tor Exit Nodes", desc: "Live Tor exit IP list", trigger: triggerTorExitIngestion, schedule: "0 */2 * * *" },
-  { id: "mastodon", name: "Mastodon OSINT", desc: "infosec.exchange #ThreatIntel", trigger: triggerMastodonIngestion, schedule: "*/15 * * * *" },
-  { id: "feodo", name: "Feodo Tracker", desc: "Emotet/Dridex/TrickBot C2", trigger: triggerFeodoIngestion, schedule: "0 */3 * * *" },
-  { id: "malbazaar", name: "MalBazaar", desc: "Malware sample hashes & YARA", trigger: triggerMalBazaarIngestion, schedule: "0 */6 * * *" },
-  { id: "blocklist_de", name: "Blocklist.de", desc: "Attacking IPs (SSH/mail/web)", trigger: triggerBlocklistDeIngestion, schedule: "0 */4 * * *" },
-  { id: "ssl_blocklist", name: "SSL Blocklist", desc: "Botnet SSL certificates", trigger: triggerSslBlocklistIngestion, schedule: "0 */6 * * *" },
-  { id: "spamhaus_drop", name: "Spamhaus DROP", desc: "Known spam/botnet CIDR blocks", trigger: triggerSpamhausDropIngestion, schedule: "0 */12 * * *" },
-  { id: "certstream", name: "CertStream", desc: "Certificate transparency monitoring", trigger: triggerCertstreamIngestion, schedule: "*/30 * * * *" },
-  { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "*/15 * * * *" },
-  { id: "spam_trap", name: "Spam Trap Demo", desc: "Generate synthetic honeypot data", trigger: () => supabase.functions.invoke("generate-spam-trap-demo").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "manual" },
+// ─── Feed Configuration ───
+type FeedType = "open" | "api" | "manual";
+interface FeedDef {
+  id: string; name: string; desc: string;
+  trigger: () => Promise<any>;
+  schedule: string;
+  type: FeedType;
+  apiKeyName?: string;
+  rateLimitNote?: string;
+}
+
+const FEEDS: FeedDef[] = [
+  // Open feeds — auto-pull via cron, no key needed
+  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus"), schedule: "*/15 * * * *", type: "open" },
+  { id: "openphish", name: "OpenPhish", desc: "Phishing URLs", trigger: () => triggerIngestion("openphish"), schedule: "*/15 * * * *", type: "open" },
+  { id: "phishtank", name: "PhishTank", desc: "Verified phishing DB", trigger: () => triggerIngestion("phishtank"), schedule: "*/15 * * * *", type: "open" },
+  { id: "cisa_kev", name: "CISA KEV", desc: "Known Exploited Vulns", trigger: triggerCisaKevIngestion, schedule: "0 */6 * * *", type: "open" },
+  { id: "otx", name: "AlienVault OTX", desc: "Community threat pulses", trigger: triggerOtxIngestion, schedule: "*/30 * * * *", type: "open" },
+  { id: "threatfox", name: "ThreatFox", desc: "C2 servers & botnet IOCs", trigger: triggerThreatFoxIngestion, schedule: "*/15 * * * *", type: "open" },
+  { id: "sans_isc", name: "SANS ISC", desc: "Global port scanning trends", trigger: triggerSansIscIngestion, schedule: "0 */4 * * *", type: "open" },
+  { id: "ransomwatch", name: "Ransomwatch", desc: "Ransomware leak site victims", trigger: triggerRansomwatchIngestion, schedule: "*/30 * * * *", type: "open" },
+  { id: "tor_exits", name: "Tor Exit Nodes", desc: "Live Tor exit IP list", trigger: triggerTorExitIngestion, schedule: "0 */2 * * *", type: "open" },
+  { id: "mastodon", name: "Mastodon OSINT", desc: "infosec.exchange #ThreatIntel", trigger: triggerMastodonIngestion, schedule: "*/15 * * * *", type: "open" },
+  { id: "feodo", name: "Feodo Tracker", desc: "Emotet/Dridex/TrickBot C2", trigger: triggerFeodoIngestion, schedule: "0 */3 * * *", type: "open" },
+  { id: "malbazaar", name: "MalBazaar", desc: "Malware sample hashes & YARA", trigger: triggerMalBazaarIngestion, schedule: "0 */6 * * *", type: "open" },
+  { id: "blocklist_de", name: "Blocklist.de", desc: "Attacking IPs (SSH/mail/web)", trigger: triggerBlocklistDeIngestion, schedule: "0 */4 * * *", type: "open" },
+  { id: "ssl_blocklist", name: "SSL Blocklist", desc: "Botnet SSL certificates", trigger: triggerSslBlocklistIngestion, schedule: "0 */6 * * *", type: "open" },
+  { id: "spamhaus_drop", name: "Spamhaus DROP", desc: "Known spam/botnet CIDR blocks", trigger: triggerSpamhausDropIngestion, schedule: "0 */12 * * *", type: "open" },
+  { id: "certstream", name: "CertStream", desc: "Certificate transparency monitoring", trigger: triggerCertstreamIngestion, schedule: "*/30 * * * *", type: "open" },
+  { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "*/15 * * * *", type: "open" },
+  // API-key feeds — auto-pull when key is configured
+  { id: "google_safebrowsing", name: "Google Safe Browsing", desc: "URL reputation (10k/day free)", trigger: triggerGoogleSafeBrowsingIngestion, schedule: "0 * * * *", type: "api", apiKeyName: "GOOGLE_SAFEBROWSING_API_KEY", rateLimitNote: "10,000 lookups/day" },
+  { id: "greynoise", name: "GreyNoise Community", desc: "Mass-scanner vs targeted (50/day)", trigger: triggerGreyNoiseIngestion, schedule: "0 */6 * * *", type: "api", apiKeyName: "GREYNOISE_API_KEY", rateLimitNote: "50 requests/day" },
+  { id: "phishtank_community", name: "PhishTank Community", desc: "Extended phishing DB with API key", trigger: triggerPhishTankCommunityIngestion, schedule: "0 */6 * * *", type: "api", apiKeyName: "PHISHTANK_API_KEY", rateLimitNote: "Unlimited with key" },
+  { id: "abuseipdb", name: "AbuseIPDB", desc: "IP abuse confidence scores (1k/day)", trigger: triggerAbuseIPDBIngestion, schedule: "0 */6 * * *", type: "api", apiKeyName: "ABUSEIPDB_API_KEY", rateLimitNote: "1,000 checks/day" },
+  { id: "virustotal", name: "VirusTotal", desc: "Multi-engine reputation (500/day)", trigger: triggerVirusTotalIngestion, schedule: "0 */6 * * *", type: "api", apiKeyName: "VIRUSTOTAL_API_KEY", rateLimitNote: "500/day, 4/min" },
+  { id: "ipqualityscore", name: "IPQualityScore", desc: "Fraud scoring for IPs (5k/mo)", trigger: triggerIPQualityScoreIngestion, schedule: "0 */12 * * *", type: "api", apiKeyName: "IPQUALITYSCORE_API_KEY", rateLimitNote: "5,000/month" },
+  // Manual-only feeds
+  { id: "spam_trap", name: "Spam Trap Demo", desc: "Generate synthetic honeypot data", trigger: () => supabase.functions.invoke("generate-spam-trap-demo").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "manual", type: "manual" },
 ];
 
 function FeedManager() {
   const [runningFeeds, setRunningFeeds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const { data: schedules } = useFeedSchedules();
 
-  const runFeed = async (feed: typeof FEEDS[0]) => {
+  const runFeed = async (feed: FeedDef) => {
     setRunningFeeds((prev) => new Set(prev).add(feed.id));
     setResults((prev) => ({ ...prev, [feed.id]: undefined as any }));
     try {
       const data = await feed.trigger();
-      const msg = data?.fetched != null ? `Fetched ${data.fetched}, new: ${data.new ?? data.upserted ?? "—"}` : "Completed";
+      const msg = data?.fetched != null
+        ? `Fetched ${data.fetched}, new: ${data.new ?? data.upserted ?? data.enriched ?? data.flagged ?? "—"}`
+        : data?.checked != null
+        ? `Checked ${data.checked}, enriched: ${data.enriched ?? data.flagged ?? "—"}`
+        : "Completed";
       setResults((prev) => ({ ...prev, [feed.id]: { success: true, message: msg } }));
       toast.success(`${feed.name} complete`, { description: msg });
     } catch (err: any) {
@@ -344,42 +371,111 @@ function FeedManager() {
     }
   };
 
+  const manualFeeds = FEEDS.filter(f => f.type === "manual");
+  const openFeeds = FEEDS.filter(f => f.type === "open");
+  const apiFeeds = FEEDS.filter(f => f.type === "api");
+
+  const getScheduleInfo = (feedId: string) => {
+    if (!schedules) return null;
+    return schedules.find((s: any) => s.feed_source === feedId);
+  };
+
+  const renderFeedCard = (feed: FeedDef) => {
+    const isRunning = runningFeeds.has(feed.id);
+    const result = results[feed.id];
+    const schedInfo = getScheduleInfo(feed.id);
+
+    return (
+      <div key={feed.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2.5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-xs font-medium text-foreground">{feed.name}</p>
+            {feed.type === "open" && (
+              <Badge variant="default" className="text-[8px] px-1.5 py-0 h-3.5 bg-primary/20 text-primary border-primary/30">
+                <RefreshCw className="w-2 h-2 mr-0.5" />AUTO
+              </Badge>
+            )}
+            {feed.type === "api" && (
+              <Badge variant="outline" className={`text-[8px] px-1 py-0 h-3.5 ${schedInfo?.api_key_configured ? "border-emerald-500/30 text-emerald-400" : "border-yellow-500/30 text-yellow-400"}`}>
+                <Key className="w-2 h-2 mr-0.5" />{schedInfo?.api_key_configured ? "AUTO" : "key needed"}
+              </Badge>
+            )}
+            {feed.type === "manual" && (
+              <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5">manual</Badge>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground truncate">{feed.desc}</p>
+          {feed.rateLimitNote && (
+            <p className="text-[9px] text-muted-foreground/60 italic">{feed.rateLimitNote}</p>
+          )}
+          {schedInfo?.last_run_at && (
+            <p className="text-[9px] text-muted-foreground/60">
+              Last: {new Date(schedInfo.last_run_at).toLocaleString()} · {schedInfo.last_records ?? 0} records
+            </p>
+          )}
+          {result && <p className={`text-[10px] mt-0.5 ${result.success ? "text-emerald-400" : "text-destructive"}`}>{result.message}</p>}
+        </div>
+        <Button size="sm" variant="ghost" disabled={isRunning} onClick={() => runFeed(feed)} className="shrink-0 h-7 w-7 p-0">
+          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> :
+           result?.success ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
+           result && !result.success ? <AlertTriangle className="w-3.5 h-3.5 text-destructive" /> :
+           <Play className="w-3.5 h-3.5 text-muted-foreground" />}
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2"><Rss className="w-5 h-5 text-primary" />Data Feeds</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => FEEDS.forEach(runFeed)} className="gap-1.5 text-xs"><Play className="w-3 h-3" />Run All</Button>
+          <Button size="sm" variant="outline" onClick={() => manualFeeds.forEach(runFeed)} className="gap-1.5 text-xs">
+            <Play className="w-3 h-3" />Run Manual Feeds
+          </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {FEEDS.map((feed) => {
-            const isRunning = runningFeeds.has(feed.id);
-            const result = results[feed.id];
-            const isManual = feed.schedule === "manual";
-            return (
-              <div key={feed.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-medium text-foreground">{feed.name}</p>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5">
-                      {isManual ? "manual" : feed.schedule}
-                    </Badge>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground truncate">{feed.desc}</p>
-                  {result && <p className={`text-[10px] mt-0.5 ${result.success ? "text-emerald-400" : "text-destructive"}`}>{result.message}</p>}
-                </div>
-                <Button size="sm" variant="ghost" disabled={isRunning} onClick={() => runFeed(feed)} className="shrink-0 h-7 w-7 p-0">
-                  {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> :
-                   result?.success ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
-                   result && !result.success ? <AlertTriangle className="w-3.5 h-3.5 text-destructive" /> :
-                   <Play className="w-3.5 h-3.5 text-muted-foreground" />}
-                </Button>
-              </div>
-            );
-          })}
+      <CardContent className="space-y-4">
+        {/* Open (Auto) Feeds */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <RefreshCw className="w-3.5 h-3.5 text-primary" />
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Open Feeds — Auto-Pull ({openFeeds.length})
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {openFeeds.map(renderFeedCard)}
+          </div>
         </div>
+
+        {/* API-Key Feeds */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Key className="w-3.5 h-3.5 text-yellow-400" />
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              API Feeds — Auto-Pull When Key Configured ({apiFeeds.length})
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {apiFeeds.map(renderFeedCard)}
+          </div>
+        </div>
+
+        {/* Manual Feeds */}
+        {manualFeeds.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Play className="w-3.5 h-3.5 text-muted-foreground" />
+              <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                Manual Feeds ({manualFeeds.length})
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {manualFeeds.map(renderFeedCard)}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
