@@ -32,15 +32,17 @@ const FEED_WORKERS = [
   { source: 'spamhaus_drop', function_name: 'ingest-spamhaus-drop',       priority: 2, batch_size: 500, requires_key: false },
   { source: 'google_safebrowsing', function_name: 'ingest-google-safebrowsing', priority: 2, batch_size: 500, requires_key: true, key_env: 'GOOGLE_SAFEBROWSING_API_KEY' },
   { source: 'phishtank_community', function_name: 'ingest-phishtank-community', priority: 2, batch_size: 500, requires_key: true, key_env: 'PHISHTANK_API_KEY' },
-  { source: 'abuseipdb',           function_name: 'ingest-abuseipdb',           priority: 2, batch_size: 200, requires_key: true, key_env: 'ABUSEIPDB_API_KEY' },
+  // API-key feeds with strict rate limits are in Tier 5 — called by dedicated cron jobs only
   // Tier 3 — Enrichment (every 30 min)
   { source: 'otx',           function_name: 'ingest-otx-pulses',          priority: 3, batch_size: 50,  requires_key: false },
   { source: 'sans_isc',      function_name: 'ingest-sans-isc',            priority: 3, batch_size: 100, requires_key: false },
   { source: 'blocklist_de',  function_name: 'ingest-blocklist-de',        priority: 3, batch_size: 400, requires_key: false },
   { source: 'ssl_blocklist', function_name: 'ingest-ssl-blocklist',       priority: 3, batch_size: 300, requires_key: false },
   { source: 'greynoise',     function_name: 'ingest-greynoise',           priority: 3, batch_size: 45,  requires_key: true, key_env: 'GREYNOISE_API_KEY' },
-  { source: 'virustotal',    function_name: 'ingest-virustotal',          priority: 3, batch_size: 20,  requires_key: true, key_env: 'VIRUSTOTAL_API_KEY' },
-  { source: 'ipqualityscore',function_name: 'ingest-ipqualityscore',      priority: 3, batch_size: 15,  requires_key: true, key_env: 'IPQUALITYSCORE_API_KEY' },
+  // Tier 5 — Rate-limited API feeds (dedicated cron jobs, NOT called by tier crons)
+  { source: 'abuseipdb',     function_name: 'ingest-abuseipdb',           priority: 5, batch_size: 200, requires_key: true, key_env: 'ABUSEIPDB_API_KEY' },
+  { source: 'virustotal',    function_name: 'ingest-virustotal',          priority: 5, batch_size: 20,  requires_key: true, key_env: 'VIRUSTOTAL_API_KEY' },
+  { source: 'ipqualityscore',function_name: 'ingest-ipqualityscore',      priority: 5, batch_size: 15,  requires_key: true, key_env: 'IPQUALITYSCORE_API_KEY' },
   // Tier 4 — Background (every 30 min)
   { source: 'tor_nodes',     function_name: 'ingest-tor-exits',           priority: 4, batch_size: 2000,requires_key: false },
   { source: 'mastodon',      function_name: 'ingest-mastodon',            priority: 4, batch_size: 200, requires_key: false },
