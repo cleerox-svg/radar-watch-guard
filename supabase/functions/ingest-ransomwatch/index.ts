@@ -1,6 +1,6 @@
 /**
  * ingest-ransomwatch — Pulls ransomware leak site victim data from Ransomwatch (GitHub).
- * Free, no API key. Outputs clean JSON of breached companies by threat actor.
+ * Optimized: batch upsert instead of N+1 individual queries.
  * Data goes into threat_news table with source='ransomwatch'.
  */
 
@@ -23,6 +23,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Parse optional batch_size from request body (default 500)
+    let batchSize = 500;
+    try {
+      const body = await req.json();
+      if (body?.batch_size) batchSize = Math.min(body.batch_size, 2000);
+    } catch { /* no body is fine */ }
+
     const res = await fetch(
       "https://raw.githubusercontent.com/joshhighet/ransomwatch/main/posts.json"
     );
@@ -31,13 +38,13 @@ Deno.serve(async (req) => {
     const posts: any[] = await res.json();
     console.log(`Ransomwatch returned ${posts.length} total posts`);
 
-    // Take the most recent 100 posts
+    // Take the most recent posts up to batch_size
     const recent = posts
       .sort((a: any, b: any) => new Date(b.discovered || 0).getTime() - new Date(a.discovered || 0).getTime())
-      .slice(0, 100);
+      .slice(0, batchSize);
 
     const records = recent.map((p: any) => ({
-      title: `${p.group_name || "Unknown"}: ${p.post_title || "Unnamed victim"}`,
+      title: `${p.group_name || "Unknown"}: ${p.post_title || "Unnamed victim"}`.substring(0, 200),
       description: `Ransomware victim posted by ${p.group_name || "unknown group"} on their leak site.`,
       source: "ransomwatch",
       severity: "critical",
@@ -52,23 +59,23 @@ Deno.serve(async (req) => {
       },
     }));
 
-    // Upsert based on title uniqueness (threat_news has no unique constraint on title,
-    // so we check for existing entries to avoid duplicates)
+    // Batch upsert using (source, title) unique constraint instead of N+1 queries
     let upserted = 0;
-    for (const record of records) {
-      const { data: existing } = await sb
-        .from("threat_news")
-        .select("id")
-        .eq("title", record.title)
-        .eq("source", "ransomwatch")
-        .limit(1);
-
-      if (!existing || existing.length === 0) {
-        const { error } = await sb.from("threat_news").insert(record);
-        if (error) console.error("Insert error:", error.message);
-        else upserted++;
+    const CHUNK = 200;
+    for (let i = 0; i < records.length; i += CHUNK) {
+      const chunk = records.slice(i, i + CHUNK);
+      const { error } = await sb.from("threat_news").upsert(
+        chunk,
+        { onConflict: "source,title", ignoreDuplicates: true }
+      );
+      if (error) {
+        console.error(`Chunk ${i / CHUNK} upsert error:`, error.message);
+      } else {
+        upserted += chunk.length;
       }
     }
+
+    console.log(`Ransomwatch: upserted ${upserted}/${records.length} records in ${Math.ceil(records.length / CHUNK)} chunks`);
 
     return new Response(
       JSON.stringify({ success: true, fetched: recent.length, upserted }),

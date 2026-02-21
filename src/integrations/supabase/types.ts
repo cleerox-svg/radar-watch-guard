@@ -250,6 +250,54 @@ export type Database = {
           },
         ]
       }
+      ingestion_jobs: {
+        Row: {
+          batch_size: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          feed_source: string
+          id: string
+          max_retries: number
+          metadata: Json | null
+          priority: number
+          records_processed: number | null
+          retry_count: number
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          batch_size?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          feed_source: string
+          id?: string
+          max_retries?: number
+          metadata?: Json | null
+          priority?: number
+          records_processed?: number | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          batch_size?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          feed_source?: string
+          id?: string
+          max_retries?: number
+          metadata?: Json | null
+          priority?: number
+          records_processed?: number | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       investigation_tickets: {
         Row: {
           assigned_to: string | null
@@ -340,36 +388,6 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      scan_leads: {
-        Row: {
-          company_name: string | null
-          created_at: string
-          domain_scanned: string
-          email: string
-          id: string
-          risk_grade: string | null
-          risk_score: number | null
-        }
-        Insert: {
-          company_name?: string | null
-          created_at?: string
-          domain_scanned: string
-          email: string
-          id?: string
-          risk_grade?: string | null
-          risk_score?: number | null
-        }
-        Update: {
-          company_name?: string | null
-          created_at?: string
-          domain_scanned?: string
-          email?: string
-          id?: string
-          risk_grade?: string | null
-          risk_score?: number | null
         }
         Relationships: []
       }

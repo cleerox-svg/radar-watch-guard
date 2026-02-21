@@ -20,3 +20,15 @@ verify_jwt = false
 
 [functions.check-pwned-password]
 verify_jwt = false
+
+[functions.ingest-coordinator]
+verify_jwt = false
+
+[functions.ingest-cisa-kev]
+verify_jwt = false
+
+[functions.ingest-otx-pulses]
+verify_jwt = false
+
+[functions.ingest-threats]
+verify_jwt = false
