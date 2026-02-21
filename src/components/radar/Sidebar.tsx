@@ -53,26 +53,26 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
   {
     label: "AI Insights",
     items: [
-      { key: "briefing", icon: Brain, label: "Daily Briefing", description: "Your AI-written summary of today's threats" },
-      { key: "chat", icon: MessageSquare, label: "Ask the AI", description: "Get instant answers about your threat landscape" },
+      { key: "briefing", icon: Brain, label: "Daily Briefing", description: "Your AI-written summary of today's threats", accent: "text-violet-500" },
+      { key: "chat", icon: MessageSquare, label: "Ask the AI", description: "Get instant answers about your threat landscape", accent: "text-violet-400" },
     ],
   },
   {
     label: "Live Monitoring",
     items: [
-      { key: "heatmap", icon: Globe, label: "Global Threat Map", description: "See threats plotted around the world in real time" },
-      { key: "social-monitor", icon: Radio, label: "Social Feed", description: "Indicators shared by the security community" },
-      { key: "dark-web", icon: Skull, label: "Dark Web Alerts", description: "Check for leaked credentials and breach exposure" },
-      { key: "ato", icon: UsersRound, label: "Account Takeovers", description: "Track suspicious logins and hijacked accounts" },
-      { key: "email", icon: ShieldCheck, label: "Email Security", description: "Monitor SPF, DKIM, and DMARC compliance" },
-      { key: "stats", icon: BarChart3, label: "Analytics", description: "Charts and trends across your threat data" },
-      { key: "urgent", icon: AlertTriangle, label: "Critical Alerts", description: "High-priority advisories that need attention now" },
+      { key: "heatmap", icon: Globe, label: "Global Threat Map", description: "See threats plotted around the world in real time", accent: "text-emerald-500" },
+      { key: "social-monitor", icon: Radio, label: "Social Feed", description: "Indicators shared by the security community", accent: "text-sky-500" },
+      { key: "dark-web", icon: Skull, label: "Dark Web Alerts", description: "Check for leaked credentials and breach exposure", accent: "text-orange-500" },
+      { key: "ato", icon: UsersRound, label: "Account Takeovers", description: "Track suspicious logins and hijacked accounts", accent: "text-pink-500" },
+      { key: "email", icon: ShieldCheck, label: "Email Security", description: "Monitor SPF, DKIM, and DMARC compliance", accent: "text-emerald-400" },
+      { key: "stats", icon: BarChart3, label: "Analytics", description: "Charts and trends across your threat data", accent: "text-sky-400" },
+      { key: "urgent", icon: AlertTriangle, label: "Critical Alerts", description: "High-priority advisories that need attention now", accent: "text-amber-500" },
     ],
   },
   {
     label: "Help & Docs",
     items: [
-      { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Guides, documentation, and API reference" },
+      { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Guides, documentation, and API reference", accent: "text-muted-foreground" },
     ],
   },
 ];
@@ -80,9 +80,9 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
 const adminGroup = {
   label: "Platform Settings",
   items: [
-    { key: "spam-traps" as TabKey, icon: MailWarning, label: "Spam Traps", description: "Honeypot intelligence from trap email addresses" },
-    { key: "admin" as TabKey, icon: Settings, label: "Admin Console", description: "Manage users, groups, and data feeds" },
-    { key: "leads" as TabKey, icon: UserPlus, label: "Leads", description: "Submissions from landing page forms" },
+    { key: "spam-traps" as TabKey, icon: MailWarning, label: "Spam Traps", description: "Honeypot intelligence from trap email addresses", accent: "text-amber-400" },
+    { key: "admin" as TabKey, icon: Settings, label: "Admin Console", description: "Manage users, groups, and data feeds", accent: "text-muted-foreground" },
+    { key: "leads" as TabKey, icon: UserPlus, label: "Leads", description: "Submissions from landing page forms", accent: "text-sky-400" },
   ],
 };
 
