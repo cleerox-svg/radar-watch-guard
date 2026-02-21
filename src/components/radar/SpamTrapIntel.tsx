@@ -247,13 +247,27 @@ export function SpamTrapIntel() {
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }}>
+                <Pie
+                  data={categoryData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={75}
+                  innerRadius={40}
+                  paddingAngle={3}
+                  label={({ name, percent, x, y, textAnchor }) => (
+                    <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" className="fill-foreground" style={{ fontSize: 10 }}>
+                      {`${name} ${(percent * 100).toFixed(0)}%`}
+                    </text>
+                  )}
+                >
                   {categoryData.map((entry, idx) => (
                     <Cell key={idx} fill={entry.color} />
                   ))}
                 </Pie>
                 <RechartsTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11, color: "hsl(var(--foreground))" }} itemStyle={{ color: "hsl(var(--foreground))" }} />
-                <Legend wrapperStyle={{ fontSize: 10, color: "hsl(var(--foreground))" }} formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>} />
+                <Legend wrapperStyle={{ fontSize: 10 }} formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
