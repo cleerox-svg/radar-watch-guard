@@ -364,6 +364,8 @@ export default function Landing() {
             <Satellite className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-foreground tracking-wider">LRX RADAR</span>
             <span className="text-[10px] text-muted-foreground font-mono ml-2">v3.1.0</span>
+            <span className="mx-2 text-border">|</span>
+            <span className="text-[10px] text-muted-foreground font-mono">🇨🇦 Canadian Owned & Operated</span>
           </div>
           <div className="flex items-center gap-4">
             <a href="mailto:sales@lrxradar.com" className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono">
