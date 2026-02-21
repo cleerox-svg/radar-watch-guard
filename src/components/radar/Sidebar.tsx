@@ -115,17 +115,17 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
     <aside className="w-64 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col z-20 shadow-xl">
       {/* Logo */}
       <div className="h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 border-b border-border">
-        <div className="flex items-center">
+        <Link to="/" className="flex items-center group">
           <div className="relative w-9 h-9 mr-3 flex items-center justify-center">
             <div className="absolute inset-0 bg-primary/20 rounded-xl animate-pulse-slow" />
             <div className="absolute inset-0 bg-primary/10 rounded-xl animate-ping-slow" />
             <Satellite className="w-5 h-5 text-primary relative z-10" />
           </div>
           <div>
-            <span className="block text-lg font-extrabold tracking-wider text-foreground">LRX RADAR</span>
+            <span className="block text-lg font-extrabold tracking-wider text-foreground group-hover:text-primary transition-colors">LRX RADAR</span>
             <span className="block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Threat Intelligence</span>
           </div>
-        </div>
+        </Link>
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X className="w-5 h-5" />
