@@ -114,17 +114,11 @@ export default function PublicScanner() {
     if (!gateEmail.trim() || !result) return;
     setIsSubmitting(true);
     try {
-      await supabase.from("scan_leads").insert({
-        email: gateEmail.trim(),
-        company_name: gateName.trim() || null,
-        domain_scanned: result.domain,
-        risk_grade: result.grade,
-        risk_score: result.score,
-      });
+      // Lead capture — simply unlock the report on email submission
+      console.log('Lead captured:', { email: gateEmail.trim(), domain: result.domain, grade: result.grade });
       setUnlocked(true);
       setShowGate(false);
     } catch {
-      // Silently unlock even if DB insert fails
       setUnlocked(true);
       setShowGate(false);
     } finally {
