@@ -2,7 +2,8 @@
  * Sidebar.tsx — Navigation filtered by user's access group module permissions.
  */
 
-import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket, MailWarning } from "lucide-react";
+import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket, MailWarning, UserCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -195,10 +196,13 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
       {/* Footer */}
       <div className="px-3 py-3 border-t border-border space-y-3">
         {userDisplayName && (
-          <div className="px-3 py-2">
-            <p className="text-xs font-medium text-foreground truncate">{userDisplayName}</p>
-            <p className="text-[10px] text-muted-foreground font-mono">{primaryGroup?.toUpperCase() || "USER"}</p>
-          </div>
+          <Link to="/profile" className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors group">
+            <UserCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">{userDisplayName}</p>
+              <p className="text-[10px] text-muted-foreground font-mono">{primaryGroup?.toUpperCase() || "USER"}</p>
+            </div>
+          </Link>
         )}
 
         <div className="relative">
