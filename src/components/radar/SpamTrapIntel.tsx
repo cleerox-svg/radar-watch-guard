@@ -233,7 +233,7 @@ export function SpamTrapIntel() {
                 <Area type="monotone" dataKey="spam" stackId="1" fill={CATEGORY_COLORS.spam} stroke={CATEGORY_COLORS.spam} fillOpacity={0.6} />
                 <Area type="monotone" dataKey="scam" stackId="1" fill={CATEGORY_COLORS.scam} stroke={CATEGORY_COLORS.scam} fillOpacity={0.6} />
                 <Area type="monotone" dataKey="brand-abuse" stackId="1" fill={CATEGORY_COLORS["brand-abuse"]} stroke={CATEGORY_COLORS["brand-abuse"]} fillOpacity={0.6} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -247,13 +247,13 @@ export function SpamTrapIntel() {
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40} paddingAngle={3}>
+                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }}>
                   {categoryData.map((entry, idx) => (
                     <Cell key={idx} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <RechartsTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11, color: "hsl(var(--foreground))" }} itemStyle={{ color: "hsl(var(--foreground))" }} />
+                <Legend wrapperStyle={{ fontSize: 10, color: "hsl(var(--foreground))" }} formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
