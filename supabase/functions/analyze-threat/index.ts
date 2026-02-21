@@ -171,10 +171,10 @@ Provide a thorough analysis with MITRE ATT&CK mapping, campaign attribution asse
       JSON.stringify({ success: true, analysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Threat analysis error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
