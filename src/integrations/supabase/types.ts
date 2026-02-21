@@ -448,6 +448,48 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_leads: {
+        Row: {
+          company: string | null
+          created_at: string
+          domain_scanned: string | null
+          email: string
+          id: string
+          metadata: Json | null
+          name: string
+          phone: string | null
+          scan_grade: string | null
+          scan_score: number | null
+          submission_type: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          domain_scanned?: string | null
+          email: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          phone?: string | null
+          scan_grade?: string | null
+          scan_score?: number | null
+          submission_type?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          domain_scanned?: string | null
+          email?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          phone?: string | null
+          scan_grade?: string | null
+          scan_score?: number | null
+          submission_type?: string
+        }
+        Relationships: []
+      }
       session_events: {
         Row: {
           created_at: string

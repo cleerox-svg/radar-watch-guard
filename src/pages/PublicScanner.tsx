@@ -70,6 +70,8 @@ export default function PublicScanner() {
   const [showGate, setShowGate] = useState(false);
   const [gateEmail, setGateEmail] = useState("");
   const [gateName, setGateName] = useState("");
+  const [gateCompany, setGateCompany] = useState("");
+  const [gatePhone, setGatePhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -111,11 +113,19 @@ export default function PublicScanner() {
   };
 
   const submitLead = async () => {
-    if (!gateEmail.trim() || !result) return;
+    if (!gateEmail.trim() || !gateName.trim() || !result) return;
     setIsSubmitting(true);
     try {
-      // Lead capture — simply unlock the report on email submission
-      console.log('Lead captured:', { email: gateEmail.trim(), domain: result.domain, grade: result.grade });
+      await supabase.from("scan_leads").insert({
+        name: gateName.trim(),
+        email: gateEmail.trim(),
+        company: gateCompany.trim() || null,
+        phone: gatePhone.trim() || null,
+        submission_type: "brand_scan",
+        domain_scanned: result.domain,
+        scan_grade: result.grade,
+        scan_score: result.score,
+      });
       setUnlocked(true);
       setShowGate(false);
     } catch {
@@ -533,21 +543,36 @@ export default function PublicScanner() {
               </div>
               <form onSubmit={(e) => { e.preventDefault(); submitLead(); }} className="space-y-3">
                 <input
+                  type="text"
+                  required
+                  value={gateName}
+                  onChange={(e) => setGateName(e.target.value)}
+                  placeholder="Your name *"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                <input
                   type="email"
                   required
                   value={gateEmail}
                   onChange={(e) => setGateEmail(e.target.value)}
-                  placeholder="work@company.com"
+                  placeholder="work@company.com *"
                   className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
                 <input
                   type="text"
-                  value={gateName}
-                  onChange={(e) => setGateName(e.target.value)}
+                  value={gateCompany}
+                  onChange={(e) => setGateCompany(e.target.value)}
                   placeholder="Company name (optional)"
                   className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
-                <Button type="submit" className="w-full gap-2" disabled={isSubmitting || !gateEmail.trim()}>
+                <input
+                  type="tel"
+                  value={gatePhone}
+                  onChange={(e) => setGatePhone(e.target.value)}
+                  placeholder="Phone number (optional)"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                <Button type="submit" className="w-full gap-2" disabled={isSubmitting || !gateEmail.trim() || !gateName.trim()}>
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                   {isSubmitting ? "Unlocking..." : "Get Full Report"}
                 </Button>

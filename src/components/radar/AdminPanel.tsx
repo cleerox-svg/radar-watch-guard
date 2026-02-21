@@ -41,6 +41,7 @@ const ALL_MODULES = [
   { key: "knowledge", label: "Knowledge Base", group: "Help & Docs" },
   { key: "spam-traps", label: "Spam Traps", group: "Platform Settings" },
   { key: "admin", label: "Admin Console", group: "Platform Settings" },
+  { key: "leads", label: "Leads", group: "Platform Settings" },
 ];
 
 const MODULE_GROUPS = [...new Set(ALL_MODULES.map((m) => m.group))];
@@ -63,6 +64,8 @@ interface TeamUser {
   roles: string[];
   groups: { id: string; name: string }[];
   email?: string;
+  last_login?: string | null;
+  last_ip?: string | null;
 }
 
 interface TableStats { name: string; total: number; today: number; }
@@ -596,29 +599,36 @@ function TeamManager() {
 
   const fetchTeam = useCallback(async () => {
     setLoading(true);
-    const [profilesRes, rolesRes, assignmentsRes, groupsRes] = await Promise.all([
+    const [profilesRes, rolesRes, assignmentsRes, groupsRes, sessionsRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("user_roles").select("*"),
       supabase.from("user_group_assignments").select("user_id, group_id, access_groups(id, name)"),
       supabase.from("access_groups").select("id, name").order("created_at"),
+      supabase.from("session_events").select("user_id, created_at, ip_address, event_type").eq("event_type", "login").order("created_at", { ascending: false }).limit(500),
     ]);
 
     const profiles = profilesRes.data || [];
     const roles = rolesRes.data || [];
     const assignments = assignmentsRes.data || [];
+    const sessionEvents = sessionsRes.data || [];
     setGroups(groupsRes.data || []);
 
-    const merged: TeamUser[] = profiles.map((p: any) => ({
-      user_id: p.user_id,
-      display_name: p.display_name,
-      title: p.title,
-      team: p.team,
-      roles: roles.filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
-      groups: assignments
-        .filter((a: any) => a.user_id === p.user_id)
-        .map((a: any) => a.access_groups)
-        .filter(Boolean),
-    }));
+    const merged: TeamUser[] = profiles.map((p: any) => {
+      const lastLogin = sessionEvents.find((s: any) => s.user_id === p.user_id);
+      return {
+        user_id: p.user_id,
+        display_name: p.display_name,
+        title: p.title,
+        team: p.team,
+        roles: roles.filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
+        groups: assignments
+          .filter((a: any) => a.user_id === p.user_id)
+          .map((a: any) => a.access_groups)
+          .filter(Boolean),
+        last_login: lastLogin?.created_at || null,
+        last_ip: lastLogin?.ip_address || null,
+      };
+    });
 
     setUsers(merged);
     setLoading(false);
@@ -751,7 +761,14 @@ function TeamManager() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{u.display_name || "Unnamed"}</p>
-                    <p className="text-[10px] text-muted-foreground">{u.title || "User"}{u.team ? ` · ${u.team}` : ""}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {u.title || "User"}{u.team ? ` · ${u.team}` : ""}
+                      {u.last_login && (
+                        <span className="ml-2">
+                          · Last login: {new Date(u.last_login).toLocaleDateString()}{u.last_ip ? ` (${u.last_ip})` : ""}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {u.roles.map((role) => (
@@ -912,9 +929,14 @@ function SessionManager() {
                       {evt.event_type.replace("_", " ")}
                     </span>
                     <span className="text-xs text-foreground font-medium truncate">{userName}</span>
-                    <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
-                      {new Date(evt.created_at).toLocaleString()}
-                    </span>
+                    <div className="flex items-center gap-2 ml-auto shrink-0">
+                      {evt.ip_address && (
+                        <span className="text-[10px] text-muted-foreground font-mono">{evt.ip_address}</span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(evt.created_at).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 );
               })}

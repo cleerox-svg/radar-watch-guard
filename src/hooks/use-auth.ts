@@ -95,6 +95,7 @@ export function useAuth() {
           supabase.from("session_events").insert({
             user_id: session.user.id,
             event_type: "login",
+            user_agent: navigator.userAgent || null,
           }).then(() => {});
         }
         setTimeout(() => fetchProfile(session.user.id), 0);
@@ -123,6 +124,7 @@ export function useAuth() {
       await supabase.from("session_events").insert({
         user_id: user.id,
         event_type: "logout",
+        user_agent: navigator.userAgent || null,
       }).then(() => {});
     }
     await supabase.auth.signOut();
