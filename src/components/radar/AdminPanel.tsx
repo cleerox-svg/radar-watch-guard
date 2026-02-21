@@ -3,6 +3,7 @@ import {
   UserPlus, Shield, Trash2, Loader2, Users, Copy, Database, Activity,
   TrendingUp, BarChart3, Rss, Play, CheckCircle2, AlertTriangle,
   Settings, Plus, Save, X, ChevronDown, ChevronUp, Pencil,
+  Link2, Zap,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ import {
   triggerThreatFoxIngestion, triggerSansIscIngestion, triggerRansomwatchIngestion,
   triggerTorExitIngestion, triggerMastodonIngestion,
 } from "@/hooks/use-threat-data";
+import { AdminIntegrations } from "@/components/radar/AdminIntegrations";
+import { AdminAutomations } from "@/components/radar/AdminAutomations";
 
 // ─── Module definitions ───
 const ALL_MODULES = [
@@ -677,6 +680,12 @@ export function AdminPanel() {
         <TabsTrigger value="feeds" className="gap-1.5 text-xs">
           <Rss className="w-3.5 h-3.5" /> Data Sources
         </TabsTrigger>
+        <TabsTrigger value="integrations" className="gap-1.5 text-xs">
+          <Link2 className="w-3.5 h-3.5" /> Integrations
+        </TabsTrigger>
+        <TabsTrigger value="automations" className="gap-1.5 text-xs">
+          <Zap className="w-3.5 h-3.5" /> Automations
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="team">
@@ -690,6 +699,14 @@ export function AdminPanel() {
       <TabsContent value="feeds" className="space-y-6">
         <DatabaseStatus />
         <FeedManager />
+      </TabsContent>
+
+      <TabsContent value="integrations">
+        <AdminIntegrations />
+      </TabsContent>
+
+      <TabsContent value="automations">
+        <AdminAutomations />
       </TabsContent>
     </Tabs>
   );
