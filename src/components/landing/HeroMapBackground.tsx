@@ -26,7 +26,7 @@ const hotspots: { name: string; coordinates: [number, number]; delay: number }[]
 export function HeroMapBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
-      <div className="absolute inset-0 opacity-[0.25]">
+      <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.25]">
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{ scale: 180, center: [10, 20] }}
@@ -41,11 +41,11 @@ export function HeroMapBackground() {
                   geography={geo}
                   fill="hsl(var(--primary))"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={0.4}
+                  strokeWidth={0.5}
                   style={{
-                    default: { outline: "none", opacity: 0.35 },
-                    hover: { outline: "none", opacity: 0.35 },
-                    pressed: { outline: "none", opacity: 0.35 },
+                    default: { outline: "none", opacity: 0.5 },
+                    hover: { outline: "none", opacity: 0.5 },
+                    pressed: { outline: "none", opacity: 0.5 },
                   }}
                 />
               ))
@@ -80,13 +80,26 @@ export function HeroMapBackground() {
                   repeatCount="indefinite"
                 />
               </circle>
+              <text
+                textAnchor="middle"
+                y={-6}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "4px",
+                  fill: "hsl(var(--foreground))",
+                  opacity: 0.7,
+                  fontWeight: 500,
+                }}
+              >
+                {spot.name}
+              </text>
             </Marker>
           ))}
         </ComposableMap>
       </div>
       {/* Gradient overlays to fade edges */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-transparent to-background dark:from-background/70" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40 dark:from-background/60 dark:to-background/60" />
     </div>
   );
 }
