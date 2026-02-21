@@ -6,6 +6,8 @@
 import { Link } from "react-router-dom";
 import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -74,12 +76,8 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: "10+", label: "Intelligence Feeds" },
-  { value: "15min", label: "Auto-Refresh Cycle" },
-  { value: "3", label: "Core Modules" },
-  { value: "24/7", label: "Continuous Monitoring" },
-];
+
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -91,6 +89,26 @@ const fadeUp = {
 };
 
 export default function Landing() {
+  /** Live threat count from the database */
+  const { data: threatCount } = useQuery({
+    queryKey: ["threat_count_landing"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("threats")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 60000,
+  });
+
+  const stats = [
+    { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Tracked" },
+    { value: "10+", label: "Intelligence Feeds" },
+    { value: "3", label: "Core Modules" },
+    { value: "24/7", label: "Continuous Monitoring" },
+  ];
+
   return (
     <div className="min-h-screen bg-background bg-noise">
       {/* Nav */}
