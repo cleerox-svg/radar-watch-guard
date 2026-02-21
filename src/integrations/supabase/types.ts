@@ -408,8 +408,10 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          first_name: string | null
           id: string
           idle_timeout_minutes: number | null
+          last_name: string | null
           revoked_at: string | null
           team: string | null
           title: string | null
@@ -420,8 +422,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           id?: string
           idle_timeout_minutes?: number | null
+          last_name?: string | null
           revoked_at?: string | null
           team?: string | null
           title?: string | null
@@ -432,8 +436,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           id?: string
           idle_timeout_minutes?: number | null
+          last_name?: string | null
           revoked_at?: string | null
           team?: string | null
           title?: string | null
