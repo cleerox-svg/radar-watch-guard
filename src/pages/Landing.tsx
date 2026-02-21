@@ -314,7 +314,8 @@ export default function Landing() {
                 Our AI analyzes your brand's threat landscape and delivers a personalized intelligence report with MITRE ATT&CK mapping and prioritized recommendations.
               </p>
               <p className="text-xs text-muted-foreground/70 italic">
-                A member of our sales team will follow up to discuss your results and how LRX Radar can protect your organization.
+                A member of our sales team will follow up to discuss your results and how LRX Radar can protect your organization. You can also reach us directly at{" "}
+                <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>.
               </p>
             </div>
             <AIBriefingForm />
@@ -364,9 +365,14 @@ export default function Landing() {
             <span className="text-sm font-bold text-foreground tracking-wider">LRX RADAR</span>
             <span className="text-[10px] text-muted-foreground font-mono ml-2">v3.1.0</span>
           </div>
-          <p className="text-[10px] text-muted-foreground font-mono">
-            © {new Date().getFullYear()} LRX Radar · Threat Intelligence Platform
-          </p>
+          <div className="flex items-center gap-4">
+            <a href="mailto:sales@lrxradar.com" className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono">
+              sales@lrxradar.com
+            </a>
+            <p className="text-[10px] text-muted-foreground font-mono">
+              © {new Date().getFullYear()} LRX Radar · Threat Intelligence Platform
+            </p>
+          </div>
         </div>
       </footer>
     </div>
@@ -452,6 +458,9 @@ function AIBriefingForm() {
       </Button>
       <p className="text-[10px] text-muted-foreground text-center">
         A member of our sales team will follow up with your personalized report.
+        <br />
+        Or email us directly at{" "}
+        <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>
       </p>
     </form>
   );
