@@ -29,6 +29,7 @@ import { SocialMediaMonitor } from "@/components/radar/SocialMediaMonitor";
 import { DarkWebMonitor } from "@/components/radar/DarkWebMonitor";
 import { AdminPanel } from "@/components/radar/AdminPanel";
 import { SpamTrapIntel } from "@/components/radar/SpamTrapIntel";
+import { LeadsFeed } from "@/components/radar/LeadsFeed";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { useIdleTimeout } from "@/hooks/use-idle-timeout";
@@ -36,7 +37,7 @@ import { IdleTimeoutWarning } from "@/components/radar/IdleTimeoutWarning";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "spam-traps", "admin"];
+const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "spam-traps", "leads", "admin"];
 
 const tabTitles: Record<TabKey, string> = {
   exposure: "Brand Exposure Overview",
@@ -54,6 +55,7 @@ const tabTitles: Record<TabKey, string> = {
   stats: "Threat Analytics",
   urgent: "Critical Alerts",
   "spam-traps": "Spam Trap Intelligence",
+  leads: "Lead Submissions",
   admin: "Admin Console",
 };
 
@@ -273,6 +275,7 @@ const Index = () => {
             {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
             {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
             {hasModuleAccess("spam-traps") && currentTab === "spam-traps" && <SpamTrapIntel />}
+            {hasModuleAccess("leads") && currentTab === "leads" && <LeadsFeed />}
             {hasModuleAccess("admin") && currentTab === "admin" && <AdminPanel />}
           </div>
         </main>

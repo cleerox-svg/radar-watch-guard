@@ -4,12 +4,14 @@
  */
 
 import { Link } from "react-router-dom";
-import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3, UserCircle, LayoutDashboard } from "lucide-react";
+import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3, UserCircle, LayoutDashboard, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const features = [
   {
@@ -291,6 +293,35 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* AI Briefing Request */}
+      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-primary/5" />
+          <div className="relative grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
+                <Brain className="w-3.5 h-3.5" /> AI-POWERED
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-4">
+                Get a Free AI Threat Intelligence Briefing
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Our AI analyzes your brand's threat landscape and delivers a personalized intelligence report with MITRE ATT&CK mapping and prioritized recommendations.
+              </p>
+              <p className="text-xs text-muted-foreground/70 italic">
+                A member of our sales team will follow up to discuss your results and how LRX Radar can protect your organization.
+              </p>
+            </div>
+            <AIBriefingForm />
+          </div>
+        </motion.div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
@@ -339,5 +370,89 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function AIBriefingForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+    setSubmitting(true);
+    try {
+      await supabase.from("scan_leads").insert({
+        name: name.trim(),
+        email: email.trim(),
+        company: company.trim() || null,
+        phone: phone.trim() || null,
+        submission_type: "ai_briefing",
+      });
+      setSubmitted(true);
+      toast.success("Request submitted!", { description: "Our team will be in touch shortly." });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="bg-background border border-border rounded-xl p-6 text-center">
+        <ShieldCheck className="w-10 h-10 text-primary mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-foreground mb-2">Request Received!</h3>
+        <p className="text-sm text-muted-foreground">
+          Our sales team will prepare your AI threat intelligence briefing and contact you shortly.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-6 space-y-3">
+      <input
+        type="text"
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name *"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Work email *"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="text"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder="Company name (optional)"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="tel"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        placeholder="Phone number (optional)"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim()}>
+        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+        {submitting ? "Submitting..." : "Request AI Briefing"}
+      </Button>
+      <p className="text-[10px] text-muted-foreground text-center">
+        A member of our sales team will follow up with your personalized report.
+      </p>
+    </form>
   );
 }
