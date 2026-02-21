@@ -53,3 +53,21 @@ verify_jwt = false
 
 [functions.ingest-certstream]
 verify_jwt = false
+
+[functions.ingest-google-safebrowsing]
+verify_jwt = false
+
+[functions.ingest-greynoise]
+verify_jwt = false
+
+[functions.ingest-phishtank-community]
+verify_jwt = false
+
+[functions.ingest-abuseipdb]
+verify_jwt = false
+
+[functions.ingest-virustotal]
+verify_jwt = false
+
+[functions.ingest-ipqualityscore]
+verify_jwt = false

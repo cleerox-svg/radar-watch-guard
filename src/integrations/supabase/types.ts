@@ -890,6 +890,9 @@ export type Database = {
         | "certstream"
         | "phishtank_community"
         | "greynoise"
+        | "google_safebrowsing"
+        | "virustotal"
+        | "ipqualityscore"
       threat_severity: "critical" | "high" | "medium" | "low" | "info"
       threat_status: "active" | "investigating" | "mitigated" | "resolved"
     }
@@ -1042,6 +1045,9 @@ export const Constants = {
         "certstream",
         "phishtank_community",
         "greynoise",
+        "google_safebrowsing",
+        "virustotal",
+        "ipqualityscore",
       ],
       threat_severity: ["critical", "high", "medium", "low", "info"],
       threat_status: ["active", "investigating", "mitigated", "resolved"],
