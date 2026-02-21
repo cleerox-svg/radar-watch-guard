@@ -33,6 +33,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Circuit breaker: skip if rate-limited within last 24 hours (5 calls/day limit)
+    const { data: schedule } = await sb
+      .from("feed_schedules")
+      .select("last_status, last_run_at")
+      .eq("feed_source", "abuseipdb")
+      .single();
+
+    if (schedule?.last_status === "rate_limited" && schedule?.last_run_at) {
+      const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
+      const lastRun = new Date(schedule.last_run_at).getTime();
+      if (Date.now() - lastRun < cooldownMs) {
+        console.log("AbuseIPDB circuit breaker OPEN — rate-limited, skipping until cooldown expires");
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "circuit_breaker_open", cooldown_remaining_h: Math.round((cooldownMs - (Date.now() - lastRun)) / 3600000) }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Pull the AbuseIPDB blacklist (top reported IPs)
     const res = await fetch(
       "https://api.abuseipdb.com/api/v2/blacklist?confidenceMinimum=90&limit=200",
@@ -43,6 +62,21 @@ Deno.serve(async (req) => {
         },
       }
     );
+
+    // Circuit breaker: trip on rate limit
+    if (res.status === 429) {
+      console.error("AbuseIPDB 429 rate limit — tripping circuit breaker for 24h");
+      await sb.from("feed_schedules").update({
+        last_run_at: new Date().toISOString(),
+        last_status: "rate_limited",
+        last_records: 0,
+      }).eq("feed_source", "abuseipdb");
+      const body = await res.text();
+      return new Response(
+        JSON.stringify({ success: false, error: "Rate limited — circuit breaker tripped", detail: body }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!res.ok) {
       const errText = await res.text();

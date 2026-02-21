@@ -33,6 +33,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Circuit breaker: skip if rate-limited within last 1 hour (4 req/min, resets quickly)
+    const { data: schedule } = await sb
+      .from("feed_schedules")
+      .select("last_status, last_run_at")
+      .eq("feed_source", "virustotal")
+      .single();
+
+    if (schedule?.last_status === "rate_limited" && schedule?.last_run_at) {
+      const cooldownMs = 60 * 60 * 1000; // 1 hour
+      const lastRun = new Date(schedule.last_run_at).getTime();
+      if (Date.now() - lastRun < cooldownMs) {
+        console.log("VirusTotal circuit breaker OPEN — skipping until cooldown expires");
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "circuit_breaker_open", cooldown_remaining_min: Math.round((cooldownMs - (Date.now() - lastRun)) / 60000) }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
     // Get active threats not yet checked by VirusTotal
     const { data: threats } = await sb
       .from("threats")
@@ -75,8 +93,17 @@ Deno.serve(async (req) => {
         });
 
         if (res.status === 429) {
-          console.log("VirusTotal rate limit hit, stopping");
-          break;
+          console.error("VirusTotal 429 rate limit — tripping circuit breaker for 1h");
+          await sb.from("feed_schedules").update({
+            last_run_at: new Date().toISOString(),
+            last_status: "rate_limited",
+            last_records: enriched,
+          }).eq("feed_source", "virustotal");
+          const body = await res.text();
+          return new Response(
+            JSON.stringify({ success: false, error: "Rate limited — circuit breaker tripped", checked: unchecked.indexOf(threat), enriched }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
 
         if (!res.ok) {
