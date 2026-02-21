@@ -200,12 +200,13 @@ export default function Landing() {
                   Try Free Domain Scan
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="gap-2 text-sm px-8">
-                  Access Platform
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              <Button size="lg" variant="outline" className="gap-2 text-sm px-8" onClick={() => {
+                const form = document.getElementById('request-access');
+                if (form) form.scrollIntoView({ behavior: 'smooth' });
+              }}>
+                Request Access
+                <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -396,7 +397,37 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      {/* CTA */}
+      {/* Request Access Form */}
+      <section id="request-access" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-cyan-500/5" />
+          <div className="relative grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-mono mb-4">
+                <ShieldCheck className="w-3.5 h-3.5" /> INVITE-ONLY ACCESS
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-4">
+                Request Platform Access
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                LRX Radar is an invite-only platform. Submit your details and our team will review your request and provision your account.
+              </p>
+              <p className="text-xs text-muted-foreground/70 italic">
+                Questions? Reach us directly at{" "}
+                <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>.
+              </p>
+            </div>
+            <AccessRequestForm />
+          </div>
+        </motion.div>
+      </section>
+
+
       <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -419,12 +450,13 @@ export default function Landing() {
                   Scan Your Domain
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="gap-2 px-8">
-                  Request Platform Access
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              <Button size="lg" variant="outline" className="gap-2 px-8" onClick={() => {
+                const form = document.getElementById('request-access');
+                if (form) form.scrollIntoView({ behavior: 'smooth' });
+              }}>
+                Request Platform Access
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </motion.div>
@@ -546,6 +578,99 @@ function AIBriefingForm() {
         <br />
         Or email us directly at{" "}
         <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>
+      </p>
+    </form>
+  );
+}
+
+function AccessRequestForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+    setSubmitting(true);
+    try {
+      await supabase.from("scan_leads").insert({
+        name: name.trim(),
+        email: email.trim(),
+        company: company.trim() || null,
+        phone: phone.trim() || null,
+        submission_type: "platform_access",
+        metadata: message.trim() ? { message: message.trim() } : {},
+      });
+      setSubmitted(true);
+      toast.success("Access request submitted!", { description: "Our team will review and reach out." });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="bg-background border border-border rounded-xl p-6 text-center">
+        <ShieldCheck className="w-10 h-10 text-primary mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-foreground mb-2">Request Received!</h3>
+        <p className="text-sm text-muted-foreground">
+          Our team will review your request and provision your account. You'll receive an invitation email once approved.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-6 space-y-3">
+      <input
+        type="text"
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name *"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Work email *"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="text"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder="Company name (optional)"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
+        type="tel"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        placeholder="Phone number (optional)"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Tell us about your use case (optional)"
+        rows={3}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+      />
+      <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim()}>
+        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+        {submitting ? "Submitting..." : "Request Access"}
+      </Button>
+      <p className="text-[10px] text-muted-foreground text-center">
+        Invite-only · Our team will provision your account after review.
       </p>
     </form>
   );
