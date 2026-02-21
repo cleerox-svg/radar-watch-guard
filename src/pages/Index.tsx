@@ -95,7 +95,7 @@ const Index = () => {
   const pullStartY = useRef<number | null>(null);
   const isPulling = useRef(false);
 
-  // Realtime subscriptions
+  // Realtime subscriptions — threats, news, social IOCs, ATO events
   useEffect(() => {
     const channel = supabase
       .channel("threats-realtime")
@@ -114,6 +114,22 @@ const Index = () => {
           duration: 8000,
         });
         queryClient.invalidateQueries({ queryKey: ["threat_news"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "social_iocs" }, (payload) => {
+        const ioc = payload.new as { ioc_value?: string; ioc_type?: string; source?: string };
+        toast.info(`🔍 New IOC from ${ioc.source || "community"}`, {
+          description: `${ioc.ioc_type || "indicator"}: ${ioc.ioc_value || "unknown"}`,
+          duration: 5000,
+        });
+        queryClient.invalidateQueries({ queryKey: ["social_iocs"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ato_events" }, (payload) => {
+        const ato = payload.new as { user_email?: string; event_type?: string; risk_score?: number };
+        toast.error(`🔐 Account takeover alert`, {
+          description: `${ato.event_type || "suspicious activity"} — ${ato.user_email || "unknown"} (risk: ${ato.risk_score || 0})`,
+          duration: 8000,
+        });
+        queryClient.invalidateQueries({ queryKey: ["ato_events"] });
       })
       .subscribe();
 
