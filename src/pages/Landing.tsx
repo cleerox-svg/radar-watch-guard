@@ -354,19 +354,20 @@ export default function Landing() {
             <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mb-4">
               Every briefing includes executable actions — open investigation tickets, push domain blocks, file abuse reports, or generate law enforcement referral templates.
             </p>
-            <Link to="/login">
-              <Button size="sm" className="gap-2">
-                <Brain className="w-4 h-4" />
-                Try AI Briefings
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
+            <Button size="sm" className="gap-2" onClick={() => {
+              const briefingForm = document.getElementById('ai-briefing-request');
+              if (briefingForm) briefingForm.scrollIntoView({ behavior: 'smooth' });
+            }}>
+              <Brain className="w-4 h-4" />
+              Request a Briefing
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </motion.div>
       </section>
 
       {/* AI Briefing Request */}
-      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+      <section id="ai-briefing-request" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -457,6 +458,7 @@ function AIBriefingForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [domain, setDomain] = useState("");
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -470,6 +472,7 @@ function AIBriefingForm() {
         name: name.trim(),
         email: email.trim(),
         company: company.trim() || null,
+        domain_scanned: domain.trim() || null,
         phone: phone.trim() || null,
         submission_type: "ai_briefing",
       });
@@ -520,13 +523,21 @@ function AIBriefingForm() {
         className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       />
       <input
+        type="text"
+        required
+        value={domain}
+        onChange={(e) => setDomain(e.target.value)}
+        placeholder="Your domain (e.g. example.com) *"
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+      <input
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone number (optional)"
         className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       />
-      <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim()}>
+      <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim() || !domain.trim()}>
         {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
         {submitting ? "Submitting..." : "Request AI Briefing"}
       </Button>
