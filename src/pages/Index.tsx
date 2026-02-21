@@ -31,6 +31,8 @@ import { AdminPanel } from "@/components/radar/AdminPanel";
 import { SpamTrapIntel } from "@/components/radar/SpamTrapIntel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
+import { useIdleTimeout } from "@/hooks/use-idle-timeout";
+import { IdleTimeoutWarning } from "@/components/radar/IdleTimeoutWarning";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -75,6 +77,15 @@ const Index = () => {
     await signOut();
     navigate("/login");
   }, [signOut, navigate]);
+
+  // Idle timeout — configurable per user (default 30 min)
+  const idleMinutes = profile?.idle_timeout_minutes ?? 30;
+  const { showWarning, secondsRemaining, dismissWarning } = useIdleTimeout({
+    timeoutMinutes: idleMinutes,
+    warningSeconds: 60,
+    onTimeout: handleSignOut,
+    enabled: idleMinutes > 0,
+  });
 
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -170,95 +181,103 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden relative bg-background">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-background/60 backdrop-blur-md z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div className={`
-        fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        <Sidebar
-          currentTab={currentTab}
-          onTabChange={handleTabChange}
-          onClose={() => setSidebarOpen(false)}
-          isAdmin={isAdmin}
-          userDisplayName={profile?.display_name}
-          primaryGroup={primaryGroup}
-          onSignOut={handleSignOut}
-          hasModuleAccess={hasModuleAccess}
-        />
-      </div>
-
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-noise">
-        <header className="h-14 lg:h-16 bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-8 z-10 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
-                <ChevronRight className="w-3 h-3 text-primary" />
-              </div>
-              <h2 className="text-base lg:text-lg font-bold text-foreground truncate">
-                {tabTitles[currentTab]}
-              </h2>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 px-3 py-1.5 rounded-full glow-radar transition-all">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              <span className="text-[10px] lg:text-xs font-mono text-primary font-medium hidden sm:inline">WATCHING</span>
-              <span className="text-[10px] font-mono text-primary sm:hidden">LIVE</span>
-            </div>
-          </div>
-        </header>
-
-        {isMobile && pullDistance > 0 && (
-          <div className="flex items-center justify-center overflow-hidden transition-all duration-150 bg-background/50" style={{ height: pullDistance }}>
-            <RefreshCw
-              className={`w-5 h-5 text-primary transition-transform duration-200 ${isRefreshing ? "animate-spin" : ""}`}
-              style={{ transform: isRefreshing ? undefined : `rotate(${(pullDistance / PULL_THRESHOLD) * 360}deg)`, opacity: Math.min(pullDistance / PULL_THRESHOLD, 1) }}
-            />
-            <span className="ml-2 text-xs font-mono text-muted-foreground">
-              {isRefreshing ? "Refreshing…" : pullDistance >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
-            </span>
-          </div>
+    <>
+      <IdleTimeoutWarning
+        open={showWarning}
+        secondsRemaining={secondsRemaining}
+        onDismiss={dismissWarning}
+        onLogout={handleSignOut}
+      />
+      <div className="h-screen flex overflow-hidden relative bg-background">
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-background/60 backdrop-blur-md z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
 
-        <div
-          ref={contentRef}
-          className="flex-1 overflow-auto p-4 lg:p-8 scrollbar-cyber"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          {hasModuleAccess("exposure") && currentTab === "exposure" && <ExposureEngine />}
-          {hasModuleAccess("correlation") && currentTab === "correlation" && <CorrelationMatrix />}
-          {hasModuleAccess("erasure") && currentTab === "erasure" && <ErasureOrchestrator />}
-          {hasModuleAccess("investigations") && currentTab === "investigations" && <InvestigationTracker />}
-          {hasModuleAccess("knowledge") && currentTab === "knowledge" && <KnowledgeBase />}
-          {hasModuleAccess("briefing") && currentTab === "briefing" && <ThreatBriefing />}
-          {hasModuleAccess("chat") && currentTab === "chat" && <ThreatChat />}
-          {hasModuleAccess("heatmap") && currentTab === "heatmap" && <ThreatHeatmap />}
-          {hasModuleAccess("social-monitor") && currentTab === "social-monitor" && <SocialMediaMonitor />}
-          {hasModuleAccess("dark-web") && currentTab === "dark-web" && <DarkWebMonitor />}
-          {hasModuleAccess("ato") && currentTab === "ato" && <AccountTakeover />}
-          {hasModuleAccess("email") && currentTab === "email" && <EmailAuth />}
-          {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
-          {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
-          {hasModuleAccess("spam-traps") && currentTab === "spam-traps" && <SpamTrapIntel />}
-          {hasModuleAccess("admin") && currentTab === "admin" && <AdminPanel />}
+        <div className={`
+          fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}>
+          <Sidebar
+            currentTab={currentTab}
+            onTabChange={handleTabChange}
+            onClose={() => setSidebarOpen(false)}
+            isAdmin={isAdmin}
+            userDisplayName={profile?.display_name}
+            primaryGroup={primaryGroup}
+            onSignOut={handleSignOut}
+            hasModuleAccess={hasModuleAccess}
+          />
         </div>
-      </main>
-    </div>
+
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-noise">
+          <header className="h-14 lg:h-16 bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-8 z-10 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+                  <ChevronRight className="w-3 h-3 text-primary" />
+                </div>
+                <h2 className="text-base lg:text-lg font-bold text-foreground truncate">
+                  {tabTitles[currentTab]}
+                </h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 px-3 py-1.5 rounded-full glow-radar transition-all">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                <span className="text-[10px] lg:text-xs font-mono text-primary font-medium hidden sm:inline">WATCHING</span>
+                <span className="text-[10px] font-mono text-primary sm:hidden">LIVE</span>
+              </div>
+            </div>
+          </header>
+
+          {isMobile && pullDistance > 0 && (
+            <div className="flex items-center justify-center overflow-hidden transition-all duration-150 bg-background/50" style={{ height: pullDistance }}>
+              <RefreshCw
+                className={`w-5 h-5 text-primary transition-transform duration-200 ${isRefreshing ? "animate-spin" : ""}`}
+                style={{ transform: isRefreshing ? undefined : `rotate(${(pullDistance / PULL_THRESHOLD) * 360}deg)`, opacity: Math.min(pullDistance / PULL_THRESHOLD, 1) }}
+              />
+              <span className="ml-2 text-xs font-mono text-muted-foreground">
+                {isRefreshing ? "Refreshing…" : pullDistance >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh"}
+              </span>
+            </div>
+          )}
+
+          <div
+            ref={contentRef}
+            className="flex-1 overflow-auto p-4 lg:p-8 scrollbar-cyber"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            {hasModuleAccess("exposure") && currentTab === "exposure" && <ExposureEngine />}
+            {hasModuleAccess("correlation") && currentTab === "correlation" && <CorrelationMatrix />}
+            {hasModuleAccess("erasure") && currentTab === "erasure" && <ErasureOrchestrator />}
+            {hasModuleAccess("investigations") && currentTab === "investigations" && <InvestigationTracker />}
+            {hasModuleAccess("knowledge") && currentTab === "knowledge" && <KnowledgeBase />}
+            {hasModuleAccess("briefing") && currentTab === "briefing" && <ThreatBriefing />}
+            {hasModuleAccess("chat") && currentTab === "chat" && <ThreatChat />}
+            {hasModuleAccess("heatmap") && currentTab === "heatmap" && <ThreatHeatmap />}
+            {hasModuleAccess("social-monitor") && currentTab === "social-monitor" && <SocialMediaMonitor />}
+            {hasModuleAccess("dark-web") && currentTab === "dark-web" && <DarkWebMonitor />}
+            {hasModuleAccess("ato") && currentTab === "ato" && <AccountTakeover />}
+            {hasModuleAccess("email") && currentTab === "email" && <EmailAuth />}
+            {hasModuleAccess("stats") && currentTab === "stats" && <ThreatStatistics />}
+            {hasModuleAccess("urgent") && currentTab === "urgent" && <UrgentThreatsNews />}
+            {hasModuleAccess("spam-traps") && currentTab === "spam-traps" && <SpamTrapIntel />}
+            {hasModuleAccess("admin") && currentTab === "admin" && <AdminPanel />}
+          </div>
+        </main>
+      </div>
+    </>
   );
 };
 

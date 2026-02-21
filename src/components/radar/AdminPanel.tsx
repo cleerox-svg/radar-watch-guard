@@ -3,7 +3,7 @@ import {
   UserPlus, Shield, Trash2, Loader2, Users, Copy, Database, Activity,
   TrendingUp, BarChart3, Rss, Play, CheckCircle2, AlertTriangle,
   Settings, Plus, Save, X, ChevronDown, ChevronUp, Pencil,
-  Link2, Zap, Lock, ShieldCheck,
+  Link2, Zap, Lock, ShieldCheck, LogOut, Clock, Eye,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -788,6 +788,144 @@ function TeamManager() {
   );
 }
 
+// ─── Session Management ───
+function SessionManager() {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const [sessionsRes, profilesRes] = await Promise.all([
+      supabase.from("session_events").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("profiles").select("user_id, display_name, idle_timeout_minutes, revoked_at"),
+    ]);
+    setSessions(sessionsRes.data || []);
+    setUsers(profilesRes.data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleForceLogout = async (userId: string) => {
+    setRevoking(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("revoke-sessions", {
+        body: { action: "force_logout", target_user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Sessions revoked", { description: data?.message });
+      fetchData();
+    } catch (err: any) {
+      toast.error("Revocation failed", { description: err.message });
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  const eventTypeColors: Record<string, string> = {
+    login: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    logout: "text-muted-foreground bg-muted/50 border-border",
+    force_logout: "text-destructive bg-destructive/10 border-destructive/20",
+    ato_auto_revoke: "text-destructive bg-destructive/10 border-destructive/20",
+    idle_timeout: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Force Logout */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <LogOut className="w-5 h-5 text-destructive" />Force Logout Users
+          </CardTitle>
+          <p className="text-[10px] text-muted-foreground">
+            Instantly revoke all active sessions for a user across all devices.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((u) => (
+                <div key={u.user_id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2.5">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                    {(u.display_name || "?")[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{u.display_name || "Unnamed"}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Timeout: {u.idle_timeout_minutes ?? 30}m
+                      </span>
+                      {u.revoked_at && (
+                        <span className="text-[10px] text-destructive">
+                          Last revoked: {new Date(u.revoked_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={revoking === u.user_id}
+                    onClick={() => handleForceLogout(u.user_id)}
+                    className="text-xs gap-1.5 h-7"
+                  >
+                    {revoking === u.user_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
+                    Revoke
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Session Audit Log */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Eye className="w-5 h-5 text-primary" />Session Audit Log
+          </CardTitle>
+          <p className="text-[10px] text-muted-foreground">
+            Recent authentication events across all users.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : sessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No session events recorded yet.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[400px] overflow-y-auto scrollbar-cyber">
+              {sessions.map((evt) => {
+                const userName = users.find((u) => u.user_id === evt.user_id)?.display_name || evt.user_id.slice(0, 8);
+                const colorClass = eventTypeColors[evt.event_type] || "text-muted-foreground bg-muted/50 border-border";
+                return (
+                  <div key={evt.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2">
+                    <span className={`text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded-full border ${colorClass}`}>
+                      {evt.event_type.replace("_", " ")}
+                    </span>
+                    <span className="text-xs text-foreground font-medium truncate">{userName}</span>
+                    <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+                      {new Date(evt.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main AdminPanel ───
 export function AdminPanel() {
   return (
@@ -795,6 +933,9 @@ export function AdminPanel() {
       <TabsList className="bg-card border border-border">
         <TabsTrigger value="team" className="gap-1.5 text-xs">
           <Users className="w-3.5 h-3.5" /> Team
+        </TabsTrigger>
+        <TabsTrigger value="sessions" className="gap-1.5 text-xs">
+          <Clock className="w-3.5 h-3.5" /> Sessions
         </TabsTrigger>
         <TabsTrigger value="system" className="gap-1.5 text-xs">
           <Database className="w-3.5 h-3.5" /> System
@@ -810,6 +951,10 @@ export function AdminPanel() {
       <TabsContent value="team" className="space-y-6">
         <TeamManager />
         <AccessGroupsManager />
+      </TabsContent>
+
+      <TabsContent value="sessions">
+        <SessionManager />
       </TabsContent>
 
       <TabsContent value="system" className="space-y-6">
