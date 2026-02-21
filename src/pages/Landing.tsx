@@ -4,10 +4,11 @@
  */
 
 import { Link } from "react-router-dom";
-import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3 } from "lucide-react";
+import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3, UserCircle, LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -89,6 +90,7 @@ const fadeUp = {
 };
 
 export default function Landing() {
+  const { user } = useAuth();
   /** Live threat count from the database */
   const { data: threatCount } = useQuery({
     queryKey: ["threat_count_landing"],
@@ -131,12 +133,29 @@ export default function Landing() {
                 Free Scan
               </Button>
             </Link>
-            <Link to="/login">
-              <Button size="sm" className="text-xs gap-1.5">
-                Sign In
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1.5">
+                    <UserCircle className="w-3.5 h-3.5" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link to="/dashboard">
+                  <Button size="sm" className="text-xs gap-1.5">
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    Dashboard
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button size="sm" className="text-xs gap-1.5">
+                  Sign In
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
