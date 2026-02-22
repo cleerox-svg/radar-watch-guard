@@ -20,7 +20,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 /** Feed worker configuration — priority 1 = highest */
 const FEED_WORKERS = [
   // Tier 1 — Critical (every 5 min)
-  { source: 'urlhaus',       function_name: 'ingest-threats',             priority: 1, batch_size: 500, requires_key: false },
+  { source: 'urlhaus',       function_name: 'ingest-threats',             priority: 1, batch_size: 500, requires_key: true, key_env: 'ABUSECH_AUTH_KEY' },
   { source: 'phishtank',     function_name: 'ingest-threats',             priority: 1, batch_size: 500, requires_key: false },
   { source: 'ransomwatch',   function_name: 'ingest-ransomwatch',         priority: 1, batch_size: 500, requires_key: false },
   { source: 'cisa_kev',      function_name: 'ingest-cisa-kev',            priority: 1, batch_size: 100, requires_key: false },
@@ -37,7 +37,7 @@ const FEED_WORKERS = [
   { source: 'otx',           function_name: 'ingest-otx-pulses',          priority: 3, batch_size: 50,  requires_key: false },
   { source: 'sans_isc',      function_name: 'ingest-sans-isc',            priority: 3, batch_size: 100, requires_key: false },
   { source: 'blocklist_de',  function_name: 'ingest-blocklist-de',        priority: 3, batch_size: 400, requires_key: false },
-  { source: 'ssl_blocklist', function_name: 'ingest-ssl-blocklist',       priority: 3, batch_size: 300, requires_key: false },
+  // ssl_blocklist removed — deprecated by abuse.ch on 2025-01-03
   { source: 'greynoise',     function_name: 'ingest-greynoise',           priority: 3, batch_size: 45,  requires_key: true, key_env: 'GREYNOISE_API_KEY' },
   // Tier 5 — Rate-limited API feeds (dedicated cron jobs, NOT called by tier crons)
   { source: 'abuseipdb',     function_name: 'ingest-abuseipdb',           priority: 5, batch_size: 200, requires_key: true, key_env: 'ABUSEIPDB_API_KEY' },

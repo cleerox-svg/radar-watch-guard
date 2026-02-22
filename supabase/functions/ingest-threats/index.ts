@@ -125,15 +125,26 @@ Deno.serve(async (req) => {
 
     // ── URLhaus Feed ──
     if (source === 'urlhaus' || !source) {
+      const authKey = Deno.env.get('ABUSECH_AUTH_KEY');
+      if (!authKey) {
+        console.warn('URLhaus: ABUSECH_AUTH_KEY not set — abuse.ch requires authentication since June 2025');
+      }
+
       let data: any = {};
+      const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      if (authKey) headers['Auth-Key'] = authKey;
+
       try {
         const res = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers,
           body: `limit=${batchSize}`,
         });
         const text = await res.text();
-        console.log(`URLhaus POST response length: ${text.length}, status: ${res.status}`);
+        console.log(`URLhaus POST status: ${res.status}, length: ${text.length}`);
+        if (res.status === 401) {
+          console.error('URLhaus: 401 Unauthorized — check ABUSECH_AUTH_KEY');
+        }
         try { data = JSON.parse(text); } catch { console.error('URLhaus parse error, first 200 chars:', text.substring(0, 200)); }
       } catch (e) {
         console.error('URLhaus POST failed:', e);
@@ -141,10 +152,12 @@ Deno.serve(async (req) => {
 
       if (!data.urls || data.urls.length === 0) {
         console.log('URLhaus POST returned no urls, trying GET fallback...');
+        const getHeaders: Record<string, string> = {};
+        if (authKey) getHeaders['Auth-Key'] = authKey;
         try {
-          const res2 = await fetch(`https://urlhaus-api.abuse.ch/v1/urls/recent/limit/${batchSize}/`);
+          const res2 = await fetch(`https://urlhaus-api.abuse.ch/v1/urls/recent/limit/${batchSize}/`, { headers: getHeaders });
           const text2 = await res2.text();
-          console.log(`URLhaus GET response length: ${text2.length}, status: ${res2.status}`);
+          console.log(`URLhaus GET status: ${res2.status}, length: ${text2.length}`);
           try { data = JSON.parse(text2); } catch { console.error('URLhaus GET parse error, first 200 chars:', text2.substring(0, 200)); }
         } catch (e) {
           console.error('URLhaus GET failed:', e);
