@@ -33,16 +33,19 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const keywords = body.keywords || BRAND_KEYWORDS.slice(0, 3); // Limit to 3 per run
+    const keywords = body.keywords || BRAND_KEYWORDS.slice(0, 2); // Limit to 2 per run to avoid timeout
     let allRecords: any[] = [];
 
     for (const keyword of keywords) {
       try {
-        // crt.sh provides certificate transparency search
+        // crt.sh provides certificate transparency search — add timeout to prevent edge fn timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s per keyword
         const res = await fetch(
           `https://crt.sh/?q=%25${encodeURIComponent(keyword)}%25&output=json&exclude=expired`,
-          { headers: { "User-Agent": "LRX-Radar/1.0" } }
+          { headers: { "User-Agent": "LRX-Radar/1.0" }, signal: controller.signal }
         );
+        clearTimeout(timeoutId);
         if (!res.ok) { console.error(`crt.sh ${keyword} fetch error ${res.status}`); continue; }
 
         const certs = await res.json();
@@ -75,7 +78,11 @@ Deno.serve(async (req) => {
         }).filter(Boolean);
         allRecords.push(...records);
       } catch (e) {
-        console.error(`CertStream ${keyword} error:`, e instanceof Error ? e.message : e);
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          console.warn(`CertStream/${keyword}: request timed out after 15s, skipping`);
+        } else {
+          console.error(`CertStream ${keyword} error:`, e instanceof Error ? e.message : e);
+        }
       }
     }
 
