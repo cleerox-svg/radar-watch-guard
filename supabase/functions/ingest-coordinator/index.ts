@@ -37,7 +37,8 @@ const FEED_WORKERS = [
   { source: 'otx',           function_name: 'ingest-otx-pulses',          priority: 3, batch_size: 50,  requires_key: false },
   { source: 'sans_isc',      function_name: 'ingest-sans-isc',            priority: 3, batch_size: 100, requires_key: false },
   { source: 'blocklist_de',  function_name: 'ingest-blocklist-de',        priority: 3, batch_size: 400, requires_key: false },
-  // ssl_blocklist removed — deprecated by abuse.ch on 2025-01-03
+  // ssl_blocklist removed — deprecated by abuse.ch on 2025-01-03, replaced by ipsum
+  { source: 'ipsum',          function_name: 'ingest-ipsum',               priority: 3, batch_size: 300, requires_key: false },
   { source: 'greynoise',     function_name: 'ingest-greynoise',           priority: 3, batch_size: 45,  requires_key: true, key_env: 'GREYNOISE_API_KEY' },
   // Tier 5 — Rate-limited API feeds (dedicated cron jobs, NOT called by tier crons)
   { source: 'abuseipdb',     function_name: 'ingest-abuseipdb',           priority: 5, batch_size: 200, requires_key: true, key_env: 'ABUSEIPDB_API_KEY' },

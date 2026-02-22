@@ -894,6 +894,7 @@ export type Database = {
         | "google_safebrowsing"
         | "virustotal"
         | "ipqualityscore"
+        | "ipsum"
       threat_severity: "critical" | "high" | "medium" | "low" | "info"
       threat_status: "active" | "investigating" | "mitigated" | "resolved"
     }
@@ -1049,6 +1050,7 @@ export const Constants = {
         "google_safebrowsing",
         "virustotal",
         "ipqualityscore",
+        "ipsum",
       ],
       threat_severity: ["critical", "high", "medium", "low", "info"],
       threat_status: ["active", "investigating", "mitigated", "resolved"],
