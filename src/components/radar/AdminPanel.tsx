@@ -24,8 +24,9 @@ import {
   triggerGoogleSafeBrowsingIngestion, triggerGreyNoiseIngestion,
   triggerPhishTankCommunityIngestion, triggerAbuseIPDBIngestion,
   triggerVirusTotalIngestion, triggerIPQualityScoreIngestion,
-  useFeedSchedules,
+  useFeedSchedules, useIngestionJobsFreshness,
 } from "@/hooks/use-threat-data";
+import { formatDistanceToNow } from "date-fns";
 import { AdminIntegrations } from "@/components/radar/AdminIntegrations";
 import { AdminAutomations } from "@/components/radar/AdminAutomations";
 
@@ -349,6 +350,12 @@ function FeedManager() {
   const [runningFeeds, setRunningFeeds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
   const { data: schedules } = useFeedSchedules();
+  const { data: jobsFreshness } = useIngestionJobsFreshness();
+
+  const getJobInfo = (feedId: string) => {
+    if (!jobsFreshness) return null;
+    return jobsFreshness.find((j: any) => j.feed_source === feedId);
+  };
 
   const runFeed = async (feed: FeedDef) => {
     setRunningFeeds((prev) => new Set(prev).add(feed.id));
@@ -384,9 +391,24 @@ function FeedManager() {
     const isRunning = runningFeeds.has(feed.id);
     const result = results[feed.id];
     const schedInfo = getScheduleInfo(feed.id);
+    const jobInfo = getJobInfo(feed.id);
+    const lastPolled = jobInfo?.completed_at || jobInfo?.created_at || schedInfo?.last_run_at;
+    const lastStatus = jobInfo?.status;
+    const isSuccess = lastStatus === "completed";
+    const isFailed = lastStatus === "failed";
 
     return (
       <div key={feed.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-2.5">
+        {/* Status indicator */}
+        <div className="shrink-0">
+          {lastStatus ? (
+            isSuccess ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
+            isFailed ? <X className="w-3.5 h-3.5 text-destructive" /> :
+            <Clock className="w-3.5 h-3.5 text-yellow-400" />
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-full border border-border" />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-xs font-medium text-foreground">{feed.name}</p>
@@ -408,11 +430,16 @@ function FeedManager() {
           {feed.rateLimitNote && (
             <p className="text-[9px] text-muted-foreground/60 italic">{feed.rateLimitNote}</p>
           )}
-          {schedInfo?.last_run_at && (
-            <p className="text-[9px] text-muted-foreground/60">
-              Last: {new Date(schedInfo.last_run_at).toLocaleString()} · {schedInfo.last_records ?? 0} records
-            </p>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {lastPolled && (
+              <p className="text-[9px] text-muted-foreground/60">
+                Polled {formatDistanceToNow(new Date(lastPolled), { addSuffix: true })}
+              </p>
+            )}
+            {jobInfo?.records_processed != null && jobInfo.records_processed > 0 && (
+              <p className="text-[9px] text-muted-foreground/60">· {jobInfo.records_processed} records</p>
+            )}
+          </div>
           {result && <p className={`text-[10px] mt-0.5 ${result.success ? "text-emerald-400" : "text-destructive"}`}>{result.message}</p>}
         </div>
         <Button size="sm" variant="ghost" disabled={isRunning} onClick={() => runFeed(feed)} className="shrink-0 h-7 w-7 p-0">
