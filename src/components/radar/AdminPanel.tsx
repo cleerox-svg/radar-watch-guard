@@ -318,7 +318,7 @@ interface FeedDef {
 
 const FEEDS: FeedDef[] = [
   // Open feeds — auto-pull via cron, no key needed
-  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus"), schedule: "*/15 * * * *", type: "open" },
+  { id: "urlhaus", name: "URLhaus", desc: "Malware URLs (Abuse.ch)", trigger: () => triggerIngestion("urlhaus"), schedule: "*/15 * * * *", type: "api", apiKeyName: "ABUSECH_AUTH_KEY", rateLimitNote: "Requires abuse.ch auth (free)" },
   { id: "openphish", name: "OpenPhish", desc: "Phishing URLs", trigger: () => triggerIngestion("openphish"), schedule: "*/15 * * * *", type: "open" },
   { id: "phishtank", name: "PhishTank", desc: "Verified phishing DB", trigger: () => triggerIngestion("phishtank"), schedule: "*/15 * * * *", type: "open" },
   { id: "cisa_kev", name: "CISA KEV", desc: "Known Exploited Vulns", trigger: triggerCisaKevIngestion, schedule: "0 */6 * * *", type: "open" },
@@ -331,7 +331,7 @@ const FEEDS: FeedDef[] = [
   { id: "feodo", name: "Feodo Tracker", desc: "Emotet/Dridex/TrickBot C2", trigger: triggerFeodoIngestion, schedule: "0 */3 * * *", type: "open" },
   { id: "malbazaar", name: "MalBazaar", desc: "Malware sample hashes & YARA", trigger: triggerMalBazaarIngestion, schedule: "0 */6 * * *", type: "open" },
   { id: "blocklist_de", name: "Blocklist.de", desc: "Attacking IPs (SSH/mail/web)", trigger: triggerBlocklistDeIngestion, schedule: "0 */4 * * *", type: "open" },
-  { id: "ssl_blocklist", name: "SSL Blocklist", desc: "Botnet SSL certificates", trigger: triggerSslBlocklistIngestion, schedule: "0 */6 * * *", type: "open" },
+  { id: "ssl_blocklist", name: "SSL Blocklist ⚠️ DEPRECATED", desc: "Deprecated by abuse.ch (Jan 2025)", trigger: triggerSslBlocklistIngestion, schedule: "—", type: "open" },
   { id: "spamhaus_drop", name: "Spamhaus DROP", desc: "Known spam/botnet CIDR blocks", trigger: triggerSpamhausDropIngestion, schedule: "0 */12 * * *", type: "open" },
   { id: "certstream", name: "CertStream", desc: "Certificate transparency monitoring", trigger: triggerCertstreamIngestion, schedule: "*/30 * * * *", type: "open" },
   { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "*/15 * * * *", type: "open" },
