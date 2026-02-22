@@ -108,9 +108,25 @@ export default function Landing() {
     refetchInterval: 60000,
   });
 
+  /** Dynamic feed count from feed_schedules */
+  const { data: feedCount } = useQuery({
+    queryKey: ["feed_count_landing"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("feed_schedules")
+        .select("*", { count: "exact", head: true })
+        .eq("enabled", true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 120000,
+  });
+
+  const feedLabel = feedCount != null && feedCount > 0 ? `${feedCount}+` : "24+";
+
   const stats = [
     { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Tracked" },
-    { value: "24+", label: "Intelligence Feeds" },
+    { value: feedLabel, label: "Intelligence Feeds" },
     { value: "3", label: "Core Modules" },
     { value: "24/7", label: "Continuous Monitoring" },
   ];
@@ -275,7 +291,7 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: "01", title: "Detect", desc: "Continuous ingestion from 10+ threat feeds with automated brand exposure scanning and dark web monitoring.", color: "text-cyan-500" },
+              { step: "01", title: "Detect", desc: `Continuous ingestion from ${feedLabel} threat feeds with automated brand exposure scanning and dark web monitoring.`, color: "text-cyan-500" },
               { step: "02", title: "Correlate", desc: "AI connects signals across DMARC, ATO, social IOCs, and breach data — surfacing campaigns humans would miss.", color: "text-amber-500" },
             ].map((item, i) => (
               <motion.div
