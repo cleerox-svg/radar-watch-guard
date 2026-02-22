@@ -331,7 +331,7 @@ const FEEDS: FeedDef[] = [
   { id: "feodo", name: "Feodo Tracker", desc: "Emotet/Dridex/TrickBot C2", trigger: triggerFeodoIngestion, schedule: "0 */3 * * *", type: "open" },
   { id: "malbazaar", name: "MalBazaar", desc: "Malware sample hashes & YARA", trigger: triggerMalBazaarIngestion, schedule: "0 */6 * * *", type: "open" },
   { id: "blocklist_de", name: "Blocklist.de", desc: "Attacking IPs (SSH/mail/web)", trigger: triggerBlocklistDeIngestion, schedule: "0 */4 * * *", type: "open" },
-  { id: "ssl_blocklist", name: "SSL Blocklist ⚠️ DEPRECATED", desc: "Deprecated by abuse.ch (Jan 2025)", trigger: triggerSslBlocklistIngestion, schedule: "—", type: "open" },
+  { id: "ipsum", name: "IPsum Blocklist", desc: "Aggregated malicious IPs (30+ sources, level 3+)", trigger: () => supabase.functions.invoke("ingest-ipsum").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "0 */6 * * *", type: "open" },
   { id: "spamhaus_drop", name: "Spamhaus DROP", desc: "Known spam/botnet CIDR blocks", trigger: triggerSpamhausDropIngestion, schedule: "0 */12 * * *", type: "open" },
   { id: "certstream", name: "CertStream", desc: "Certificate transparency monitoring", trigger: triggerCertstreamIngestion, schedule: "*/30 * * * *", type: "open" },
   { id: "tweetfeed", name: "TweetFeed", desc: "IOCs from X/Twitter", trigger: () => supabase.functions.invoke("ingest-tweetfeed").then(r => { if (r.error) throw r.error; return r.data; }), schedule: "*/15 * * * *", type: "open" },
