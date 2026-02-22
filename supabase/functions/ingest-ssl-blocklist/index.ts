@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
     if (!res.ok) throw new Error(`SSL Blocklist fetch error ${res.status}`);
 
     const text = await res.text();
-    const lines = text.split("\n").filter(l => l.trim() && !l.startsWith("#"));
-    console.log(`SSL Blocklist returned ${lines.length} entries`);
+    const lines = text.split("\n").filter(l => l.trim() && !l.startsWith("#") && !l.startsWith(";"));
+    console.log(`SSL Blocklist returned ${lines.length} entries (raw lines: ${text.split("\n").length})`);
 
     // CSV format: first_seen,dst_ip,dst_port
     const records = lines.slice(0, 300).map(line => {

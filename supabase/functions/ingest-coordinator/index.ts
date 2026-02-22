@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
         if (jobId) {
           await supabase.from('ingestion_jobs').update({
             status: result.success ? 'completed' : 'failed',
-            records_processed: result.fetched || result.upserted || result.new || 0,
+            records_processed: result.fetched || result.upserted || result.new || result.ports || 0,
             error_message: result.error || null,
             completed_at: new Date().toISOString(),
           }).eq('id', jobId);

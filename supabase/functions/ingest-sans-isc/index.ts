@@ -85,8 +85,11 @@ Deno.serve(async (req) => {
       console.log("Daily summary fetch skipped:", e);
     }
 
+    // Update feed_schedules
+    await sb.from("feed_schedules").update({ last_run_at: new Date().toISOString(), last_status: "success", last_records: ports.length }).eq("feed_source", "sans_isc");
+
     return new Response(
-      JSON.stringify({ success: true, ports: ports.length, dailySummary: summaryCount }),
+      JSON.stringify({ success: true, fetched: ports.length, upserted: records.length, ports: ports.length, dailySummary: summaryCount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

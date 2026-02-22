@@ -133,36 +133,45 @@ Deno.serve(async (req) => {
           body: `limit=${batchSize}`,
         });
         const text = await res.text();
-        try { data = JSON.parse(text); } catch { console.error('URLhaus parse error'); }
+        console.log(`URLhaus POST response length: ${text.length}, status: ${res.status}`);
+        try { data = JSON.parse(text); } catch { console.error('URLhaus parse error, first 200 chars:', text.substring(0, 200)); }
       } catch (e) {
         console.error('URLhaus POST failed:', e);
       }
 
-      if (!data.urls) {
+      if (!data.urls || data.urls.length === 0) {
+        console.log('URLhaus POST returned no urls, trying GET fallback...');
         try {
           const res2 = await fetch(`https://urlhaus-api.abuse.ch/v1/urls/recent/limit/${batchSize}/`);
           const text2 = await res2.text();
-          try { data = JSON.parse(text2); } catch { console.error('URLhaus GET parse error'); }
+          console.log(`URLhaus GET response length: ${text2.length}, status: ${res2.status}`);
+          try { data = JSON.parse(text2); } catch { console.error('URLhaus GET parse error, first 200 chars:', text2.substring(0, 200)); }
         } catch (e) {
           console.error('URLhaus GET failed:', e);
         }
       }
 
       fetchedCount = data.urls?.length || 0;
+      console.log(`URLhaus fetched ${fetchedCount} URLs`);
       if (data.urls) {
-        records = data.urls.slice(0, batchSize).map((u: any) => ({
-          brand: u.tags?.join(', ') || 'Unknown',
-          domain: new URL(u.url).hostname,
-          attack_type: u.threat || 'malware_download',
-          confidence: u.urlhaus_reference ? 85 : 60,
-          severity: u.threat === 'malware_download' ? 'high' : 'medium',
-          status: u.url_status === 'online' ? 'active' : 'mitigated',
-          source: 'urlhaus',
-          country: u.country || null,
-          metadata: { urlhaus_id: u.id, url: u.url, tags: u.tags },
-          first_seen: u.date_added || new Date().toISOString(),
-          last_seen: new Date().toISOString(),
-        }));
+        records = data.urls.slice(0, batchSize).map((u: any) => {
+          let hostname = 'unknown';
+          try { hostname = new URL(u.url).hostname; } catch { /* malformed URL */ }
+          if (hostname === 'unknown') return null;
+          return {
+            brand: u.tags?.join(', ') || 'Unknown',
+            domain: hostname,
+            attack_type: u.threat || 'malware_download',
+            confidence: u.urlhaus_reference ? 85 : 60,
+            severity: u.threat === 'malware_download' ? 'high' : 'medium',
+            status: u.url_status === 'online' ? 'active' : 'mitigated',
+            source: 'urlhaus',
+            country: u.country || null,
+            metadata: { urlhaus_id: u.id, url: u.url, tags: u.tags },
+            first_seen: u.date_added || new Date().toISOString(),
+            last_seen: new Date().toISOString(),
+          };
+        }).filter(Boolean);
       }
     }
 
