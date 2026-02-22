@@ -72,6 +72,8 @@ const sourceLabels: Record<string, string> = {
   ato_event: "Account Takeover",
   social_ioc: "Social IOC",
   breach_check: "Breach Check",
+  briefing: "AI Briefing",
+  correlation_alert: "Correlation Alert",
 };
 
 export function InvestigationTracker() {

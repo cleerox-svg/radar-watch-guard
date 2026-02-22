@@ -1,10 +1,11 @@
 /**
  * SocialMediaMonitor.tsx — Social Media IOC Feed Monitor.
  * Displays IOCs collected from TweetFeed (infosec Twitter community)
- * with filtering, tag clouds, and IOC type breakdowns.
+ * with filtering, tag clouds, IOC type breakdowns, and cross-references
+ * to known threat infrastructure and Tor exit nodes.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import { RefreshCw, Search, Hash, Globe, Server, FileCode, AlertTriangle, TrendingUp, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useThreats, useTorExitNodes } from "@/hooks/use-threat-data";
+import { CrossReferencePanel, buildThreatCrossRefs, buildTorCrossRefs } from "./CrossReferencePanel";
 
 function useSocialIocs() {
   return useQuery({
@@ -49,10 +52,22 @@ const confidenceColors: Record<string, string> = {
 
 export function SocialMediaMonitor() {
   const { data: iocs, isLoading } = useSocialIocs();
+  const { data: threats } = useThreats();
+  const { data: torNodes } = useTorExitNodes();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isIngesting, setIsIngesting] = useState(false);
+
+  // Cross-references: IOC domains/IPs matching threat infrastructure & Tor
+  const crossRefs = useMemo(() => {
+    const iocDomains = (iocs || []).filter(i => i.ioc_type === "domain").map(i => i.ioc_value);
+    const iocIPs = (iocs || []).filter(i => i.ioc_type === "ip").map(i => i.ioc_value);
+    return {
+      threatDomains: buildThreatCrossRefs(iocDomains, threats, "domain"),
+      torIPs: buildTorCrossRefs(iocIPs, torNodes),
+    };
+  }, [iocs, threats, torNodes]);
 
   const handleIngest = async (timeRange: string = "week") => {
     setIsIngesting(true);
@@ -160,6 +175,12 @@ export function SocialMediaMonitor() {
             </Card>
           </motion.div>
         ))}
+      </div>
+
+      {/* Cross-Reference Panels */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <CrossReferencePanel title="IOC Domains Matching Known Threats" references={crossRefs.threatDomains} />
+        <CrossReferencePanel title="IOC IPs on Tor Exit Nodes" references={crossRefs.torIPs} />
       </div>
 
       <Tabs defaultValue="feed" className="space-y-4">

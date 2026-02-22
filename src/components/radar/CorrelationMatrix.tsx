@@ -36,6 +36,16 @@ interface AutoAction {
   rationale: string;
 }
 
+interface CorrelationAlert {
+  title: string;
+  severity: string;
+  data_sources: string[];
+  evidence: string[];
+  impact: string;
+  remediation_options: string[];
+  confidence: string;
+}
+
 interface IntelResult {
   correlations: {
     total_threats_7d: number;
@@ -53,19 +63,33 @@ interface IntelResult {
     social_hashes: number;
     correlated_social_threats: number;
     correlated_social_ips: number;
+    social_via_tor: number;
     trending_tags: [string, number][];
     breach_checks_7d: number;
     high_risk_breaches: number;
     correlated_breach_brands: number;
+    // New correlations
+    spam_traps_7d: number;
+    spam_matching_threats: number;
+    spam_matching_tor: number;
+    spam_matching_brands: number;
+    spam_dmarc_overlap: number;
+    tor_nodes_tracked: number;
+    tor_matching_threats: number;
+    ato_via_tor: number;
+    open_investigations: number;
+    pending_erasures: number;
   };
   ai_analysis: {
     convergence_score: number;
     convergence_grade: string;
     active_campaigns: Campaign[];
+    correlation_alerts?: CorrelationAlert[];
     gap_analysis: { blind_spots: string[]; coverage_strengths: string[] };
     auto_actions: AutoAction[];
     executive_summary: string;
   } | null;
+  tickets_created?: number;
   generated_at: string;
 }
 
@@ -87,6 +111,8 @@ export function CorrelationMatrix() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedCampaign, setExpandedCampaign] = useState<number | null>(null);
+  const [expandedAlert, setExpandedAlert] = useState<number | null>(null);
+  const [autoTickets, setAutoTickets] = useState(false);
 
   const { data: threats } = useThreats();
   const { data: emailReports } = useEmailAuthReports();
@@ -136,7 +162,7 @@ export function CorrelationMatrix() {
     return signals.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 20);
   }, [threats, emailReports, atoEvents]);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (createTickets = false) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -146,11 +172,18 @@ export function CorrelationMatrix() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ auto_create_tickets: createTickets }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Analysis failed");
       setResult(data);
+      if (data.tickets_created > 0) {
+        import("sonner").then(({ toast }) => {
+          toast.success(`${data.tickets_created} correlation alert ticket(s) created`, {
+            description: "Review them in Active Investigations",
+          });
+        });
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -176,10 +209,21 @@ export function CorrelationMatrix() {
                 Unified cross-signal campaign detection — tracks entities across the attack lifecycle, not individual events.
               </p>
             </div>
-            <Button onClick={runAnalysis} disabled={isLoading} className="gap-2">
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              {isLoading ? "Correlating..." : result ? "Refresh" : "Run Correlation Analysis"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoTickets}
+                  onChange={(e) => setAutoTickets(e.target.checked)}
+                  className="rounded border-border"
+                />
+                Auto-create alert tickets
+              </label>
+              <Button onClick={() => runAnalysis(autoTickets)} disabled={isLoading} className="gap-2">
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {isLoading ? "Correlating..." : result ? "Refresh" : "Run Correlation Analysis"}
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -244,14 +288,18 @@ export function CorrelationMatrix() {
             )}
           </div>
 
-          {/* Correlation Stats */}
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {/* Correlation Stats — expanded with new cross-correlations */}
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2">
             <StatCard icon={AlertTriangle} label="Active High" value={corr?.active_high_threats || 0} color="text-red-500" />
             <StatCard icon={Activity} label="DMARC↔Threat" value={corr?.correlated_dmarc_threats || 0} color="text-orange-500" />
             <StatCard icon={Target} label="ATO↔Threat" value={corr?.correlated_ato_threats || 0} color="text-yellow-500" />
             <StatCard icon={Radio} label="Social↔Threat" value={(corr?.correlated_social_threats || 0) + (corr?.correlated_social_ips || 0)} color="text-cyan-500" />
-            <StatCard icon={Skull} label="High-Risk Breaches" value={corr?.high_risk_breaches || 0} color="text-rose-500" />
+            <StatCard icon={Skull} label="Breaches" value={corr?.high_risk_breaches || 0} color="text-rose-500" />
             <StatCard icon={Globe} label="KEV Alerts" value={corr?.kev_alerts || 0} color="text-blue-500" />
+            <StatCard icon={AlertTriangle} label="Spam↔Threat" value={corr?.spam_matching_threats || 0} color="text-amber-500" />
+            <StatCard icon={Wifi} label="Tor↔Threat" value={corr?.tor_matching_threats || 0} color="text-purple-500" />
+            <StatCard icon={Skull} label="ATO via Tor" value={corr?.ato_via_tor || 0} color="text-pink-500" />
+            <StatCard icon={Activity} label="Spam↔DMARC" value={corr?.spam_dmarc_overlap || 0} color="text-emerald-500" />
           </div>
 
           {/* Campaign Alerts */}
@@ -312,7 +360,84 @@ export function CorrelationMatrix() {
             </Card>
           )}
 
-          {/* Automated Actions */}
+          {/* Correlation Alerts — Enriched tickets for analyst review */}
+          {ai?.correlation_alerts && ai.correlation_alerts.length > 0 && (
+            <Card className="border-amber-500/20 bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  Cross-Correlation Alerts
+                  <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 font-mono">
+                    {ai.correlation_alerts.length} DETECTED
+                  </span>
+                  {result?.tickets_created && result.tickets_created > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono">
+                      {result.tickets_created} TICKETS CREATED
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ai.correlation_alerts.map((alert, i) => {
+                  const sevColor = alert.severity === "critical" ? "border-red-500/30 bg-red-500/10" :
+                    alert.severity === "high" ? "border-orange-500/30 bg-orange-500/10" :
+                    alert.severity === "medium" ? "border-yellow-500/30 bg-yellow-500/10" :
+                    "border-border bg-muted/30";
+                  return (
+                    <div key={i} className={cn("rounded-lg border overflow-hidden", sevColor)}>
+                      <button
+                        onClick={() => setExpandedAlert(expandedAlert === i ? null : i)}
+                        className="w-full flex items-center gap-3 p-4 text-left hover:bg-accent/20 transition-colors"
+                      >
+                        <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform shrink-0", expandedAlert === i && "rotate-90")} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-foreground">{alert.title}</h4>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{alert.impact}</p>
+                        </div>
+                        <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
+                          alert.severity === "critical" ? "border-red-500/30 text-red-500" :
+                          alert.severity === "high" ? "border-orange-500/30 text-orange-500" :
+                          "border-yellow-500/30 text-yellow-500"
+                        )}>
+                          {alert.severity}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{alert.confidence} conf</span>
+                      </button>
+                      {expandedAlert === i && (
+                        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/50">
+                          <div className="pt-3">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Data Sources</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {alert.data_sources.map((src, j) => (
+                                <span key={j} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{src}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Evidence</p>
+                            {alert.evidence.map((ev, j) => (
+                              <p key={j} className="text-xs text-foreground flex items-start gap-1.5 mb-1">
+                                <Eye className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" /> {ev}
+                              </p>
+                            ))}
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Remediation Options</p>
+                            {alert.remediation_options.map((rem, j) => (
+                              <p key={j} className="text-xs text-foreground flex items-start gap-1.5 mb-1">
+                                <ArrowRight className="w-3 h-3 text-primary mt-0.5 shrink-0" /> {rem}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
           {ai?.auto_actions && ai.auto_actions.length > 0 && (
             <Card className="border-border bg-card">
               <CardHeader className="pb-2">
