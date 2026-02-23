@@ -340,7 +340,20 @@ export function ThreatBriefing() {
 
   useEffect(() => {
     loadCached();
-    loadHistory();
+    // Load history after a brief delay to ensure auth session is ready
+    const loadWithRetry = async () => {
+      await loadHistory();
+      // If no history found, retry once after auth may have initialized
+      setTimeout(async () => {
+        const { data } = await supabase
+          .from('threat_briefings')
+          .select('id, generated_at, briefing, data_summary')
+          .order('generated_at', { ascending: false })
+          .limit(20);
+        if (data && data.length > 0) setHistory(data as unknown as HistoryEntry[]);
+      }, 1500);
+    };
+    loadWithRetry();
   }, []);
 
   const loadCached = async () => {
@@ -572,23 +585,23 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
       {/* Header */}
       <Card className="border-primary/30 bg-card">
         <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <CardTitle className="text-base lg:text-lg flex items-center gap-2">
               <Brain className="w-5 h-5 text-primary" />
               AI Threat Intelligence Briefing
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowHistory(!showHistory)}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={() => setShowHistory(!showHistory)}>
                 <History className="w-4 h-4" /> History ({history.length})
               </Button>
               {briefing?.success && (
-                <Button onClick={exportAsPdf} variant="outline" size="sm" className="gap-2">
-                  <Download className="w-4 h-4" /> Export PDF
+                <Button onClick={exportAsPdf} variant="outline" size="sm" className="gap-2 text-xs">
+                  <Download className="w-4 h-4" /> Export
                 </Button>
               )}
-              <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2">
+              <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2 text-xs flex-1 sm:flex-none">
                 <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                {loading ? "Analyzing…" : "Generate New Briefing"}
+                {loading ? "Analyzing…" : "Generate Briefing"}
               </Button>
             </div>
           </div>
