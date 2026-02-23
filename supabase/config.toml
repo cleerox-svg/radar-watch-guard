@@ -71,3 +71,30 @@ verify_jwt = false
 
 [functions.ingest-ipqualityscore]
 verify_jwt = false
+
+[functions.threat-briefing]
+verify_jwt = false
+
+[functions.analyze-threat]
+verify_jwt = false
+
+[functions.threat-chat]
+verify_jwt = false
+
+[functions.check-breach]
+verify_jwt = false
+
+[functions.scan-domain]
+verify_jwt = false
+
+[functions.converged-intel]
+verify_jwt = false
+
+[functions.generate-spam-trap-demo]
+verify_jwt = false
+
+[functions.ingest-ipsum]
+verify_jwt = false
+
+[functions.ingest-tweetfeed]
+verify_jwt = false
