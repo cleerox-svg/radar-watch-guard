@@ -2,7 +2,7 @@
  * Sidebar.tsx — Navigation filtered by user's access group module permissions.
  */
 
-import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket, MailWarning, UserCircle, UserPlus } from "lucide-react";
+import { Satellite, X, Sun, Moon, Monitor, LogOut, Scan, Zap, Shield, BookOpen, Settings, Activity, Target, Globe, Radio, Skull, Brain, MessageSquare, BarChart3, AlertTriangle, ShieldCheck, UsersRound, Ticket, MailWarning, UserCircle, UserPlus, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
@@ -23,6 +23,7 @@ export type TabKey =
   | "urgent"
   | "briefing"
   | "chat"
+  | "agents"
   | "social-monitor"
   | "dark-web"
   | "spam-traps"
@@ -55,6 +56,7 @@ const navGroups: { label: string; items: { key: TabKey; icon: typeof Globe; labe
     items: [
       { key: "briefing", icon: Brain, label: "Daily Briefing", description: "Your AI-written summary of today's threats", accent: "text-violet-500" },
       { key: "chat", icon: MessageSquare, label: "Ask the AI", description: "Get instant answers about your threat landscape", accent: "text-violet-400" },
+      { key: "agents", icon: Bot, label: "AI Agents", description: "Command center for automated threat agents", accent: "text-emerald-500" },
     ],
   },
   {

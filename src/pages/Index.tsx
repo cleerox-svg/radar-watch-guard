@@ -25,6 +25,7 @@ import { FeedAnalyticsDashboard } from "@/components/radar/FeedAnalyticsDashboar
 import { UrgentThreatsNews } from "@/components/radar/UrgentThreatsNews";
 import { ThreatBriefing } from "@/components/radar/ThreatBriefing";
 import { ThreatChat } from "@/components/radar/ThreatChat";
+import { AgentCommandCenter } from "@/components/radar/AgentCommandCenter";
 import { SocialMediaMonitor } from "@/components/radar/SocialMediaMonitor";
 import { DarkWebMonitor } from "@/components/radar/DarkWebMonitor";
 import { AdminPanel } from "@/components/radar/AdminPanel";
@@ -37,7 +38,7 @@ import { IdleTimeoutWarning } from "@/components/radar/IdleTimeoutWarning";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "spam-traps", "leads", "admin"];
+const tabOrder: TabKey[] = ["exposure", "correlation", "erasure", "investigations", "briefing", "chat", "agents", "heatmap", "social-monitor", "dark-web", "ato", "email", "stats", "urgent", "knowledge", "spam-traps", "leads", "admin"];
 
 const tabTitles: Record<TabKey, string> = {
   exposure: "Brand Exposure Overview",
@@ -47,6 +48,7 @@ const tabTitles: Record<TabKey, string> = {
   knowledge: "Knowledge Base",
   briefing: "Today's Threat Briefing",
   chat: "Ask the AI",
+  agents: "AI Agent Command Center",
   heatmap: "Global Threat Map",
   "social-monitor": "Community Threat Feed",
   "dark-web": "Dark Web Alerts",
@@ -283,6 +285,7 @@ const Index = () => {
             {hasModuleAccess("knowledge") && currentTab === "knowledge" && <KnowledgeBase />}
             {hasModuleAccess("briefing") && currentTab === "briefing" && <ThreatBriefing />}
             {hasModuleAccess("chat") && currentTab === "chat" && <ThreatChat />}
+            {hasModuleAccess("agents") && currentTab === "agents" && <AgentCommandCenter />}
             {hasModuleAccess("heatmap") && currentTab === "heatmap" && <ThreatHeatmap />}
             {hasModuleAccess("social-monitor") && currentTab === "social-monitor" && <SocialMediaMonitor />}
             {hasModuleAccess("dark-web") && currentTab === "dark-web" && <DarkWebMonitor />}

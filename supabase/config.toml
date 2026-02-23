@@ -98,3 +98,18 @@ verify_jwt = false
 
 [functions.ingest-tweetfeed]
 verify_jwt = false
+
+[functions.agent-triage]
+verify_jwt = false
+
+[functions.agent-hunt]
+verify_jwt = false
+
+[functions.agent-response]
+verify_jwt = false
+
+[functions.agent-intel]
+verify_jwt = false
+
+[functions.agent-copilot]
+verify_jwt = false
