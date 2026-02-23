@@ -1,11 +1,11 @@
 /**
- * threat-briefing — Supabase Edge Function (v3)
+ * threat-briefing — Supabase Edge Function (v4 — Streaming)
  *
- * Full data coverage (original limits) with speed optimizations:
- *   - Fastest model first (flash-lite) with 25s timeout
- *   - Persists to threat_briefings for 12hr cache + history
- *   - ?cached=true returns latest non-expired briefing instantly
- *   - Compact prompt formatting to reduce token processing time
+ * Full data coverage with SSE streaming for instant perceived speed:
+ *   - Streams AI tokens as they arrive via Server-Sent Events
+ *   - Persists completed briefings to threat_briefings for 12hr cache + history
+ *   - ?cached=true returns latest non-expired briefing instantly (non-streaming)
+ *   - Includes top_brands analysis for globally recognized brand impact
  */
 
 const corsHeaders = {
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false }).limit(30),
     ]);
 
-    // ─── Build compact summaries (pipe-delimited to save tokens) ───
+    // ─── Build compact summaries ───
     const threatSummary = (threats || []).map(t =>
       `${t.severity}|${t.brand}|${t.domain}|${t.attack_type}|${t.source}|${t.country || '?'}|${t.confidence}%|${t.last_seen}`
     ).join('\n');
@@ -139,9 +139,18 @@ Deno.serve(async (req) => {
 
 IMPORTANT: For EACH campaign and risk, include a "data_points" array listing the specific records/evidence used and a "correlation_logic" string explaining how you connected dots across feeds.
 
+IMPORTANT: In "top_brands", identify the top 5 globally recognized brands (e.g. Microsoft, Google, Apple, Amazon, PayPal, Netflix, Meta/Facebook, DHL, etc.) that appear most impacted across all data. Consider brands that are impersonated, targeted, breached, or mentioned in phishing campaigns, IOCs, ATO events, and breach data. Only include well-known global brands, not small or obscure entities.
+
 Return ONLY valid JSON:
 {
   "executive_summary": "2-3 sentences",
+  "top_brands": [{
+    "name": "str", "logo_hint": "str (e.g. 'microsoft','google','apple')",
+    "impact_type": "impersonated|targeted|breached|multiple",
+    "threat_count": num, "severity": "critical|high|medium",
+    "summary": "1-2 sentence explanation of how this brand is impacted",
+    "sources": ["feed1","feed2"]
+  }],
   "campaigns": [{
     "name": "str", "description": "str", "domains_count": num,
     "brands_targeted": ["str"], "severity": "critical|high|medium",
@@ -197,94 +206,7 @@ ${metricsSummary || 'None'}
 ## Feed Health
 ${feedHealthSummary || 'None'}
 
-Cross-correlate across all feeds. Include data_points and correlation_logic for each finding.`;
-
-    // ─── Model failover with 25s timeout ───
-    const models = [
-      'google/gemini-2.5-flash-lite',
-      'google/gemini-2.5-flash',
-      'google/gemini-3-flash-preview',
-    ];
-
-    let aiData: any = null;
-    let lastErr = '';
-    const timeoutMs = 25000;
-
-    for (const model of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
-              ],
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timer);
-
-          if (aiResponse.status === 429) {
-            return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again shortly.' }), {
-              status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          if (aiResponse.status === 402) {
-            return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), {
-              status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          if (!aiResponse.ok) {
-            lastErr = `${model} ${aiResponse.status}`;
-            console.error(lastErr, await aiResponse.text());
-            if (attempt === 0) await new Promise(r => setTimeout(r, 800));
-            continue;
-          }
-
-          aiData = await aiResponse.json();
-          break;
-        } catch (e) {
-          lastErr = `${model}: ${e instanceof Error ? e.message : String(e)}`;
-          console.error(lastErr);
-          if (attempt === 0) await new Promise(r => setTimeout(r, 800));
-        }
-      }
-      if (aiData) break;
-    }
-
-    if (!aiData) {
-      return new Response(
-        JSON.stringify({ success: false, error: `All models failed. ${lastErr}` }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const content = aiData.choices?.[0]?.message?.content || '';
-
-    let briefing;
-    try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
-      briefing = JSON.parse(jsonStr);
-    } catch {
-      briefing = {
-        executive_summary: content,
-        campaigns: [], top_risks: [], trends: [],
-        feed_health: { healthy_feeds: 0, stale_feeds: [], recommendations: [] },
-        recommendations: [],
-      };
-    }
+Cross-correlate across all feeds. Include data_points and correlation_logic for each finding. Identify top 5 globally recognized impacted brands.`;
 
     const dataSummary = {
       threats_analyzed: threats?.length || 0,
@@ -297,31 +219,171 @@ Cross-correlate across all feeds. Include data_points and correlation_logic for 
       erasure_actions_analyzed: erasureActions?.length || 0,
     };
 
-    const generatedAt = new Date().toISOString();
+    // ─── Send SSE: data_summary first, then stream AI tokens ───
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Send data summary immediately so the UI can show stats while AI generates
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'meta', data_summary: dataSummary })}\n\n`));
 
-    // ─── Persist to history ───
-    const { data: saved } = await supabase
-      .from('threat_briefings')
-      .insert({
-        briefing,
-        data_summary: dataSummary,
-        generated_at: generatedAt,
-        expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-      })
-      .select('id')
-      .single();
+        // ─── Model failover with streaming ───
+        const models = [
+          'google/gemini-2.5-flash-lite',
+          'google/gemini-2.5-flash',
+          'google/gemini-3-flash-preview',
+        ];
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        briefing,
-        data_summary: dataSummary,
-        generated_at: generatedAt,
-        briefing_id: saved?.id || null,
-        from_cache: false,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+        let fullContent = '';
+        let succeeded = false;
+        let lastErr = '';
+
+        for (const model of models) {
+          if (succeeded) break;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const ac = new AbortController();
+              const timer = setTimeout(() => ac.abort(), 45000);
+
+              const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model,
+                  messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt },
+                  ],
+                  stream: true,
+                }),
+                signal: ac.signal,
+              });
+
+              clearTimeout(timer);
+
+              if (aiResponse.status === 429) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', error: 'Rate limit exceeded. Please try again shortly.' })}\n\n`));
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+                return;
+              }
+              if (aiResponse.status === 402) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', error: 'AI credits exhausted.' })}\n\n`));
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+                return;
+              }
+
+              if (!aiResponse.ok) {
+                lastErr = `${model} ${aiResponse.status}`;
+                console.error(lastErr, await aiResponse.text());
+                if (attempt === 0) await new Promise(r => setTimeout(r, 800));
+                continue;
+              }
+
+              // Stream the response
+              const reader = aiResponse.body!.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                let newlineIdx: number;
+                while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+                  let line = buffer.slice(0, newlineIdx);
+                  buffer = buffer.slice(newlineIdx + 1);
+                  if (line.endsWith('\r')) line = line.slice(0, -1);
+                  if (!line.startsWith('data: ')) continue;
+                  const jsonStr = line.slice(6).trim();
+                  if (jsonStr === '[DONE]') continue;
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    if (content) {
+                      fullContent += content;
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content })}\n\n`));
+                    }
+                  } catch {
+                    // partial JSON, ignore
+                  }
+                }
+              }
+
+              succeeded = true;
+              break;
+            } catch (e) {
+              lastErr = `${model}: ${e instanceof Error ? e.message : String(e)}`;
+              console.error(lastErr);
+              if (attempt === 0) await new Promise(r => setTimeout(r, 800));
+            }
+          }
+        }
+
+        if (!succeeded) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', error: `All models failed. ${lastErr}` })}\n\n`));
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+          return;
+        }
+
+        // Parse full content
+        let briefing;
+        try {
+          const jsonMatch = fullContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+          const jsonStr = jsonMatch ? jsonMatch[1].trim() : fullContent.trim();
+          briefing = JSON.parse(jsonStr);
+        } catch {
+          briefing = {
+            executive_summary: fullContent,
+            top_brands: [],
+            campaigns: [], top_risks: [], trends: [],
+            feed_health: { healthy_feeds: 0, stale_feeds: [], recommendations: [] },
+            recommendations: [],
+          };
+        }
+
+        const generatedAt = new Date().toISOString();
+
+        // Persist to DB
+        let briefingId = null;
+        try {
+          const { data: saved } = await supabase
+            .from('threat_briefings')
+            .insert({
+              briefing,
+              data_summary: dataSummary,
+              generated_at: generatedAt,
+              expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+            })
+            .select('id')
+            .single();
+          briefingId = saved?.id || null;
+        } catch (e) {
+          console.error('Failed to persist briefing:', e);
+        }
+
+        // Send final parsed result
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'complete',
+          briefing,
+          data_summary: dataSummary,
+          generated_at: generatedAt,
+          briefing_id: briefingId,
+        })}\n\n`));
+
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+    });
   } catch (error: unknown) {
     console.error('Threat briefing error:', error);
     return new Response(
