@@ -1,12 +1,11 @@
 /**
- * threat-briefing — Supabase Edge Function (v2 — optimized)
+ * threat-briefing — Supabase Edge Function (v3)
  *
- * Speed optimizations:
- *   - Reduced row limits (80 threats, 20 news, etc.)
- *   - Fastest model first (gemini-2.5-flash-lite)
- *   - 20s timeout with AbortController
- *   - Persists briefing to threat_briefings table for caching/history
- *   - Optional ?cached=true to return latest non-expired briefing
+ * Full data coverage (original limits) with speed optimizations:
+ *   - Fastest model first (flash-lite) with 25s timeout
+ *   - Persists to threat_briefings for 12hr cache + history
+ *   - ?cached=true returns latest non-expired briefing instantly
+ *   - Compact prompt formatting to reduce token processing time
  */
 
 const corsHeaders = {
@@ -54,7 +53,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Parallel data fetching — reduced limits for speed ───
+    // ─── Parallel data fetching — FULL coverage ───
     const [
       { data: threats },
       { data: news },
@@ -68,40 +67,40 @@ Deno.serve(async (req) => {
     ] = await Promise.all([
       supabase.from('threats')
         .select('brand, domain, attack_type, severity, status, source, country, confidence, first_seen, last_seen, ip_address, asn, org_name')
-        .order('last_seen', { ascending: false }).limit(80),
+        .order('last_seen', { ascending: false }).limit(150),
       supabase.from('threat_news')
         .select('title, severity, source, cve_id, vendor, product, date_published, description')
-        .order('date_published', { ascending: false }).limit(20),
+        .order('date_published', { ascending: false }).limit(30),
       supabase.from('attack_metrics')
         .select('metric_name, metric_value, category, country, recorded_at')
-        .order('recorded_at', { ascending: false }).limit(20),
+        .order('recorded_at', { ascending: false }).limit(30),
       supabase.from('social_iocs')
         .select('ioc_type, ioc_value, source, confidence, tags, date_shared, source_user')
-        .order('date_shared', { ascending: false }).limit(30),
+        .order('date_shared', { ascending: false }).limit(50),
       supabase.from('ato_events')
         .select('event_type, user_email, risk_score, location_from, location_to, detected_at, resolved')
-        .order('detected_at', { ascending: false }).limit(15),
+        .order('detected_at', { ascending: false }).limit(20),
       supabase.from('breach_checks')
         .select('check_type, check_value, breaches_found, risk_level, breach_names, last_checked')
-        .order('last_checked', { ascending: false }).limit(15),
+        .order('last_checked', { ascending: false }).limit(20),
       supabase.from('tor_exit_nodes')
         .select('ip_address, last_seen')
-        .order('last_seen', { ascending: false }).limit(30),
+        .order('last_seen', { ascending: false }).limit(50),
       supabase.from('erasure_actions')
         .select('action, provider, target, status, type, created_at, completed_at')
-        .order('created_at', { ascending: false }).limit(10),
+        .order('created_at', { ascending: false }).limit(15),
       supabase.from('ingestion_jobs')
         .select('feed_source, status, records_processed, completed_at, error_message')
-        .order('created_at', { ascending: false }).limit(20),
+        .order('created_at', { ascending: false }).limit(30),
     ]);
 
-    // ─── Build compact summaries ───
+    // ─── Build compact summaries (pipe-delimited to save tokens) ───
     const threatSummary = (threats || []).map(t =>
       `${t.severity}|${t.brand}|${t.domain}|${t.attack_type}|${t.source}|${t.country || '?'}|${t.confidence}%|${t.last_seen}`
     ).join('\n');
 
     const newsSummary = (news || []).map(n =>
-      `${n.severity}|${n.source}|${n.cve_id || ''}|${n.vendor || ''}|${n.title}`
+      `${n.severity}|${n.source}|${n.cve_id || ''}|${n.vendor || ''}|${n.product || ''}|${n.title}`
     ).join('\n');
 
     const metricsSummary = (metrics || []).map(m =>
@@ -109,7 +108,7 @@ Deno.serve(async (req) => {
     ).join('\n');
 
     const socialSummary = (socialIocs || []).map(s =>
-      `[${s.confidence}]${s.ioc_type}:${s.ioc_value}|${(s.tags || []).join(',')}|${s.source}`
+      `[${s.confidence}]${s.ioc_type}:${s.ioc_value}|${(s.tags || []).join(',')}|${s.source}@${s.source_user || 'anon'}`
     ).join('\n');
 
     const atoSummary = (atoEvents || []).map(a =>
@@ -117,26 +116,28 @@ Deno.serve(async (req) => {
     ).join('\n');
 
     const breachSummary = (breachChecks || []).map(b =>
-      `${b.check_type}:${b.check_value}|risk:${b.risk_level}|${b.breaches_found}breaches`
+      `${b.check_type}:${b.check_value}|risk:${b.risk_level}|${b.breaches_found}breaches|${(b.breach_names || []).slice(0, 3).join(',')}`
     ).join('\n');
 
-    const torSummary = `${(torNodes || []).length} Tor exit nodes`;
+    const torSummary = `${(torNodes || []).length} active Tor exit nodes tracked`;
 
     const erasureSummary = (erasureActions || []).map(e =>
-      `${e.action}|${e.provider}→${e.target}|${e.status}`
+      `${e.action}|${e.provider}→${e.target}|${e.status}|${e.type}`
     ).join('\n');
 
-    const feedHealth = (ingestionJobs || []).reduce((acc: Record<string, { status: string; records: number }>, j: any) => {
-      if (!acc[j.feed_source]) acc[j.feed_source] = { status: j.status, records: j.records_processed || 0 };
+    const feedHealth = (ingestionJobs || []).reduce((acc: Record<string, { status: string; records: number; at: string }>, j: any) => {
+      if (!acc[j.feed_source]) {
+        acc[j.feed_source] = { status: j.status, records: j.records_processed || 0, at: j.completed_at || '' };
+      }
       return acc;
     }, {});
     const feedHealthSummary = Object.entries(feedHealth).map(([src, info]: [string, any]) =>
-      `${src}:${info.status}(${info.records})`
+      `${src}:${info.status}(${info.records},${info.at || 'never'})`
     ).join('\n');
 
-    const systemPrompt = `You are a senior threat intelligence analyst for LRX Radar. Analyze multi-source data and produce a structured JSON briefing.
+    const systemPrompt = `You are a senior threat intelligence analyst for LRX Radar. Analyze the provided multi-source threat data and produce a structured JSON briefing.
 
-IMPORTANT: For EACH campaign and risk, include a "data_points" array listing the specific records/evidence used (domain names, IPs, IOC values, CVE IDs, email addresses, etc.) and a "correlation_logic" string explaining HOW you connected the dots across feeds.
+IMPORTANT: For EACH campaign and risk, include a "data_points" array listing the specific records/evidence used and a "correlation_logic" string explaining how you connected dots across feeds.
 
 Return ONLY valid JSON:
 {
@@ -167,7 +168,7 @@ Return ONLY valid JSON:
   }]
 }
 
-Generate 5-15 playbook actions referencing specific data. executable=true for open_ticket/create_erasure/block_domain/add_watchlist.`;
+Generate 5-15 playbook actions. executable=true for open_ticket/create_erasure/block_domain/add_watchlist. Reference specific domains, IPs, brands, CVEs.`;
 
     const userPrompt = `## Threats (${threats?.length || 0})
 ${threatSummary || 'None'}
@@ -196,9 +197,9 @@ ${metricsSummary || 'None'}
 ## Feed Health
 ${feedHealthSummary || 'None'}
 
-Identify cross-feed campaigns, priority risks, trends, feed issues, and actionable recommendations. Include data_points and correlation_logic for each finding.`;
+Cross-correlate across all feeds. Include data_points and correlation_logic for each finding.`;
 
-    // ─── Fast model-first failover with 20s timeout ───
+    // ─── Model failover with 25s timeout ───
     const models = [
       'google/gemini-2.5-flash-lite',
       'google/gemini-2.5-flash',
@@ -207,7 +208,7 @@ Identify cross-feed campaigns, priority risks, trends, feed issues, and actionab
 
     let aiData: any = null;
     let lastErr = '';
-    const timeoutMs = 20000;
+    const timeoutMs = 25000;
 
     for (const model of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
