@@ -667,6 +667,36 @@ export type Database = {
         }
         Relationships: []
       }
+      threat_briefings: {
+        Row: {
+          briefing: Json
+          created_at: string
+          data_summary: Json
+          expires_at: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+        }
+        Insert: {
+          briefing: Json
+          created_at?: string
+          data_summary?: Json
+          expires_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+        }
+        Update: {
+          briefing?: Json
+          created_at?: string
+          data_summary?: Json
+          expires_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       threat_news: {
         Row: {
           created_at: string

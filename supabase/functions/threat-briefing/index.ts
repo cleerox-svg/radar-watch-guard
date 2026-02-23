@@ -1,9 +1,12 @@
 /**
- * threat-briefing — Supabase Edge Function
+ * threat-briefing — Supabase Edge Function (v2 — optimized)
  *
- * Queries ALL feed data (threats, threat_news, social_iocs, ato_events,
- * breach_checks, tor_exit_nodes, erasure_actions, attack_metrics) and sends
- * to AI for a comprehensive intelligence briefing. Excludes spam_trap data.
+ * Speed optimizations:
+ *   - Reduced row limits (80 threats, 20 news, etc.)
+ *   - Fastest model first (gemini-2.5-flash-lite)
+ *   - 20s timeout with AbortController
+ *   - Persists briefing to threat_briefings table for caching/history
+ *   - Optional ?cached=true to return latest non-expired briefing
  */
 
 const corsHeaders = {
@@ -26,7 +29,32 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ─── Parallel data fetching across all feeds (except spam_trap) ───
+    // ─── Check for cached briefing ───
+    const url = new URL(req.url);
+    const wantCached = url.searchParams.get('cached') === 'true';
+
+    if (wantCached) {
+      const { data: cached } = await supabase
+        .from('threat_briefings')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cached) {
+        return new Response(JSON.stringify({
+          success: true,
+          briefing: cached.briefing,
+          data_summary: cached.data_summary,
+          generated_at: cached.generated_at,
+          briefing_id: cached.id,
+          from_cache: true,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // ─── Parallel data fetching — reduced limits for speed ───
     const [
       { data: threats },
       { data: news },
@@ -40,196 +68,153 @@ Deno.serve(async (req) => {
     ] = await Promise.all([
       supabase.from('threats')
         .select('brand, domain, attack_type, severity, status, source, country, confidence, first_seen, last_seen, ip_address, asn, org_name')
-        .order('last_seen', { ascending: false }).limit(150),
+        .order('last_seen', { ascending: false }).limit(80),
       supabase.from('threat_news')
-        .select('title, severity, source, cve_id, vendor, product, date_published, metadata, description')
-        .order('date_published', { ascending: false }).limit(30),
+        .select('title, severity, source, cve_id, vendor, product, date_published, description')
+        .order('date_published', { ascending: false }).limit(20),
       supabase.from('attack_metrics')
         .select('metric_name, metric_value, category, country, recorded_at')
-        .order('recorded_at', { ascending: false }).limit(30),
+        .order('recorded_at', { ascending: false }).limit(20),
       supabase.from('social_iocs')
         .select('ioc_type, ioc_value, source, confidence, tags, date_shared, source_user')
-        .order('date_shared', { ascending: false }).limit(50),
+        .order('date_shared', { ascending: false }).limit(30),
       supabase.from('ato_events')
         .select('event_type, user_email, risk_score, location_from, location_to, detected_at, resolved')
-        .order('detected_at', { ascending: false }).limit(20),
+        .order('detected_at', { ascending: false }).limit(15),
       supabase.from('breach_checks')
         .select('check_type, check_value, breaches_found, risk_level, breach_names, last_checked')
-        .order('last_checked', { ascending: false }).limit(20),
+        .order('last_checked', { ascending: false }).limit(15),
       supabase.from('tor_exit_nodes')
         .select('ip_address, last_seen')
-        .order('last_seen', { ascending: false }).limit(50),
+        .order('last_seen', { ascending: false }).limit(30),
       supabase.from('erasure_actions')
         .select('action, provider, target, status, type, created_at, completed_at')
-        .order('created_at', { ascending: false }).limit(15),
+        .order('created_at', { ascending: false }).limit(10),
       supabase.from('ingestion_jobs')
         .select('feed_source, status, records_processed, completed_at, error_message')
-        .order('created_at', { ascending: false }).limit(30),
+        .order('created_at', { ascending: false }).limit(20),
     ]);
 
-    // ─── Build structured summaries for each data source ───
+    // ─── Build compact summaries ───
     const threatSummary = (threats || []).map(t =>
-      `${t.severity} | ${t.brand} | ${t.domain} | ${t.attack_type} | ${t.source} | ${t.country || 'N/A'} | conf:${t.confidence}% | ${t.last_seen}`
+      `${t.severity}|${t.brand}|${t.domain}|${t.attack_type}|${t.source}|${t.country || '?'}|${t.confidence}%|${t.last_seen}`
     ).join('\n');
 
     const newsSummary = (news || []).map(n =>
-      `${n.severity} | ${n.source} | ${n.cve_id || 'N/A'} | ${n.vendor || 'N/A'} | ${n.product || 'N/A'} | ${n.title}`
+      `${n.severity}|${n.source}|${n.cve_id || ''}|${n.vendor || ''}|${n.title}`
     ).join('\n');
 
     const metricsSummary = (metrics || []).map(m =>
-      `${m.metric_name}: ${m.metric_value} (${m.category || 'N/A'}, ${m.country || 'global'})`
+      `${m.metric_name}:${m.metric_value}(${m.category || ''},${m.country || 'global'})`
     ).join('\n');
 
     const socialSummary = (socialIocs || []).map(s =>
-      `[${s.confidence}] ${s.ioc_type}: ${s.ioc_value} | tags: ${(s.tags || []).join(',')} | ${s.source} @${s.source_user || 'anon'} | ${s.date_shared}`
+      `[${s.confidence}]${s.ioc_type}:${s.ioc_value}|${(s.tags || []).join(',')}|${s.source}`
     ).join('\n');
 
     const atoSummary = (atoEvents || []).map(a =>
-      `${a.event_type} | ${a.user_email} | risk:${a.risk_score} | ${a.location_from}→${a.location_to} | ${a.resolved ? 'RESOLVED' : 'OPEN'} | ${a.detected_at}`
+      `${a.event_type}|${a.user_email}|risk:${a.risk_score}|${a.location_from}→${a.location_to}|${a.resolved ? 'R' : 'OPEN'}`
     ).join('\n');
 
     const breachSummary = (breachChecks || []).map(b =>
-      `${b.check_type}: ${b.check_value} | risk:${b.risk_level} | ${b.breaches_found} breaches | ${(b.breach_names || []).slice(0, 3).join(',')} | ${b.last_checked}`
+      `${b.check_type}:${b.check_value}|risk:${b.risk_level}|${b.breaches_found}breaches`
     ).join('\n');
 
-    const torSummary = `${(torNodes || []).length} active Tor exit nodes tracked`;
+    const torSummary = `${(torNodes || []).length} Tor exit nodes`;
 
     const erasureSummary = (erasureActions || []).map(e =>
-      `${e.action} | ${e.provider} → ${e.target} | status:${e.status} | type:${e.type}`
+      `${e.action}|${e.provider}→${e.target}|${e.status}`
     ).join('\n');
 
-    // Feed health summary
-    const feedHealth = (ingestionJobs || []).reduce((acc: Record<string, { status: string; records: number; at: string }>, j: any) => {
-      if (!acc[j.feed_source]) {
-        acc[j.feed_source] = { status: j.status, records: j.records_processed || 0, at: j.completed_at || '' };
-      }
+    const feedHealth = (ingestionJobs || []).reduce((acc: Record<string, { status: string; records: number }>, j: any) => {
+      if (!acc[j.feed_source]) acc[j.feed_source] = { status: j.status, records: j.records_processed || 0 };
       return acc;
     }, {});
     const feedHealthSummary = Object.entries(feedHealth).map(([src, info]: [string, any]) =>
-      `${src}: ${info.status} (${info.records} records, last: ${info.at || 'never'})`
+      `${src}:${info.status}(${info.records})`
     ).join('\n');
 
-    const systemPrompt = `You are a senior threat intelligence analyst for LRX Radar, a global phishing defense platform. Analyze the provided multi-source threat data and produce a structured intelligence briefing.
+    const systemPrompt = `You are a senior threat intelligence analyst for LRX Radar. Analyze multi-source data and produce a structured JSON briefing.
 
-Your analysis must be data-driven, referencing specific numbers, domains, brands, CVEs, IOCs, and feed sources. Cross-correlate across data sources to identify patterns. Be direct and actionable.
+IMPORTANT: For EACH campaign and risk, include a "data_points" array listing the specific records/evidence used (domain names, IPs, IOC values, CVE IDs, email addresses, etc.) and a "correlation_logic" string explaining HOW you connected the dots across feeds.
 
-Format your response as JSON matching this exact structure:
+Return ONLY valid JSON:
 {
-  "executive_summary": "2-3 sentence overview of the current threat landscape across all feeds",
-  "campaigns": [
-    {
-      "name": "Campaign name",
-      "description": "What this campaign involves",
-      "domains_count": number,
-      "brands_targeted": ["brand1", "brand2"],
-      "severity": "critical|high|medium",
-      "sources_correlated": ["feed1", "feed2"],
-      "recommendation": "Specific action to take"
-    }
-  ],
-  "top_risks": [
-    {
-      "title": "Risk title",
-      "detail": "Why this is a risk, referencing specific data",
-      "priority": "immediate|short_term|monitor",
-      "action": "What to do",
-      "data_sources": ["which feeds contributed"]
-    }
-  ],
-  "trends": [
-    {
-      "observation": "What you observed across feeds",
-      "direction": "increasing|decreasing|stable",
-      "significance": "Why it matters"
-    }
-  ],
-  "feed_health": {
-    "healthy_feeds": number,
-    "stale_feeds": ["feed names with no recent data"],
-    "recommendations": ["any feed-specific recommendations"]
-  },
-  "recommendations": [
-    "Actionable recommendation 1",
-    "Actionable recommendation 2"
-  ],
-  "action_playbook": [
-    {
-      "finding_ref": "Name of the campaign or risk this relates to",
-      "category": "investigate|escalate|defend|track",
-      "title": "Short action title (e.g. 'WHOIS lookup on suspicious domain')",
-      "description": "What to do and why, with specific targets",
-      "executable": true,
-      "action_type": "open_ticket|create_erasure|block_domain|osint_lookup|abuse_report|law_enforcement|isac_share|add_watchlist",
-      "action_data": {
-        "target": "specific domain, IP, actor, or brand name",
-        "severity": "critical|high|medium|low",
-        "template": "For advisory actions only: pre-filled template text (e.g. abuse report email body, law enforcement referral letter, ISAC sharing format). Leave empty for executable actions."
-      },
-      "urgency": "immediate|short_term|ongoing"
-    }
-  ]
+  "executive_summary": "2-3 sentences",
+  "campaigns": [{
+    "name": "str", "description": "str", "domains_count": num,
+    "brands_targeted": ["str"], "severity": "critical|high|medium",
+    "sources_correlated": ["feed1","feed2"],
+    "recommendation": "str",
+    "data_points": [{"source": "feed_name", "type": "domain|ip|ioc|cve|email", "value": "specific value", "context": "why relevant"}],
+    "correlation_logic": "How these data points connect across feeds"
+  }],
+  "top_risks": [{
+    "title": "str", "detail": "str", "priority": "immediate|short_term|monitor",
+    "action": "str", "data_sources": ["feeds"],
+    "data_points": [{"source": "feed_name", "type": "str", "value": "str", "context": "str"}],
+    "correlation_logic": "How determined"
+  }],
+  "trends": [{"observation": "str", "direction": "increasing|decreasing|stable", "significance": "str"}],
+  "feed_health": {"healthy_feeds": num, "stale_feeds": ["str"], "recommendations": ["str"]},
+  "recommendations": ["str"],
+  "action_playbook": [{
+    "finding_ref": "str", "category": "investigate|escalate|defend|track",
+    "title": "str", "description": "str", "executable": bool,
+    "action_type": "open_ticket|create_erasure|block_domain|osint_lookup|abuse_report|law_enforcement|isac_share|add_watchlist",
+    "action_data": {"target": "str", "severity": "str", "template": "str"},
+    "urgency": "immediate|short_term|ongoing"
+  }]
 }
 
-IMPORTANT for action_playbook:
-- Generate 5-15 specific, actionable items based on the actual data
-- executable=true for: open_ticket, create_erasure, block_domain, add_watchlist (these trigger platform functions)
-- executable=false for: abuse_report, law_enforcement, isac_share, osint_lookup (these provide templates/guidance)
-- For law_enforcement actions, include IC3/CISA contact info in template
-- For abuse_report actions, include a draft email template with the specific domain/IP
-- For osint_lookup actions, suggest specific tools (WHOIS, Shodan, VirusTotal, URLScan)
-- Reference specific domains, IPs, brands, and CVEs from the data — never be generic`;
+Generate 5-15 playbook actions referencing specific data. executable=true for open_ticket/create_erasure/block_domain/add_watchlist.`;
 
-    const userPrompt = `Analyze the following multi-source threat intelligence data:
+    const userPrompt = `## Threats (${threats?.length || 0})
+${threatSummary || 'None'}
 
-## Active Threats (${threats?.length || 0} records)
-severity | brand | domain | attack_type | source | country | confidence | last_seen
-${threatSummary || 'No threats data available'}
+## News/KEVs (${news?.length || 0})
+${newsSummary || 'None'}
 
-## Vulnerability News / KEVs (${news?.length || 0} records)
-severity | source | cve_id | vendor | product | title
-${newsSummary || 'No news data available'}
+## Social IOCs (${socialIocs?.length || 0})
+${socialSummary || 'None'}
 
-## Social Media IOCs (${socialIocs?.length || 0} records)
-${socialSummary || 'No social IOC data available'}
+## ATO Events (${atoEvents?.length || 0})
+${atoSummary || 'None'}
 
-## Account Takeover Events (${atoEvents?.length || 0} records)
-${atoSummary || 'No ATO events'}
+## Breach Checks (${breachChecks?.length || 0})
+${breachSummary || 'None'}
 
-## Breach Check Results (${breachChecks?.length || 0} records)
-${breachSummary || 'No breach checks'}
-
-## Tor Exit Nodes
+## Tor Nodes
 ${torSummary}
 
-## Takedown / Erasure Actions (${erasureActions?.length || 0} records)
-${erasureSummary || 'No erasure actions'}
+## Erasure Actions (${erasureActions?.length || 0})
+${erasureSummary || 'None'}
 
-## Attack Metrics (${metrics?.length || 0} records)
-${metricsSummary || 'No metrics data available'}
+## Metrics (${metrics?.length || 0})
+${metricsSummary || 'None'}
 
-## Feed Health Status
-${feedHealthSummary || 'No ingestion job data'}
+## Feed Health
+${feedHealthSummary || 'None'}
 
-Identify:
-1. Cross-feed correlated campaigns (e.g., domain in threats + IOC in social + CVE in news)
-2. Top priority risks requiring immediate action
-3. Emerging trends across all attack vectors
-4. Feed health issues (stale or failing feeds)
-5. Specific, actionable recommendations for the security team`;
+Identify cross-feed campaigns, priority risks, trends, feed issues, and actionable recommendations. Include data_points and correlation_logic for each finding.`;
 
-    // Multi-model failover for resilience
+    // ─── Fast model-first failover with 20s timeout ───
     const models = [
-      'google/gemini-3-flash-preview',
+      'google/gemini-2.5-flash-lite',
       'google/gemini-2.5-flash',
-      'openai/gpt-5-mini',
+      'google/gemini-3-flash-preview',
     ];
 
     let aiData: any = null;
     let lastErr = '';
+    const timeoutMs = 20000;
 
     for (const model of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), timeoutMs);
+
           const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -243,7 +228,10 @@ Identify:
                 { role: 'user', content: userPrompt },
               ],
             }),
+            signal: controller.signal,
           });
+
+          clearTimeout(timer);
 
           if (aiResponse.status === 429) {
             return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again shortly.' }), {
@@ -251,24 +239,24 @@ Identify:
             });
           }
           if (aiResponse.status === 402) {
-            return new Response(JSON.stringify({ error: 'AI credits exhausted. Add funds in workspace settings.' }), {
+            return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), {
               status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
 
           if (!aiResponse.ok) {
-            lastErr = `${model} returned ${aiResponse.status}: ${await aiResponse.text()}`;
-            console.error(lastErr);
-            if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+            lastErr = `${model} ${aiResponse.status}`;
+            console.error(lastErr, await aiResponse.text());
+            if (attempt === 0) await new Promise(r => setTimeout(r, 800));
             continue;
           }
 
           aiData = await aiResponse.json();
           break;
         } catch (e) {
-          lastErr = `${model} error: ${e instanceof Error ? e.message : String(e)}`;
+          lastErr = `${model}: ${e instanceof Error ? e.message : String(e)}`;
           console.error(lastErr);
-          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+          if (attempt === 0) await new Promise(r => setTimeout(r, 800));
         }
       }
       if (aiData) break;
@@ -276,14 +264,13 @@ Identify:
 
     if (!aiData) {
       return new Response(
-        JSON.stringify({ success: false, error: `All AI models failed. Last: ${lastErr}` }),
+        JSON.stringify({ success: false, error: `All models failed. ${lastErr}` }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const content = aiData.choices?.[0]?.message?.content || '';
 
-    // Parse JSON from AI response (handle markdown code blocks)
     let briefing;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -292,29 +279,45 @@ Identify:
     } catch {
       briefing = {
         executive_summary: content,
-        campaigns: [],
-        top_risks: [],
-        trends: [],
+        campaigns: [], top_risks: [], trends: [],
         feed_health: { healthy_feeds: 0, stale_feeds: [], recommendations: [] },
         recommendations: [],
       };
     }
 
+    const dataSummary = {
+      threats_analyzed: threats?.length || 0,
+      news_analyzed: news?.length || 0,
+      metrics_analyzed: metrics?.length || 0,
+      social_iocs_analyzed: socialIocs?.length || 0,
+      ato_events_analyzed: atoEvents?.length || 0,
+      breach_checks_analyzed: breachChecks?.length || 0,
+      tor_nodes_tracked: torNodes?.length || 0,
+      erasure_actions_analyzed: erasureActions?.length || 0,
+    };
+
+    const generatedAt = new Date().toISOString();
+
+    // ─── Persist to history ───
+    const { data: saved } = await supabase
+      .from('threat_briefings')
+      .insert({
+        briefing,
+        data_summary: dataSummary,
+        generated_at: generatedAt,
+        expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      })
+      .select('id')
+      .single();
+
     return new Response(
       JSON.stringify({
         success: true,
         briefing,
-        data_summary: {
-          threats_analyzed: threats?.length || 0,
-          news_analyzed: news?.length || 0,
-          metrics_analyzed: metrics?.length || 0,
-          social_iocs_analyzed: socialIocs?.length || 0,
-          ato_events_analyzed: atoEvents?.length || 0,
-          breach_checks_analyzed: breachChecks?.length || 0,
-          tor_nodes_tracked: torNodes?.length || 0,
-          erasure_actions_analyzed: erasureActions?.length || 0,
-        },
-        generated_at: new Date().toISOString(),
+        data_summary: dataSummary,
+        generated_at: generatedAt,
+        briefing_id: saved?.id || null,
+        from_cache: false,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
