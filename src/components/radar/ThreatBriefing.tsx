@@ -1,21 +1,14 @@
 /**
- * ThreatBriefing.tsx — AI-powered threat intelligence briefing
- *
- * v2 features:
- *   - 12-hour cached briefings with history list
- *   - Finding drill-down detail view (data points, correlation logic)
- *   - Back navigation returns to current briefing
- *   - Generate new briefing on demand
- *   - Chronological history sidebar
+ * ThreatBriefing.tsx — AI-powered threat intelligence briefing (v3 — Streaming + Top Brands)
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Brain, RefreshCw, Shield, TrendingUp, TrendingDown, Minus,
   AlertTriangle, Target, Lightbulb, Clock, Zap, Eye, Activity,
   Database, Search, Send, ShieldBan, Bookmark, ExternalLink,
   FileText, Copy, CheckCircle2, Play, ChevronDown, ChevronUp,
-  Download, ArrowLeft, History, Info, Layers,
+  Download, ArrowLeft, History, Info, Layers, Building2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,88 +20,48 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ─── Types ───
 
-interface DataPoint {
-  source: string;
-  type: string;
-  value: string;
-  context: string;
-}
+interface DataPoint { source: string; type: string; value: string; context: string; }
 
 interface Campaign {
-  name: string;
-  description: string;
-  domains_count: number;
-  brands_targeted: string[];
-  severity: string;
-  recommendation: string;
-  sources_correlated?: string[];
-  data_points?: DataPoint[];
-  correlation_logic?: string;
+  name: string; description: string; domains_count: number;
+  brands_targeted: string[]; severity: string; recommendation: string;
+  sources_correlated?: string[]; data_points?: DataPoint[]; correlation_logic?: string;
 }
 
 interface Risk {
-  title: string;
-  detail: string;
-  priority: "immediate" | "short_term" | "monitor";
-  action: string;
-  data_sources?: string[];
-  data_points?: DataPoint[];
-  correlation_logic?: string;
+  title: string; detail: string; priority: "immediate" | "short_term" | "monitor";
+  action: string; data_sources?: string[]; data_points?: DataPoint[]; correlation_logic?: string;
 }
 
-interface Trend {
-  observation: string;
-  direction: "increasing" | "decreasing" | "stable";
-  significance: string;
-}
+interface Trend { observation: string; direction: "increasing" | "decreasing" | "stable"; significance: string; }
 
-interface FeedHealth {
-  healthy_feeds: number;
-  stale_feeds: string[];
-  recommendations: string[];
-}
+interface FeedHealth { healthy_feeds: number; stale_feeds: string[]; recommendations: string[]; }
 
 interface PlaybookAction {
-  finding_ref: string;
-  category: "investigate" | "escalate" | "defend" | "track";
-  title: string;
-  description: string;
-  executable: boolean;
-  action_type: string;
-  action_data: {
-    target: string;
-    severity: string;
-    template?: string;
-  };
+  finding_ref: string; category: "investigate" | "escalate" | "defend" | "track";
+  title: string; description: string; executable: boolean; action_type: string;
+  action_data: { target: string; severity: string; template?: string; };
   urgency: "immediate" | "short_term" | "ongoing";
 }
 
+interface TopBrand {
+  name: string; logo_hint: string; impact_type: string;
+  threat_count: number; severity: string; summary: string; sources: string[];
+}
+
 interface Briefing {
-  executive_summary: string;
-  campaigns: Campaign[];
-  top_risks: Risk[];
-  trends: Trend[];
-  feed_health?: FeedHealth;
-  recommendations: string[];
+  executive_summary: string; top_brands?: TopBrand[];
+  campaigns: Campaign[]; top_risks: Risk[]; trends: Trend[];
+  feed_health?: FeedHealth; recommendations: string[];
   action_playbook?: PlaybookAction[];
 }
 
 interface BriefingResponse {
-  success: boolean;
-  briefing: Briefing;
-  data_summary: Record<string, number>;
-  generated_at: string;
-  briefing_id?: string;
-  from_cache?: boolean;
-  error?: string;
+  success: boolean; briefing: Briefing; data_summary: Record<string, number>;
+  generated_at: string; briefing_id?: string; from_cache?: boolean; error?: string;
 }
 
-interface HistoryEntry {
-  id: string;
-  generated_at: string;
-  briefing: Briefing;
-  data_summary: Record<string, number>;
-}
+interface HistoryEntry { id: string; generated_at: string; briefing: Briefing; data_summary: Record<string, number>; }
 
 // ─── Style maps ───
 
@@ -142,18 +95,23 @@ const urgencyStyles: Record<string, string> = {
   ongoing: "border-border bg-background/50",
 };
 
+const impactTypeColors: Record<string, string> = {
+  impersonated: "bg-destructive/15 text-destructive border-destructive/30",
+  targeted: "bg-warning/15 text-warning border-warning/30",
+  breached: "bg-destructive text-destructive-foreground",
+  multiple: "bg-destructive/20 text-destructive border-destructive/40",
+};
+
 // ─── Sub-components ───
 
 function InlineActions({ findingName, actions, onExecute }: {
-  findingName: string;
-  actions: PlaybookAction[];
+  findingName: string; actions: PlaybookAction[];
   onExecute: (action: PlaybookAction) => void;
 }) {
   const related = actions.filter(a =>
     a.finding_ref?.toLowerCase().includes(findingName?.toLowerCase()?.slice(0, 20))
   );
   if (related.length === 0) return null;
-
   return (
     <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
       {related.slice(0, 4).map((action, i) => {
@@ -177,8 +135,7 @@ function TemplateViewer({ template, title }: { template: string; title: string }
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(template);
-    setCopied(true);
-    toast.success("Template copied");
+    setCopied(true); toast.success("Template copied");
     setTimeout(() => setCopied(false), 2000);
   };
   return (
@@ -199,11 +156,58 @@ function TemplateViewer({ template, title }: { template: string; title: string }
   );
 }
 
-/** Detail drill-down for a campaign or risk finding */
+function TopBrandsCard({ brands }: { brands: TopBrand[] }) {
+  if (!brands || brands.length === 0) return null;
+  return (
+    <Card className="bg-card border-destructive/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-destructive" />
+          Top Impacted Brands
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 ml-1 bg-destructive/10 text-destructive border-destructive/20">
+            {brands.length}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {brands.slice(0, 5).map((brand, i) => (
+            <div key={i} className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-foreground/70 shrink-0">
+                    {brand.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground leading-tight">{brand.name}</p>
+                    <Badge className={cn("text-[9px] px-1.5 py-0 mt-0.5", impactTypeColors[brand.impact_type] || impactTypeColors.targeted)}>
+                      {brand.impact_type?.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  </div>
+                </div>
+                <Badge className={cn("text-[9px] px-1 py-0 shrink-0", severityStyles[brand.severity] || severityStyles.high)}>
+                  {brand.severity?.toUpperCase()}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{brand.summary}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-foreground/60">{brand.threat_count} threats</span>
+                <div className="flex gap-1">
+                  {brand.sources?.slice(0, 3).map((s, j) => (
+                    <Badge key={j} variant="outline" className="text-[8px] px-1 py-0">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
-  finding: Campaign | Risk;
-  type: "campaign" | "risk";
-  onBack: () => void;
+  finding: Campaign | Risk; type: "campaign" | "risk"; onBack: () => void;
   allActions: PlaybookAction[];
   onExecute: (action: PlaybookAction, idx: number) => void;
 }) {
@@ -219,7 +223,6 @@ function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
       <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={onBack}>
         <ArrowLeft className="w-4 h-4" /> Back to Briefing
       </Button>
-
       <Card className="border-primary/30 bg-card">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
@@ -237,8 +240,6 @@ function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
           <p className="text-sm text-foreground leading-relaxed">
             {type === "campaign" ? (finding as Campaign).description : (finding as Risk).detail}
           </p>
-
-          {/* Recommendation / Action */}
           <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <Lightbulb className="w-4 h-4 text-primary mt-0.5 shrink-0" />
             <p className="text-sm text-foreground">
@@ -247,34 +248,22 @@ function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
           </div>
         </CardContent>
       </Card>
-
-      {/* Correlation Logic */}
       <Card className="bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Layers className="w-4 h-4 text-primary" />
-            Correlation Logic
-          </CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Layers className="w-4 h-4 text-primary" /> Correlation Logic</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-foreground/90 leading-relaxed">{correlationLogic}</p>
           {sources.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
-              {sources.map((s, i) => (
-                <Badge key={i} variant="secondary" className="text-[10px]">{s}</Badge>
-              ))}
+              {sources.map((s, i) => <Badge key={i} variant="secondary" className="text-[10px]">{s}</Badge>)}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Data Points / Evidence */}
       <Card className="bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Database className="w-4 h-4 text-primary" />
-            Evidence &amp; Data Points ({dataPoints.length})
-          </CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Database className="w-4 h-4 text-primary" /> Evidence &amp; Data Points ({dataPoints.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {dataPoints.length === 0 ? (
@@ -297,19 +286,12 @@ function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
           )}
         </CardContent>
       </Card>
-
-      {/* Related playbook actions */}
       <Card className="bg-card border-primary/20">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-primary" />
-            Related Actions
-          </CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Related Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {allActions.filter(a =>
-            a.finding_ref?.toLowerCase().includes(name?.toLowerCase()?.slice(0, 20))
-          ).map((action, i) => {
+          {allActions.filter(a => a.finding_ref?.toLowerCase().includes(name?.toLowerCase()?.slice(0, 20))).map((action, i) => {
             const cat = categoryConfig[action.category] || categoryConfig.investigate;
             const CatIcon = cat.icon;
             return (
@@ -320,9 +302,7 @@ function FindingDetail({ finding, type, onBack, allActions, onExecute }: {
                     <div>
                       <span className="text-sm font-medium text-foreground">{action.title}</span>
                       <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
-                      {action.action_data?.target && (
-                        <p className="text-[11px] font-mono text-foreground/60 mt-1">Target: {action.action_data.target}</p>
-                      )}
+                      {action.action_data?.target && <p className="text-[11px] font-mono text-foreground/60 mt-1">Target: {action.action_data.target}</p>}
                     </div>
                   </div>
                   <Button variant={action.executable ? "default" : "outline"} size="sm"
@@ -349,15 +329,15 @@ export function ThreatBriefing() {
   const [expandedActions, setExpandedActions] = useState<Set<number>>(new Set());
   const [executingAction, setExecutingAction] = useState<number | null>(null);
   const [playbookFilter, setPlaybookFilter] = useState<string>("all");
-
-  // Drill-down state
   const [drillDown, setDrillDown] = useState<{ type: "campaign" | "risk"; index: number } | null>(null);
-
-  // History
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Load cached briefing on mount
+  // Streaming state
+  const [streamingText, setStreamingText] = useState("");
+  const [streamMeta, setStreamMeta] = useState<Record<string, number> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     loadCached();
     loadHistory();
@@ -365,11 +345,6 @@ export function ThreatBriefing() {
 
   const loadCached = async () => {
     try {
-      const resp = await supabase.functions.invoke("threat-briefing", {
-        body: null,
-        method: "GET",
-      });
-      // Use query param approach via direct fetch
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/threat-briefing?cached=true`;
       const res = await fetch(url, {
         headers: {
@@ -383,9 +358,7 @@ export function ThreatBriefing() {
           setBriefing(data);
         }
       }
-    } catch {
-      // No cached briefing, that's fine
-    }
+    } catch { /* no cache */ }
   };
 
   const loadHistory = async () => {
@@ -396,39 +369,97 @@ export function ThreatBriefing() {
         .order('generated_at', { ascending: false })
         .limit(20);
       if (data) setHistory(data as unknown as HistoryEntry[]);
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   };
 
   const generateBriefing = async () => {
     setLoading(true);
     setDrillDown(null);
+    setStreamingText("");
+    setStreamMeta(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      const { data, error } = await supabase.functions.invoke("threat-briefing");
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setBriefing(data);
-      toast.success(data.from_cache ? "Loaded cached briefing" : "New briefing generated");
-      loadHistory(); // refresh history
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/threat-briefing`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let nlIdx: number;
+        while ((nlIdx = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, nlIdx);
+          buffer = buffer.slice(nlIdx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.type === 'meta') {
+              setStreamMeta(parsed.data_summary);
+            } else if (parsed.type === 'token') {
+              accumulated += parsed.content;
+              setStreamingText(accumulated);
+            } else if (parsed.type === 'complete') {
+              setBriefing({
+                success: true,
+                briefing: parsed.briefing,
+                data_summary: parsed.data_summary,
+                generated_at: parsed.generated_at,
+                briefing_id: parsed.briefing_id,
+                from_cache: false,
+              });
+              setStreamingText("");
+              setStreamMeta(null);
+              toast.success("New briefing generated");
+              loadHistory();
+            } else if (parsed.type === 'error') {
+              throw new Error(parsed.error);
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message !== jsonStr) throw e;
+            // partial JSON line, ignore
+          }
+        }
+      }
     } catch (err: any) {
-      toast.error("Briefing generation failed", { description: err.message });
+      if (err.name !== 'AbortError') {
+        toast.error("Briefing generation failed", { description: err.message });
+      }
     } finally {
       setLoading(false);
+      setStreamingText("");
+      setStreamMeta(null);
+      abortRef.current = null;
     }
   };
 
   const loadFromHistory = (entry: HistoryEntry) => {
     setBriefing({
-      success: true,
-      briefing: entry.briefing,
-      data_summary: entry.data_summary,
-      generated_at: entry.generated_at,
-      briefing_id: entry.id,
-      from_cache: true,
+      success: true, briefing: entry.briefing, data_summary: entry.data_summary,
+      generated_at: entry.generated_at, briefing_id: entry.id, from_cache: true,
     });
-    setDrillDown(null);
-    setShowHistory(false);
+    setDrillDown(null); setShowHistory(false);
     toast.info("Loaded historical briefing");
   };
 
@@ -441,7 +472,6 @@ export function ThreatBriefing() {
       });
       return;
     }
-
     setExecutingAction(index);
     try {
       switch (action.action_type) {
@@ -451,10 +481,8 @@ export function ThreatBriefing() {
             description: `${action.description}\n\nTarget: ${action.action_data.target}`,
             severity: action.action_data.severity || "medium",
             priority: action.urgency === "immediate" ? "critical" : action.urgency === "short_term" ? "high" : "medium",
-            source_type: "briefing",
-            source_id: "00000000-0000-0000-0000-000000000000",
-            ticket_id: "",
-            tags: [action.category, "ai-briefing"],
+            source_type: "briefing", source_id: "00000000-0000-0000-0000-000000000000",
+            ticket_id: "", tags: [action.category, "ai-briefing"],
           });
           if (error) throw error;
           toast.success("Investigation ticket created", { description: action.title });
@@ -462,11 +490,8 @@ export function ThreatBriefing() {
         }
         case "create_erasure": {
           const { error } = await supabase.from("erasure_actions").insert({
-            action: "takedown_request",
-            provider: "AI Briefing",
-            target: action.action_data.target,
-            type: "domain",
-            details: action.description,
+            action: "takedown_request", provider: "AI Briefing",
+            target: action.action_data.target, type: "domain", details: action.description,
           });
           if (error) throw error;
           toast.success("Erasure action created", { description: `Target: ${action.action_data.target}` });
@@ -476,13 +501,9 @@ export function ThreatBriefing() {
         case "add_watchlist": {
           const { error } = await supabase.from("investigation_tickets").insert({
             title: `[${action.action_type === "block_domain" ? "BLOCK" : "WATCH"}] ${action.action_data.target}`,
-            description: action.description,
-            severity: action.action_data.severity || "high",
-            priority: "high",
-            source_type: "briefing",
-            source_id: "00000000-0000-0000-0000-000000000000",
-            ticket_id: "",
-            tags: [action.action_type, action.category, "ai-briefing"],
+            description: action.description, severity: action.action_data.severity || "high",
+            priority: "high", source_type: "briefing", source_id: "00000000-0000-0000-0000-000000000000",
+            ticket_id: "", tags: [action.action_type, action.category, "ai-briefing"],
           });
           if (error) throw error;
           toast.success(`${action.action_type === "block_domain" ? "Block" : "Watchlist"} ticket created`);
@@ -501,13 +522,11 @@ export function ThreatBriefing() {
   const allActions = briefing?.briefing?.action_playbook || [];
   const filteredActions = playbookFilter === "all" ? allActions : allActions.filter(a => a.category === playbookFilter);
 
-  /** Export briefing as print-friendly PDF */
   const exportAsPdf = () => {
     if (!briefing?.success) return;
     const b = briefing.briefing;
     const ds = briefing.data_summary;
     const now = new Date(briefing.generated_at).toLocaleString();
-
     const sevBadge = (s: string) => {
       const colors: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#6b7280' };
       return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;color:#fff;background:${colors[s] || colors.medium}">${(s || '').toUpperCase()}</span>`;
@@ -515,12 +534,15 @@ export function ThreatBriefing() {
     const urgBorder: Record<string, string> = { immediate: '#ef4444', short_term: '#eab308', ongoing: '#d1d5db' };
     const catEmoji: Record<string, string> = { investigate: '🔍', escalate: '📤', defend: '🛡️', track: '📌' };
 
+    const brandsHtml = b.top_brands?.length ? `<h2>Top Impacted Brands</h2><div style="display:flex;flex-wrap:wrap;gap:12px">${b.top_brands.map(br => `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;width:180px"><div style="font-weight:600;font-size:13px">${br.name}</div><div style="font-size:10px;margin:2px 0">${sevBadge(br.severity)} ${br.impact_type?.toUpperCase()}</div><div style="font-size:11px;color:#475569">${br.summary}</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">${br.threat_count} threats · ${br.sources?.join(', ')}</div></div>`).join('')}</div>` : '';
+
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Threat Briefing — ${now}</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e;padding:40px;font-size:13px;line-height:1.5}h1{font-size:20px;margin-bottom:4px}h2{font-size:15px;margin:24px 0 8px;padding-bottom:4px;border-bottom:2px solid #10b981;color:#0f172a}h3{font-size:13px;margin:12px 0 4px}.subtitle{font-size:11px;color:#64748b;margin-bottom:20px}.stats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.stat{background:#f1f5f9;border-radius:6px;padding:4px 10px;font-size:11px;font-family:monospace}.card{border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:8px 0;page-break-inside:avoid}.card-title{font-weight:600;font-size:13px}.card-desc{font-size:12px;color:#475569;margin-top:4px}.rec{font-size:12px;color:#10b981;margin-top:6px}.brand-tag{display:inline-block;background:#e2e8f0;border-radius:4px;padding:1px 6px;font-size:10px;margin:2px 2px 2px 0}.action-card{border-left:3px solid;border-radius:6px;padding:10px 12px;margin:6px 0;background:#fafafa;page-break-inside:avoid}.action-title{font-weight:600;font-size:12px}.action-meta{font-size:10px;color:#64748b;margin-top:2px}.action-desc{font-size:11px;color:#334155;margin-top:4px}.template-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:8px;margin-top:6px;font-family:monospace;font-size:10px;white-space:pre-wrap}ol{padding-left:20px}ol li{margin:4px 0;font-size:12px}.footer{margin-top:30px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center}@media print{body{padding:20px}.action-card{break-inside:avoid}}</style></head><body>
 <h1>🛡️ Threat Intelligence Briefing</h1>
 <div class="subtitle">Generated: ${now} | LRX Radar</div>
 <h2>Executive Summary</h2><p>${b.executive_summary || 'N/A'}</p>
 <div class="stats">${Object.entries(ds).map(([k,v]) => `<span class="stat">${v} ${k.replace(/_/g,' ')}</span>`).join('')}</div>
+${brandsHtml}
 ${b.campaigns?.length ? `<h2>Campaigns (${b.campaigns.length})</h2>${b.campaigns.map(c => `<div class="card"><div style="display:flex;justify-content:space-between"><span class="card-title">${c.name}</span>${sevBadge(c.severity)}</div><div class="card-desc">${c.description}</div>${(c.brands_targeted||[]).map(br=>`<span class="brand-tag">${br}</span>`).join('')}<div class="rec">💡 ${c.recommendation}</div></div>`).join('')}` : ''}
 ${b.top_risks?.length ? `<h2>Risks (${b.top_risks.length})</h2>${b.top_risks.map(r => `<div class="card"><h3>${r.title}</h3><div class="card-desc">${r.detail}</div><div class="rec">💡 ${r.action}</div></div>`).join('')}` : ''}
 ${b.recommendations?.length ? `<h2>Recommendations</h2><ol>${b.recommendations.map(r=>`<li>${r}</li>`).join('')}</ol>` : ''}
@@ -529,27 +551,18 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
 
     const w = window.open('', '_blank');
     if (!w) { toast.error("Pop-up blocked"); return; }
-    w.document.write(html);
-    w.document.close();
+    w.document.write(html); w.document.close();
     w.onload = () => w.print();
   };
 
-  // ─── Drill-down view ───
+  // ─── Drill-down ───
   if (drillDown && briefing?.success) {
     const finding = drillDown.type === "campaign"
       ? briefing.briefing.campaigns[drillDown.index]
       : briefing.briefing.top_risks[drillDown.index];
-
     if (finding) {
-      return (
-        <FindingDetail
-          finding={finding}
-          type={drillDown.type}
-          onBack={() => setDrillDown(null)}
-          allActions={allActions}
-          onExecute={executeAction}
-        />
-      );
+      return <FindingDetail finding={finding} type={drillDown.type} onBack={() => setDrillDown(null)}
+        allActions={allActions} onExecute={executeAction} />;
     }
   }
 
@@ -566,13 +579,11 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowHistory(!showHistory)}>
-                <History className="w-4 h-4" />
-                History ({history.length})
+                <History className="w-4 h-4" /> History ({history.length})
               </Button>
               {briefing?.success && (
                 <Button onClick={exportAsPdf} variant="outline" size="sm" className="gap-2">
-                  <Download className="w-4 h-4" />
-                  Export PDF
+                  <Download className="w-4 h-4" /> Export PDF
                 </Button>
               )}
               <Button onClick={generateBriefing} disabled={loading} size="sm" className="gap-2">
@@ -588,7 +599,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
           </p>
         </CardHeader>
 
-        {!briefing && !loading && (
+        {!briefing && !loading && !streamingText && (
           <CardContent>
             <div className="text-center py-12 text-muted-foreground">
               <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -598,12 +609,36 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
           </CardContent>
         )}
 
+        {/* Streaming state */}
         {loading && (
           <CardContent>
-            <div className="text-center py-12">
-              <Brain className="w-12 h-12 mx-auto mb-3 text-primary animate-pulse" />
-              <p className="text-sm font-medium text-foreground">Analyzing threat landscape…</p>
-              <p className="text-xs text-muted-foreground mt-1">Processing feeds with fast AI model</p>
+            <div className="space-y-4">
+              {streamMeta && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-mono">
+                  {Object.entries(streamMeta).map(([k, v]) => (
+                    <span key={k}>{v} {k.replace(/_/g, ' ').replace('analyzed', '').trim()}</span>
+                  ))}
+                </div>
+              )}
+              {streamingText ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Brain className="w-4 h-4 text-primary animate-pulse" />
+                    <span className="text-sm font-medium text-foreground">AI analyzing threat landscape…</span>
+                  </div>
+                  <ScrollArea className="max-h-64">
+                    <pre className="text-xs text-foreground/70 font-mono whitespace-pre-wrap leading-relaxed">
+                      {streamingText.slice(-2000)}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Brain className="w-12 h-12 mx-auto mb-3 text-primary animate-pulse" />
+                  <p className="text-sm font-medium text-foreground">Querying intelligence feeds…</p>
+                  <p className="text-xs text-muted-foreground mt-1">Fetching from all data sources</p>
+                </div>
+              )}
             </div>
           </CardContent>
         )}
@@ -614,8 +649,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
         <Card className="bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <History className="w-4 h-4 text-primary" />
-              Briefing History
+              <History className="w-4 h-4 text-primary" /> Briefing History
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -627,12 +661,9 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
                   {history.map((entry) => {
                     const isActive = briefing?.briefing_id === entry.id;
                     return (
-                      <button key={entry.id}
-                        onClick={() => loadFromHistory(entry)}
-                        className={cn(
-                          "w-full text-left rounded-lg border p-2.5 transition-colors hover:bg-accent/50",
-                          isActive ? "border-primary/40 bg-primary/5" : "border-border"
-                        )}>
+                      <button key={entry.id} onClick={() => loadFromHistory(entry)}
+                        className={cn("w-full text-left rounded-lg border p-2.5 transition-colors hover:bg-accent/50",
+                          isActive ? "border-primary/40 bg-primary/5" : "border-border")}>
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-foreground">
                             {new Date(entry.generated_at).toLocaleDateString()} {new Date(entry.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -663,8 +694,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
           <Card className="border-primary/20 bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary" />
-                Executive Summary
+                <Shield className="w-4 h-4 text-primary" /> Executive Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -679,7 +709,10 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
             </CardContent>
           </Card>
 
-          {/* Campaigns — clickable for drill-down */}
+          {/* Top Impacted Brands */}
+          <TopBrandsCard brands={briefing.briefing.top_brands || []} />
+
+          {/* Campaigns */}
           {briefing.briefing.campaigns?.length > 0 && (
             <Card className="bg-card">
               <CardHeader className="pb-2">
@@ -691,8 +724,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
               </CardHeader>
               <CardContent className="space-y-3">
                 {briefing.briefing.campaigns.map((campaign, i) => (
-                  <div key={i}
-                    className="rounded-lg border border-border bg-background/50 p-3 cursor-pointer hover:border-primary/40 transition-colors"
+                  <div key={i} className="rounded-lg border border-border bg-background/50 p-3 cursor-pointer hover:border-primary/40 transition-colors"
                     onClick={() => setDrillDown({ type: "campaign", index: i })}>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <span className="text-sm font-semibold text-foreground">{campaign.name}</span>
@@ -718,18 +750,17 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
                       ) : null}
                     </div>
                     <div className="flex items-start gap-1.5 text-[11px] text-primary">
-                      <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
-                      <span>{campaign.recommendation}</span>
+                      <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" /><span>{campaign.recommendation}</span>
                     </div>
                     <InlineActions findingName={campaign.name} actions={allActions}
-                      onExecute={(a) => { executeAction(a, allActions.indexOf(a)); }} />
+                      onExecute={(a) => executeAction(a, allActions.indexOf(a))} />
                   </div>
                 ))}
               </CardContent>
             </Card>
           )}
 
-          {/* Top Risks — clickable for drill-down */}
+          {/* Top Risks */}
           {briefing.briefing.top_risks?.length > 0 && (
             <Card className="bg-card">
               <CardHeader className="pb-2">
@@ -744,8 +775,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
                   const config = priorityConfig[risk.priority] || priorityConfig.monitor;
                   const PriorityIcon = config.icon;
                   return (
-                    <div key={i}
-                      className="rounded-lg border border-border bg-background/50 p-3 cursor-pointer hover:border-primary/40 transition-colors"
+                    <div key={i} className="rounded-lg border border-border bg-background/50 p-3 cursor-pointer hover:border-primary/40 transition-colors"
                       onClick={() => setDrillDown({ type: "risk", index: i })}>
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2">
@@ -762,11 +792,10 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
                         </Badge>
                       ) : null}
                       <div className="flex items-start gap-1.5 mt-2 text-[11px] text-primary">
-                        <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
-                        <span>{risk.action}</span>
+                        <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" /><span>{risk.action}</span>
                       </div>
                       <InlineActions findingName={risk.title} actions={allActions}
-                        onExecute={(a) => { executeAction(a, allActions.indexOf(a)); }} />
+                        onExecute={(a) => executeAction(a, allActions.indexOf(a))} />
                     </div>
                   );
                 })}
@@ -778,10 +807,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
           {briefing.briefing.trends?.length > 0 && (
             <Card className="bg-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  Trend Analysis
-                </CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Trend Analysis</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {briefing.briefing.trends.map((trend, i) => {
@@ -842,10 +868,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
           {briefing.briefing.recommendations?.length > 0 && (
             <Card className="bg-card border-primary/20">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-primary" />
-                  Actionable Recommendations
-                </CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Lightbulb className="w-4 h-4 text-primary" /> Actionable Recommendations</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="space-y-2">
@@ -865,8 +888,7 @@ ${allActions.length ? `<h2>Action Playbook (${allActions.length})</h2>${allActio
             <Card className="bg-card border-primary/30">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-primary" />
-                  Action Playbook ({allActions.length})
+                  <Zap className="w-4 h-4 text-primary" /> Action Playbook ({allActions.length})
                 </CardTitle>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {["all", "investigate", "escalate", "defend", "track"].map((cat) => {
