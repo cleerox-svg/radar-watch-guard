@@ -41,6 +41,60 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_runs: {
+        Row: {
+          agent_type: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          expires_at: string
+          id: string
+          input_params: Json | null
+          items_flagged: number | null
+          items_processed: number | null
+          results: Json | null
+          started_at: string | null
+          status: string
+          summary: string | null
+          trigger_type: string
+        }
+        Insert: {
+          agent_type: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          input_params?: Json | null
+          items_flagged?: number | null
+          items_processed?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          trigger_type?: string
+        }
+        Update: {
+          agent_type?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          input_params?: Json | null
+          items_flagged?: number | null
+          items_processed?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          trigger_type?: string
+        }
+        Relationships: []
+      }
       ato_events: {
         Row: {
           created_at: string
@@ -884,6 +938,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_agent_runs: { Args: never; Returns: undefined }
       get_hosting_provider_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
