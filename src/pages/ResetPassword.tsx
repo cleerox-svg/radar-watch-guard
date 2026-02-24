@@ -68,7 +68,7 @@ export default function ResetPassword() {
             <div className="absolute inset-0 bg-primary/5 rounded-2xl animate-pulse-slow" />
             <Satellite className="w-8 h-8 text-primary relative z-10" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-wider text-foreground">LRX RADAR</h1>
+          <h1 className="text-2xl font-extrabold tracking-wider text-foreground">TRUST RADAR</h1>
           <p className="text-xs text-muted-foreground font-mono tracking-widest uppercase">Set New Password</p>
         </div>
 

@@ -126,8 +126,8 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
             <Satellite className="w-5 h-5 text-primary relative z-10" />
           </div>
           <div>
-            <span className="block text-lg font-extrabold tracking-wider text-foreground group-hover:text-primary transition-colors">LRX RADAR</span>
-            <span className="block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Threat Intelligence</span>
+            <span className="block text-lg font-extrabold tracking-wider text-foreground group-hover:text-primary transition-colors">TRUST RADAR</span>
+            <span className="block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Trust Intelligence</span>
           </div>
         </Link>
         {onClose && (
@@ -254,7 +254,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
         )}
 
         <div className="flex items-center justify-between px-3">
-          <p className="text-[10px] text-muted-foreground font-mono">v3.1.0</p>
+          <p className="text-[10px] text-muted-foreground font-mono">v4.0.0</p>
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
