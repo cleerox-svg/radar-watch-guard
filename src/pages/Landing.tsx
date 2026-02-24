@@ -1,10 +1,15 @@
 /**
- * Landing.tsx — Public-facing sales pitch page for LRX Radar.
- * Showcases top platform features with hero, feature grid, stats, and CTA.
+ * Landing.tsx — Trust Radar public landing page.
+ * Sections: Trust Score Hero, AI Agents Showcase, How It Works, Social Proof Stats, CTAs.
  */
 
 import { Link } from "react-router-dom";
-import { Satellite, Scan, Zap, Shield, Globe, Brain, Radio, Skull, ShieldCheck, UsersRound, ArrowRight, ChevronRight, Ticket, BarChart3, UserCircle, LayoutDashboard, Loader2, Search, ShieldOff, AlertTriangle, Eye } from "lucide-react";
+import {
+  Satellite, Scan, Shield, Globe, Brain, ArrowRight, ChevronRight,
+  ShieldCheck, Loader2, Bot, Zap, Target, BarChart3,
+  UserCircle, LayoutDashboard, Eye, TrendingUp, Radio, Skull,
+  Search, Activity, CheckCircle2, Sparkles
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,89 +18,93 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { HeroMapBackground } from "@/components/landing/HeroMapBackground";
-import aiBriefingMockup from "@/assets/ai-briefing-mockup.jpg";
-
-const features = [
-  {
-    icon: Scan,
-    title: "Brand Exposure Mapping",
-    description: "Pre-attack surface analysis — typosquats, spoofing risk, credential leaks, and dangling DNS — scored into a single Brand Exposure Index.",
-    accent: "text-cyan-500",
-    accentBg: "bg-cyan-500/10",
-  },
-  {
-    icon: Zap,
-    title: "Cross-Signal Correlation",
-    description: "AI-powered engine that connects DMARC failures, ATO events, social IOCs, and breach data into high-confidence campaign alerts with kill-chain mapping.",
-    accent: "text-amber-500",
-    accentBg: "bg-amber-500/10",
-  },
-  {
-    icon: Shield,
-    title: "Automated Takedown & Response",
-    description: "Orchestrate blocklist pushes to Proofpoint/Mimecast, fire takedown requests via Netcraft/Bolster, and revoke sessions through Okta — all from one console.",
-    accent: "text-rose-500",
-    accentBg: "bg-rose-500/10",
-  },
-  {
-    icon: Brain,
-    title: "AI Threat Briefings",
-    description: "Daily AI-generated intelligence reports with MITRE ATT&CK mapping, trend analysis, and prioritized recommendations — ready for your exec team.",
-    accent: "text-violet-500",
-    accentBg: "bg-violet-500/10",
-  },
-  {
-    icon: Globe,
-    title: "Global Threat Heatmap",
-    description: "Real-time geographic visualization of threat origins and targets across 10+ intelligence feeds, with interactive drill-down by country and source.",
-    accent: "text-emerald-500",
-    accentBg: "bg-emerald-500/10",
-  },
-  {
-    icon: Skull,
-    title: "Dark Web & Breach Monitoring",
-    description: "Continuous credential exposure checks, Tor exit node tracking, and ransomware group activity monitoring — all correlated against your brand assets.",
-    accent: "text-orange-500",
-    accentBg: "bg-orange-500/10",
-  },
-  {
-    icon: Radio,
-    title: "Social IOC Intelligence",
-    description: "Automated ingestion from TweetFeed and Mastodon threat intel communities — IOCs classified, tagged, and scored in real time.",
-    accent: "text-sky-500",
-    accentBg: "bg-sky-500/10",
-  },
-  {
-    icon: UsersRound,
-    title: "Account Takeover War Room",
-    description: "Impossible travel detection, credential stuffing identification, and session hijack tracking with geolocation risk scoring and resolution workflows.",
-    accent: "text-pink-500",
-    accentBg: "bg-pink-500/10",
-  },
-  {
-    icon: Ticket,
-    title: "Investigation Tracker",
-    description: "Full-lifecycle case management — create tickets from any threat, assign analysts, track resolution, and maintain an audit trail across investigations.",
-    accent: "text-violet-500",
-    accentBg: "bg-violet-500/10",
-  },
-];
-
-
-
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.04, duration: 0.4, ease: "easeOut" as const },
+    transition: { delay: i * 0.06, duration: 0.5, ease: "easeOut" as const },
   }),
 };
 
+const agents = [
+  {
+    icon: Target,
+    name: "Triage Agent",
+    description: "Auto-scores and prioritizes every incoming threat. Deduplicates IOCs across all feeds and assigns severity in real time.",
+    accent: "text-cyan-500",
+    accentBg: "bg-cyan-500/10",
+    status: "Always On",
+  },
+  {
+    icon: Search,
+    name: "Threat Hunt Agent",
+    description: "Correlates data across 24+ feeds to identify campaign clusters, shared infrastructure, and emerging coordinated attacks.",
+    accent: "text-amber-500",
+    accentBg: "bg-amber-500/10",
+    status: "Every 6 Hours",
+  },
+  {
+    icon: Shield,
+    name: "Response Agent",
+    description: "Auto-generates takedown notices, suggests erasure actions, and builds MITRE ATT&CK-aligned mitigation checklists.",
+    accent: "text-rose-500",
+    accentBg: "bg-rose-500/10",
+    status: "On Demand",
+  },
+  {
+    icon: Brain,
+    name: "Executive Intel Agent",
+    description: "Produces C-suite briefings, brand risk scorecards, and trend forecasts — ready for your board in minutes.",
+    accent: "text-violet-500",
+    accentBg: "bg-violet-500/10",
+    status: "Daily",
+  },
+  {
+    icon: Sparkles,
+    name: "Chat Copilot",
+    description: "Ask questions in plain language — it queries your threat data, creates investigation tickets, and triggers scans inline.",
+    accent: "text-emerald-500",
+    accentBg: "bg-emerald-500/10",
+    status: "Interactive",
+  },
+];
+
+const howItWorks = [
+  {
+    step: "01",
+    title: "Measure",
+    desc: "Instant Trust Score for any domain — email authentication, impersonation risk, credential exposure, and DNS health scored into a single index.",
+    color: "text-cyan-500",
+    icon: BarChart3,
+  },
+  {
+    step: "02",
+    title: "Monitor",
+    desc: "24/7 continuous monitoring across 24+ intelligence feeds. AI agents watch for trust erosion — typosquats, breaches, spoofing, and dark web activity.",
+    color: "text-emerald-500",
+    icon: Eye,
+  },
+  {
+    step: "03",
+    title: "Defend",
+    desc: "Automated response orchestration — takedown requests, blocklist pushes, session revocations, and abuse reports dispatched from one console.",
+    color: "text-rose-500",
+    icon: Shield,
+  },
+  {
+    step: "04",
+    title: "Report",
+    desc: "AI-generated executive briefings with MITRE ATT&CK mapping, trend analysis, and board-ready trust scorecards delivered on schedule.",
+    color: "text-violet-500",
+    icon: Brain,
+  },
+];
+
 export default function Landing() {
   const { user } = useAuth();
-  /** Live threat count from the database */
+
   const { data: threatCount } = useQuery({
     queryKey: ["threat_count_landing"],
     queryFn: async () => {
@@ -108,7 +117,6 @@ export default function Landing() {
     refetchInterval: 60000,
   });
 
-  /** Dynamic feed count from feed_schedules */
   const { data: feedCount } = useQuery({
     queryKey: ["feed_count_landing"],
     queryFn: async () => {
@@ -125,9 +133,9 @@ export default function Landing() {
   const feedLabel = feedCount != null && feedCount > 0 ? `${feedCount}+` : "24+";
 
   const stats = [
-    { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Tracked" },
+    { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Neutralized" },
     { value: feedLabel, label: "Intelligence Feeds" },
-    { value: "3", label: "Core Modules" },
+    { value: "5", label: "AI Trust Agents" },
     { value: "24/7", label: "Continuous Monitoring" },
   ];
 
@@ -142,15 +150,15 @@ export default function Landing() {
               <Satellite className="w-5 h-5 text-primary relative z-10" />
             </div>
             <div>
-              <span className="text-lg font-extrabold tracking-wider text-foreground">LRX RADAR</span>
-              <span className="hidden sm:block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Threat Intelligence</span>
+              <span className="text-lg font-extrabold tracking-wider text-foreground">TRUST RADAR</span>
+              <span className="hidden sm:block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Trust Intelligence Platform</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/scan">
               <Button variant="ghost" size="sm" className="text-xs gap-1.5">
                 <Scan className="w-3.5 h-3.5" />
-                Free Scan
+                Free Trust Score
               </Button>
             </Link>
             {user ? (
@@ -180,7 +188,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero */}
+      {/* ═══ HERO: Trust Score ═══ */}
       <section className="relative overflow-hidden">
         <HeroMapBackground />
         <div className="absolute inset-0 bg-grid opacity-30" />
@@ -197,28 +205,28 @@ export default function Landing() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              LIVE THREAT INTELLIGENCE
+              AI-POWERED TRUST INTELLIGENCE
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
-              See Threats Before<br />
-              <span className="text-gradient-radar">They See You</span>
+              Know Your Brand's<br />
+              <span className="text-gradient-radar">Trust Score</span>
             </h1>
 
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground leading-relaxed">
-              LRX Radar is the intelligence layer that correlates threats across your entire attack surface — and uses your existing security tools to neutralize them automatically.
+              Trust Radar measures, monitors, and defends your brand's digital trust — powered by 5 AI agents that work 24/7 so your customers never have to question if it's really you.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link to="/scan">
                 <Button size="lg" className="gap-2 text-sm px-8 glow-primary">
                   <Scan className="w-4 h-4" />
-                  Try Free Domain Scan
+                  Get Your Free Trust Score
                 </Button>
               </Link>
               <Button size="lg" variant="outline" className="gap-2 text-sm px-8" onClick={() => {
-                const form = document.getElementById('request-access');
-                if (form) form.scrollIntoView({ behavior: 'smooth' });
+                const el = document.getElementById('request-access');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}>
                 Request Access
                 <ArrowRight className="w-4 h-4" />
@@ -228,7 +236,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Strip */}
+      {/* ═══ SOCIAL PROOF STATS ═══ */}
       <section className="border-y border-border bg-card/50">
         <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
@@ -248,21 +256,24 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* ═══ AI AGENTS SHOWCASE (Hero-level) ═══ */}
       <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
+            <Bot className="w-3.5 h-3.5" /> 5 AI TRUST AGENTS
+          </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
-            Full-Spectrum Threat Intelligence
+            Meet Your Autonomous Trust Guardians
           </h2>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
-            Three core modules cover the entire attack lifecycle — from pre-attack reconnaissance through active correlation to automated response.
+            Five specialized AI agents that measure trust, hunt threats, orchestrate response, brief executives, and answer your questions — all working in concert.
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {features.map((feature, i) => (
+          {agents.map((agent, i) => (
             <motion.div
-              key={feature.title}
+              key={agent.name}
               custom={i}
               initial="hidden"
               whileInView="visible"
@@ -270,30 +281,33 @@ export default function Landing() {
               variants={fadeUp}
               className="group bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all duration-300 card-interactive"
             >
-              <div className={`w-10 h-10 rounded-lg ${feature.accentBg} flex items-center justify-center mb-4`}>
-                <feature.icon className={`w-5 h-5 ${feature.accent}`} />
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-10 h-10 rounded-lg ${agent.accentBg} flex items-center justify-center`}>
+                  <agent.icon className={`w-5 h-5 ${agent.accent}`} />
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  {agent.status}
+                </span>
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-2">{feature.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{feature.description}</p>
+              <h3 className="text-sm font-bold text-foreground mb-2">{agent.name}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{agent.description}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* ═══ HOW IT WORKS: Measure → Monitor → Defend → Report ═══ */}
       <section className="border-t border-border bg-card/30">
         <div className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">How It Works</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">How Trust Radar Works</h2>
             <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
-              Three stages, one unified timeline — from detection to neutralization.
+              Four stages of trust lifecycle management — from assessment to executive reporting.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { step: "01", title: "Detect", desc: `Continuous ingestion from ${feedLabel} threat feeds with automated brand exposure scanning and dark web monitoring.`, color: "text-cyan-500" },
-              { step: "02", title: "Correlate", desc: "AI connects signals across DMARC, ATO, social IOCs, and breach data — surfacing campaigns humans would miss.", color: "text-amber-500" },
-            ].map((item, i) => (
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {howItWorks.map((item, i) => (
               <motion.div
                 key={item.step}
                 custom={i}
@@ -303,87 +317,62 @@ export default function Landing() {
                 variants={fadeUp}
                 className="relative bg-card border border-border rounded-xl p-6"
               >
-                <span className={`text-5xl font-extrabold ${item.color} opacity-20 absolute top-4 right-4`}>{item.step}</span>
+                <span className={`text-5xl font-extrabold ${item.color} opacity-15 absolute top-4 right-4`}>{item.step}</span>
+                <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3`}>
+                  <item.icon className={`w-4 h-4 ${item.color}`} />
+                </div>
                 <h3 className={`text-lg font-bold ${item.color} mb-2`}>{item.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                {i < howItWorks.length - 1 && (
+                  <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10">
+                    <ChevronRight className="w-5 h-5 text-muted-foreground/30" />
+                  </div>
+                )}
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Step 03: Respond — expanded with action categories */}
+      {/* ═══ TRUST VISIBILITY ═══ */}
+      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-xs font-mono mb-4">
+            <Globe className="w-3.5 h-3.5" /> FULL VISIBILITY
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
+            See What Your Customers See
+          </h2>
+          <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+            Real-time visibility into your brand's trust posture — email authentication health, impersonation attempts, credential exposure, and dark web activity, all on one dashboard.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {[
+            { icon: ShieldCheck, title: "Email Trust", desc: "SPF, DKIM, and DMARC compliance monitoring — see who can send email as your brand.", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { icon: Skull, title: "Dark Web Monitoring", desc: "Continuous checks for leaked credentials, ransomware group mentions, and Tor exit node tracking.", color: "text-orange-500", bg: "bg-orange-500/10" },
+            { icon: Radio, title: "Community Intel", desc: "Live IOC feeds from security researchers on social platforms — classified and scored in real time.", color: "text-sky-500", bg: "bg-sky-500/10" },
+          ].map((item, i) => (
             <motion.div
-              custom={2}
+              key={item.title}
+              custom={i}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUp}
-              className="relative bg-card border border-border rounded-xl p-6 md:col-span-1"
+              className="bg-card border border-border rounded-xl p-5"
             >
-              <span className="text-5xl font-extrabold text-rose-500 opacity-20 absolute top-4 right-4">03</span>
-              <h3 className="text-lg font-bold text-rose-500 mb-3">Respond</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">One-click orchestration through your existing tools — organized into four action categories.</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { icon: Search, label: "Investigate", desc: "OSINT & WHOIS", color: "text-cyan-500", bg: "bg-cyan-500/10" },
-                  { icon: ShieldOff, label: "Defend", desc: "Block & Erasure", color: "text-rose-500", bg: "bg-rose-500/10" },
-                  { icon: AlertTriangle, label: "Escalate", desc: "Abuse & LE Reports", color: "text-amber-500", bg: "bg-amber-500/10" },
-                  { icon: Eye, label: "Track", desc: "Tickets & Watchlists", color: "text-violet-500", bg: "bg-violet-500/10" },
-                ].map((action) => (
-                  <div key={action.label} className={`${action.bg} rounded-lg p-2.5 border border-border`}>
-                    <action.icon className={`w-3.5 h-3.5 ${action.color} mb-1`} />
-                    <p className={`text-[11px] font-bold ${action.color}`}>{action.label}</p>
-                    <p className="text-[9px] text-muted-foreground">{action.desc}</p>
-                  </div>
-                ))}
+              <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center mb-4`}>
+                <item.icon className={`w-5 h-5 ${item.color}`} />
               </div>
+              <h3 className="text-sm font-bold text-foreground mb-2">{item.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
             </motion.div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* AI Analysis Preview */}
-      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
-            <Brain className="w-3.5 h-3.5" /> AI-POWERED ANALYSIS
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
-            AI Threat Briefings With Actionable Playbooks
-          </h2>
-          <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
-            Daily AI-generated intelligence reports with MITRE ATT&CK mapping, campaign identification, and a prioritized action playbook you can execute directly from the platform.
-          </p>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="relative rounded-2xl overflow-hidden border border-border shadow-2xl"
-        >
-          <img
-            src={aiBriefingMockup}
-            alt="AI Threat Intelligence Briefing with Action Playbook"
-            className="w-full h-auto blur-[3px] opacity-70"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-            <h3 className="text-lg sm:text-xl font-extrabold text-foreground mb-2">Executive Summary • Campaigns • Action Playbook</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mb-4">
-              Every briefing includes executable actions — open investigation tickets, push domain blocks, file abuse reports, or generate law enforcement referral templates.
-            </p>
-            <Button size="sm" className="gap-2" onClick={() => {
-              const briefingForm = document.getElementById('ai-briefing-request');
-              if (briefingForm) briefingForm.scrollIntoView({ behavior: 'smooth' });
-            }}>
-              <Brain className="w-4 h-4" />
-              Request a Briefing
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* AI Briefing Request */}
+      {/* ═══ AI BRIEFING REQUEST ═══ */}
       <section id="ai-briefing-request" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -398,14 +387,14 @@ export default function Landing() {
                 <Brain className="w-3.5 h-3.5" /> AI-POWERED
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-4">
-                Get a Free AI Threat Intelligence Briefing
+                Get a Free AI Trust Assessment
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Our AI analyzes your brand's threat landscape and delivers a personalized intelligence report with MITRE ATT&CK mapping and prioritized recommendations.
+                Our AI analyzes your brand's trust posture and delivers a personalized intelligence report with risk scoring and prioritized recommendations.
               </p>
               <p className="text-xs text-muted-foreground/70 italic">
-                A member of our sales team will follow up to discuss your results and how LRX Radar can protect your organization. You can also reach us directly at{" "}
-                <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>.
+                A member of our team will follow up to discuss your results.{" "}
+                <a href="mailto:sales@trustradar.com" className="text-primary hover:underline">sales@trustradar.com</a>
               </p>
             </div>
             <AIBriefingForm />
@@ -413,7 +402,7 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      {/* Request Access Form */}
+      {/* ═══ REQUEST ACCESS ═══ */}
       <section id="request-access" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -431,11 +420,11 @@ export default function Landing() {
                 Request Platform Access
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
-                LRX Radar is an invite-only platform. Submit your details and our team will review your request and provision your account.
+                Trust Radar is an invite-only platform. Submit your details and our team will review your request and provision your account.
               </p>
               <p className="text-xs text-muted-foreground/70 italic">
-                Questions? Reach us directly at{" "}
-                <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>.
+                Questions? Reach us at{" "}
+                <a href="mailto:sales@trustradar.com" className="text-primary hover:underline">sales@trustradar.com</a>.
               </p>
             </div>
             <AccessRequestForm />
@@ -443,7 +432,7 @@ export default function Landing() {
         </motion.div>
       </section>
 
-
+      {/* ═══ BOTTOM CTA ═══ */}
       <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -454,21 +443,21 @@ export default function Landing() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
           <div className="relative">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-4">
-              Start With a Free Domain Scan
+              Start With a Free Trust Score
             </h2>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
-              See your brand's exposure score in seconds — no account required. Check email spoofing risk, typosquat domains, credential leaks, and more.
+              See your brand's trust score in seconds — no account required. Check email authentication, impersonation risk, credential leaks, and more.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/scan">
                 <Button size="lg" className="gap-2 px-8 glow-primary">
                   <Scan className="w-4 h-4" />
-                  Scan Your Domain
+                  Get Your Trust Score
                 </Button>
               </Link>
               <Button size="lg" variant="outline" className="gap-2 px-8" onClick={() => {
-                const form = document.getElementById('request-access');
-                if (form) form.scrollIntoView({ behavior: 'smooth' });
+                const el = document.getElementById('request-access');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}>
                 Request Platform Access
                 <ChevronRight className="w-4 h-4" />
@@ -483,17 +472,17 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Satellite className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-foreground tracking-wider">LRX RADAR</span>
-            <span className="text-[10px] text-muted-foreground font-mono ml-2">v3.1.0</span>
+            <span className="text-sm font-bold text-foreground tracking-wider">TRUST RADAR</span>
+            <span className="text-[10px] text-muted-foreground font-mono ml-2">v4.0.0</span>
             <span className="mx-2 text-border">|</span>
             <span className="text-[10px] text-muted-foreground font-mono">🇨🇦 Canadian Owned & Operated</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="mailto:sales@lrxradar.com" className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono">
-              sales@lrxradar.com
+            <a href="mailto:sales@trustradar.com" className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono">
+              sales@trustradar.com
             </a>
             <p className="text-[10px] text-muted-foreground font-mono">
-              © {new Date().getFullYear()} LRX Radar · Threat Intelligence Platform
+              © {new Date().getFullYear()} Trust Radar · Trust Intelligence Platform
             </p>
           </div>
         </div>
@@ -501,6 +490,8 @@ export default function Landing() {
     </div>
   );
 }
+
+/* ── Forms ── */
 
 function AIBriefingForm() {
   const [name, setName] = useState("");
@@ -539,61 +530,27 @@ function AIBriefingForm() {
         <ShieldCheck className="w-10 h-10 text-primary mx-auto mb-3" />
         <h3 className="text-lg font-bold text-foreground mb-2">Request Received!</h3>
         <p className="text-sm text-muted-foreground">
-          Our sales team will prepare your AI threat intelligence briefing and contact you shortly.
+          Our team will prepare your AI trust assessment and contact you shortly.
         </p>
       </div>
     );
   }
 
+  const inputCls = "w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary";
+
   return (
     <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-6 space-y-3">
-      <input
-        type="text"
-        required
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name *"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Work email *"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="text"
-        value={company}
-        onChange={(e) => setCompany(e.target.value)}
-        placeholder="Company name (optional)"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="text"
-        required
-        value={domain}
-        onChange={(e) => setDomain(e.target.value)}
-        placeholder="Your domain (e.g. example.com) *"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="tel"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="Phone number (optional)"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
+      <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name *" className={inputCls} />
+      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Work email *" className={inputCls} />
+      <input type="text" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name (optional)" className={inputCls} />
+      <input type="text" required value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Your domain (e.g. example.com) *" className={inputCls} />
+      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number (optional)" className={inputCls} />
       <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim() || !domain.trim()}>
         {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-        {submitting ? "Submitting..." : "Request AI Briefing"}
+        {submitting ? "Submitting..." : "Request AI Trust Assessment"}
       </Button>
       <p className="text-[10px] text-muted-foreground text-center">
-        A member of our sales team will follow up with your personalized report.
-        <br />
-        Or email us directly at{" "}
-        <a href="mailto:sales@lrxradar.com" className="text-primary hover:underline">sales@lrxradar.com</a>
+        A member of our team will follow up with your personalized report.
       </p>
     </form>
   );
@@ -636,51 +593,21 @@ function AccessRequestForm() {
         <ShieldCheck className="w-10 h-10 text-primary mx-auto mb-3" />
         <h3 className="text-lg font-bold text-foreground mb-2">Request Received!</h3>
         <p className="text-sm text-muted-foreground">
-          Our team will review your request and provision your account. You'll receive an invitation email once approved.
+          Our team will review your request and provision your account.
         </p>
       </div>
     );
   }
 
+  const inputCls = "w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary";
+
   return (
     <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-6 space-y-3">
-      <input
-        type="text"
-        required
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name *"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Work email *"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="text"
-        value={company}
-        onChange={(e) => setCompany(e.target.value)}
-        placeholder="Company name (optional)"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <input
-        type="tel"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="Phone number (optional)"
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-      />
-      <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Tell us about your use case (optional)"
-        rows={3}
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-      />
+      <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name *" className={inputCls} />
+      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Work email *" className={inputCls} />
+      <input type="text" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name (optional)" className={inputCls} />
+      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number (optional)" className={inputCls} />
+      <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell us about your use case (optional)" rows={3} className={`${inputCls} resize-none`} />
       <Button type="submit" className="w-full gap-2" disabled={submitting || !name.trim() || !email.trim()}>
         {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
         {submitting ? "Submitting..." : "Request Access"}

@@ -148,7 +148,7 @@ export default function PublicScanner() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Satellite className="w-5 h-5 text-primary" />
-            <span className="font-bold tracking-wider text-foreground">LRX RADAR</span>
+            <span className="font-bold tracking-wider text-foreground">TRUST RADAR</span>
           </Link>
           <Link to="/">
             <Button variant="outline" size="sm" className="text-xs gap-1">
@@ -164,14 +164,14 @@ export default function PublicScanner() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 pb-12 text-center relative">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
             <Radio className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">Free OSINT Risk Assessment</span>
+            <span className="text-xs font-medium text-primary">Free Trusted Brand Assessment</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-foreground">
-            How Vulnerable Is Your Brand?
+            How Trusted Is Your Brand?
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-            Get an instant security assessment. We scan your domain for email spoofing risk,
-            impersonation domains, certificate abuse, and credential leaks — in under 30 seconds.
+            Get an instant trust assessment. We analyze your domain's email authentication,
+            impersonation risk, credential exposure, and DNS health — in under 30 seconds.
           </p>
 
           {/* Search */}
@@ -257,9 +257,9 @@ export default function PublicScanner() {
               <div className="flex flex-col md:flex-row">
                 <div className={cn("flex items-center justify-center p-8 md:p-12 bg-gradient-to-br", gradeColors[result.grade] || gradeColors.F)}>
                   <div className="text-center">
-                    <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-1">Risk Grade</p>
+                    <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-1">Trust Grade</p>
                     <span className="text-6xl md:text-7xl font-bold text-white">{result.grade}</span>
-                    <p className="text-white/80 text-sm mt-2 font-mono">{result.score}/100</p>
+                    <p className="text-white/80 text-sm mt-2 font-mono">Trust Score: {result.score}/100</p>
                   </div>
                 </div>
                 <div className="flex-1 p-6 md:p-8">
@@ -401,9 +401,9 @@ export default function PublicScanner() {
                   <CardContent className="py-6 text-center">
                     <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
                     <p className="text-sm text-foreground font-medium">Your domain looks clean — but threats can appear at any time.</p>
-                    <p className="text-xs text-muted-foreground mt-1 mb-4">Set up continuous monitoring with LRX Radar to stay protected.</p>
-                    <Link to="/">
-                      <Button size="sm" className="gap-2">Open LRX Radar <ArrowRight className="w-3 h-3" /></Button>
+                     <p className="text-xs text-muted-foreground mt-1 mb-4">Set up continuous monitoring with Trust Radar to stay protected.</p>
+                     <Link to="/">
+                       <Button size="sm" className="gap-2">Open Trust Radar <ArrowRight className="w-3 h-3" /></Button>
                     </Link>
                   </CardContent>
                 </Card>
@@ -497,11 +497,11 @@ export default function PublicScanner() {
                 <CardContent className="py-6 flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1">
                     <h3 className="text-sm font-bold text-foreground mb-1">Want continuous monitoring?</h3>
-                    <p className="text-xs text-muted-foreground">LRX Radar provides real-time threat detection, automated takedowns, and converged intelligence — 24/7.</p>
+                    <p className="text-xs text-muted-foreground">Trust Radar provides real-time trust monitoring, automated takedowns, and converged intelligence — 24/7.</p>
                   </div>
                   <Link to="/">
                     <Button className="gap-2 shrink-0">
-                      Open LRX Radar <ArrowRight className="w-4 h-4" />
+                      Open Trust Radar <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
                 </CardContent>
@@ -590,9 +590,9 @@ export default function PublicScanner() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Satellite className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted-foreground font-mono">LRX RADAR · Global Defense</span>
+            <span className="text-xs text-muted-foreground font-mono">TRUST RADAR · Trust Intelligence</span>
           </div>
-          <span className="text-[10px] text-muted-foreground font-mono">v2.4.1</span>
+          <span className="text-[10px] text-muted-foreground font-mono">v4.0.0</span>
         </div>
       </footer>
     </div>
