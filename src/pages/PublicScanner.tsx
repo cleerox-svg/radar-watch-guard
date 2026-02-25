@@ -177,7 +177,7 @@ export default function PublicScanner() {
           {/* Search */}
           <form
             onSubmit={(e) => { e.preventDefault(); runScan(); }}
-            className="max-w-xl mx-auto flex gap-2"
+            className="max-w-xl mx-auto flex flex-col sm:flex-row gap-2"
           >
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -197,7 +197,7 @@ export default function PublicScanner() {
           </form>
 
           {/* Trust badges */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-[10px] sm:text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-primary" /> DMARC & SPF Analysis</span>
             <span className="flex items-center gap-1.5"><Globe className="w-4 h-4 text-primary" /> Typosquat Detection</span>
             <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-primary" /> Certificate Monitoring</span>
@@ -255,10 +255,10 @@ export default function PublicScanner() {
           <Card className="border-primary/20 bg-card shadow-xl overflow-hidden">
             <CardContent className="p-0">
               <div className="flex flex-col md:flex-row">
-                <div className={cn("flex items-center justify-center p-8 md:p-12 bg-gradient-to-br", gradeColors[result.grade] || gradeColors.F)}>
+                <div className={cn("flex items-center justify-center p-6 sm:p-8 md:p-12 bg-gradient-to-br", gradeColors[result.grade] || gradeColors.F)}>
                   <div className="text-center">
                     <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-1">Trust Grade</p>
-                    <span className="text-6xl md:text-7xl font-bold text-white">{result.grade}</span>
+                    <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-white">{result.grade}</span>
                     <p className="text-white/80 text-sm mt-2 font-mono">Trust Score: {result.score}/100</p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export default function PublicScanner() {
                   </div>
 
                   {/* Summary stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 mb-4">
                     <MiniStat icon={Mail} label="Email Spoofing" risk={result.email_spoofing.risk} />
                     <MiniStat icon={Globe} label="Typosquats" risk={result.typosquats.risk} value={`${result.typosquats.registered.length} found`} />
                     <MiniStat icon={Lock} label="Cert Abuse" risk={result.certificate_transparency.risk} value={`${result.certificate_transparency.certificates.length} certs`} />
@@ -517,8 +517,8 @@ export default function PublicScanner() {
 
       {/* Value props — shown before scan */}
       {!result && !isScanning && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <ValueCard icon={Mail} title="Email Spoofing" desc="Check if attackers can send emails as your CEO. We analyze DMARC enforcement and SPF records." />
             <ValueCard icon={Globe} title="Typosquat Detection" desc="We generate 60+ domain permutations and check which ones are registered with active mail servers." />
             <ValueCard icon={Lock} title="Certificate Abuse" desc="Query certificate transparency logs for SSL certs issued to impersonation domains targeting your brand." />
@@ -586,11 +586,11 @@ export default function PublicScanner() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+      <footer className="border-t border-border py-4 sm:py-6 mt-8 sm:mt-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Satellite className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted-foreground font-mono">TRUST RADAR · Trust Intelligence</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">TRUST RADAR · Trust Intelligence</span>
           </div>
           <span className="text-[10px] text-muted-foreground font-mono">v4.0.0</span>
         </div>
