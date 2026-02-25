@@ -60,7 +60,7 @@ const AGENTS: AgentConfig[] = [
   { type: "campaign", name: "Campaign Correlator", shortName: "Campaigns", description: "Clusters threats by shared infrastructure", icon: Network, accent: "text-indigo-500", bgAccent: "bg-indigo-500/10 border-indigo-500/20", functionName: "agent-campaign", category: "monitor" },
   // Analyze
   { type: "intel", name: "Executive Intel", shortName: "Intel", description: "C-suite briefings and brand risk scorecards", icon: BarChart3, accent: "text-violet-500", bgAccent: "bg-violet-500/10 border-violet-500/20", functionName: "agent-intel", category: "analyze" },
-  { type: "copilot", name: "AI Copilot", shortName: "Copilot", description: "Chat-driven DB queries and ticket creation", icon: MessageSquare, accent: "text-emerald-500", bgAccent: "bg-emerald-500/10 border-emerald-500/20", functionName: "agent-copilot", category: "analyze" },
+  { type: "copilot", name: "TrustBot", shortName: "TrustBot", description: "Chat-driven DB queries and ticket creation", icon: MessageSquare, accent: "text-emerald-500", bgAccent: "bg-emerald-500/10 border-emerald-500/20", functionName: "agent-copilot", category: "analyze" },
 ];
 
 const categoryConfig = {

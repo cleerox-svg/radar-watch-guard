@@ -63,7 +63,7 @@ const agents = [
   },
   {
     icon: Sparkles,
-    name: "Chat Copilot",
+    name: "TrustBot",
     description: "Ask questions in plain language — it queries your threat data, creates investigation tickets, and triggers scans inline.",
     accent: "text-emerald-500",
     accentBg: "bg-emerald-500/10",
