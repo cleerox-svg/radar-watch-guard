@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { Bot, Play, Clock, CheckCircle2, XCircle, Loader2, RefreshCw, ChevronDown, ChevronUp, Target, Search, Shield, BarChart3, MessageSquare, Zap, History, AlertTriangle } from "lucide-react";
+import { Bot, Play, Clock, CheckCircle2, XCircle, Loader2, RefreshCw, ChevronDown, ChevronUp, Target, Search, Shield, BarChart3, MessageSquare, Zap, History, AlertTriangle, Gavel, Fingerprint, Camera, Network, TrendingDown, Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import ReactMarkdown from "react-markdown";
+import { AgentApprovalQueue } from "./AgentApprovalQueue";
 
-type AgentType = "triage" | "hunt" | "response" | "intel" | "copilot";
+type AgentType = "triage" | "hunt" | "response" | "intel" | "copilot" | "takedown" | "impersonation" | "evidence" | "campaign" | "trust_monitor" | "abuse_mailbox";
 
 interface AgentRun {
   id: string;
@@ -86,6 +87,60 @@ const AGENTS: AgentConfig[] = [
     accent: "text-emerald-500",
     bgAccent: "bg-emerald-500/10 border-emerald-500/20",
     functionName: "agent-copilot",
+  },
+  {
+    type: "takedown",
+    name: "Takedown Orchestrator",
+    description: "Detects impersonating domains, drafts abuse notices, and queues takedown actions for approval.",
+    icon: Gavel,
+    accent: "text-red-500",
+    bgAccent: "bg-red-500/10 border-red-500/20",
+    functionName: "agent-takedown",
+  },
+  {
+    type: "impersonation",
+    name: "Impersonation Detector",
+    description: "Monitors CertStream + social feeds for lookalike domains and fake profiles. Flags for analyst confirmation.",
+    icon: Fingerprint,
+    accent: "text-fuchsia-500",
+    bgAccent: "bg-fuchsia-500/10 border-fuchsia-500/20",
+    functionName: "agent-impersonation",
+  },
+  {
+    type: "evidence",
+    name: "Evidence Preservation",
+    description: "Auto-captures DNS, WHOIS, SSL, and HTTP data for high-confidence threats before sites go dark.",
+    icon: Camera,
+    accent: "text-sky-500",
+    bgAccent: "bg-sky-500/10 border-sky-500/20",
+    functionName: "agent-evidence",
+  },
+  {
+    type: "campaign",
+    name: "Campaign Correlator",
+    description: "Clusters threats by shared infrastructure (IP, ASN, registrar) to identify coordinated fraud campaigns.",
+    icon: Network,
+    accent: "text-indigo-500",
+    bgAccent: "bg-indigo-500/10 border-indigo-500/20",
+    functionName: "agent-campaign",
+  },
+  {
+    type: "trust_monitor",
+    name: "Trust Score Monitor",
+    description: "Continuously recalculates brand trust scores and alerts on significant drops (>10 points).",
+    icon: TrendingDown,
+    accent: "text-teal-500",
+    bgAccent: "bg-teal-500/10 border-teal-500/20",
+    functionName: "agent-trust-monitor",
+  },
+  {
+    type: "abuse_mailbox",
+    name: "Abuse Mailbox Triage",
+    description: "Processes reported phishing emails, extracts IOCs, cross-references threat DB, classifies for analyst review.",
+    icon: Inbox,
+    accent: "text-orange-400",
+    bgAccent: "bg-orange-400/10 border-orange-400/20",
+    functionName: "agent-abuse-mailbox",
   },
 ];
 
@@ -184,7 +239,10 @@ export function AgentCommandCenter() {
   const stats = getGlobalStats();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Approval Queue — Human-in-the-Loop */}
+      <AgentApprovalQueue />
+
       {/* Header Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
