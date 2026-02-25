@@ -8,7 +8,9 @@ import {
   Satellite, Scan, Shield, Globe, Brain, ArrowRight, ChevronRight,
   ShieldCheck, Loader2, Bot, Zap, Target, BarChart3,
   UserCircle, LayoutDashboard, Eye, TrendingUp, Radio, Skull,
-  Search, Activity, CheckCircle2, Sparkles
+  Search, Activity, CheckCircle2, Sparkles, Gavel, Fingerprint,
+  Camera, Inbox, Network, Users, Lock, Mail, KeyRound, AlertTriangle,
+  ShieldX, ShieldAlert, XCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +38,7 @@ const agents = [
     accent: "text-cyan-500",
     accentBg: "bg-cyan-500/10",
     status: "Always On",
+    category: "Detect",
   },
   {
     icon: Search,
@@ -44,14 +47,61 @@ const agents = [
     accent: "text-amber-500",
     accentBg: "bg-amber-500/10",
     status: "Every 6 Hours",
+    category: "Detect",
   },
   {
-    icon: Shield,
-    name: "Response Agent",
-    description: "Auto-generates takedown notices, suggests erasure actions, and builds MITRE ATT&CK-aligned mitigation checklists.",
+    icon: Fingerprint,
+    name: "Impersonation Detector",
+    description: "Monitors CertStream and social feeds for lookalike domains, homoglyph attacks, and brand impersonation attempts.",
+    accent: "text-pink-500",
+    accentBg: "bg-pink-500/10",
+    status: "Continuous",
+    category: "Detect",
+  },
+  {
+    icon: Gavel,
+    name: "Takedown Orchestrator",
+    description: "Drafts and dispatches abuse notices to hosting providers, registrars, and CERTs — with human approval before every action.",
     accent: "text-rose-500",
     accentBg: "bg-rose-500/10",
     status: "On Demand",
+    category: "Respond",
+  },
+  {
+    icon: Camera,
+    name: "Evidence Preservation",
+    description: "Captures forensic-grade DNS, WHOIS, SSL, and page snapshots with tamper-proof chain-of-custody metadata.",
+    accent: "text-orange-500",
+    accentBg: "bg-orange-500/10",
+    status: "Auto-Trigger",
+    category: "Respond",
+  },
+  {
+    icon: Inbox,
+    name: "Abuse Mailbox Triage",
+    description: "Ingests reported phishing emails, extracts IOCs, cross-references your threat database, and auto-classifies by severity.",
+    accent: "text-sky-500",
+    accentBg: "bg-sky-500/10",
+    status: "Always On",
+    category: "Respond",
+  },
+  {
+    icon: Network,
+    name: "Campaign Correlator",
+    description: "Clusters threats by shared IP ranges, ASNs, registrars, and SSL patterns to uncover coordinated attack campaigns.",
+    accent: "text-indigo-500",
+    accentBg: "bg-indigo-500/10",
+    status: "Scheduled",
+    category: "Monitor",
+  },
+  {
+    icon: TrendingUp,
+    name: "Trust Score Monitor",
+    description: "Tracks your brand's trust score over time and alerts when significant drops indicate active attacks or misconfigurations.",
+    accent: "text-emerald-500",
+    accentBg: "bg-emerald-500/10",
+    status: "Continuous",
+    category: "Monitor",
   },
   {
     icon: Brain,
@@ -60,14 +110,16 @@ const agents = [
     accent: "text-violet-500",
     accentBg: "bg-violet-500/10",
     status: "Daily",
+    category: "Analyze",
   },
   {
     icon: Sparkles,
     name: "TrustBot",
     description: "Ask questions in plain language — it queries your threat data, creates investigation tickets, and triggers scans inline.",
-    accent: "text-emerald-500",
-    accentBg: "bg-emerald-500/10",
+    accent: "text-emerald-400",
+    accentBg: "bg-emerald-400/10",
     status: "Interactive",
+    category: "Analyze",
   },
 ];
 
@@ -135,7 +187,7 @@ export default function Landing() {
   const stats = [
     { value: threatCount != null ? threatCount.toLocaleString() : "—", label: "Threats Neutralized" },
     { value: feedLabel, label: "Intelligence Feeds" },
-    { value: "5", label: "AI Trust Agents" },
+    { value: "10", label: "AI Trust Agents" },
     { value: "24/7", label: "Continuous Monitoring" },
   ];
 
@@ -214,7 +266,7 @@ export default function Landing() {
             </h1>
 
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Trust Radar measures, monitors, and defends your brand's digital trust — powered by 5 AI agents that work 24/7 so your customers never have to question if it's really you.
+              Trust Radar measures, monitors, and defends your brand's digital trust — powered by 10 AI agents that work 24/7 so your customers never have to question if it's really you.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -256,44 +308,60 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ═══ AI AGENTS SHOWCASE (Hero-level) ═══ */}
+      {/* ═══ AI AGENTS SHOWCASE ═══ */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
         <div className="text-center mb-8 sm:mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
-            <Bot className="w-3.5 h-3.5" /> 5 AI TRUST AGENTS
+            <Bot className="w-3.5 h-3.5" /> 10 AI TRUST AGENTS
           </div>
           <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">
             Meet Your Autonomous Trust Guardians
           </h2>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
-            Five specialized AI agents that measure trust, hunt threats, orchestrate response, brief executives, and answer your questions — all working in concert.
+            Ten specialized AI agents organized into four mission categories — Detect, Respond, Monitor, and Analyze — all governed by human-in-the-loop approval workflows.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {agents.map((agent, i) => (
-            <motion.div
-              key={agent.name}
-              custom={i}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-40px" }}
-              variants={fadeUp}
-              className="group bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all duration-300 card-interactive"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-10 h-10 rounded-lg ${agent.accentBg} flex items-center justify-center`}>
-                  <agent.icon className={`w-5 h-5 ${agent.accent}`} />
-                </div>
-                <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {agent.status}
-                </span>
+        {(["Detect", "Respond", "Monitor", "Analyze"] as const).map((cat) => {
+          const catAgents = agents.filter(a => a.category === cat);
+          const catConfig = {
+            Detect: { color: "text-cyan-500", border: "border-cyan-500/20", bg: "bg-cyan-500/5" },
+            Respond: { color: "text-rose-500", border: "border-rose-500/20", bg: "bg-rose-500/5" },
+            Monitor: { color: "text-indigo-500", border: "border-indigo-500/20", bg: "bg-indigo-500/5" },
+            Analyze: { color: "text-violet-500", border: "border-violet-500/20", bg: "bg-violet-500/5" },
+          }[cat];
+          return (
+            <div key={cat} className="mb-6 last:mb-0">
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${catConfig.color} ${catConfig.border} ${catConfig.bg} border mb-3`}>
+                {cat}
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-2">{agent.name}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{agent.description}</p>
-            </motion.div>
-          ))}
-        </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {catAgents.map((agent, i) => (
+                  <motion.div
+                    key={agent.name}
+                    custom={i}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-40px" }}
+                    variants={fadeUp}
+                    className="group bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all duration-300 card-interactive"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-10 h-10 rounded-lg ${agent.accentBg} flex items-center justify-center`}>
+                        <agent.icon className={`w-5 h-5 ${agent.accent}`} />
+                      </div>
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                        {agent.status}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-foreground mb-2">{agent.name}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{agent.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       {/* ═══ HOW IT WORKS: Measure → Monitor → Defend → Report ═══ */}
@@ -334,24 +402,24 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ═══ TRUST VISIBILITY ═══ */}
+      {/* ═══ HUMAN-IN-THE-LOOP ═══ */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
         <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-xs font-mono mb-4">
-            <Globe className="w-3.5 h-3.5" /> FULL VISIBILITY
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-rose-500/20 bg-rose-500/5 text-rose-500 text-xs font-mono mb-4">
+            <Users className="w-3.5 h-3.5" /> HUMAN-IN-THE-LOOP
           </div>
           <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">
-            See What Your Customers See
+            AI Proposes. Humans Decide.
           </h2>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
-            Real-time visibility into your brand's trust posture — email authentication health, impersonation attempts, credential exposure, and dark web activity, all on one dashboard.
+            Every high-impact action — takedown notices, blocklist pushes, session revocations — goes through a secure approval queue before execution. Full audit trail included.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {[
-            { icon: ShieldCheck, title: "Email Trust", desc: "SPF, DKIM, and DMARC compliance monitoring — see who can send email as your brand.", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-            { icon: Skull, title: "Dark Web Monitoring", desc: "Continuous checks for leaked credentials, ransomware group mentions, and Tor exit node tracking.", color: "text-orange-500", bg: "bg-orange-500/10" },
-            { icon: Radio, title: "Community Intel", desc: "Live IOC feeds from security researchers on social platforms — classified and scored in real time.", color: "text-sky-500", bg: "bg-sky-500/10" },
+            { icon: Bot, title: "Agent Proposes", desc: "AI agents detect threats and draft response actions with full context — evidence, confidence scores, and recommended priority.", color: "text-cyan-500", bg: "bg-cyan-500/10", step: "1" },
+            { icon: Eye, title: "Analyst Reviews", desc: "Human analysts review proposed actions in a priority-ranked approval queue with structured previews of every payload.", color: "text-amber-500", bg: "bg-amber-500/10", step: "2" },
+            { icon: Zap, title: "Action Executes", desc: "Approved actions execute automatically — takedown notices dispatch, evidence locks, campaigns get tagged, and audit logs update.", color: "text-emerald-500", bg: "bg-emerald-500/10", step: "3" },
           ].map((item, i) => (
             <motion.div
               key={item.title}
@@ -360,8 +428,9 @@ export default function Landing() {
               whileInView="visible"
               viewport={{ once: true }}
               variants={fadeUp}
-              className="bg-card border border-border rounded-xl p-5"
+              className="relative bg-card border border-border rounded-xl p-5"
             >
+              <span className="absolute top-4 right-4 text-4xl font-extrabold text-muted-foreground/10">{item.step}</span>
               <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center mb-4`}>
                 <item.icon className={`w-5 h-5 ${item.color}`} />
               </div>
@@ -369,6 +438,49 @@ export default function Landing() {
               <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* ═══ TRUST VISIBILITY ═══ */}
+      <section className="border-t border-border bg-card/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-xs font-mono mb-4">
+              <Globe className="w-3.5 h-3.5" /> FULL VISIBILITY
+            </div>
+            <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">
+              See What Your Customers See
+            </h2>
+            <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+              Real-time visibility into your brand's trust posture — from email authentication to dark web exposure, all in one intelligence platform.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { icon: ShieldCheck, title: "Email Authentication", desc: "SPF, DKIM, and DMARC compliance monitoring — see who can send email as your brand and enforce reject policies.", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+              { icon: Skull, title: "Dark Web Monitoring", desc: "Continuous checks for leaked credentials, ransomware group mentions, and Tor exit node tracking across hidden services.", color: "text-orange-500", bg: "bg-orange-500/10" },
+              { icon: Radio, title: "Community Intel", desc: "Live IOC feeds from Mastodon, TweetFeed, and security researchers — classified by type and scored in real time.", color: "text-sky-500", bg: "bg-sky-500/10" },
+              { icon: Network, title: "Campaign Clustering", desc: "Shared infrastructure analysis across IP ranges, ASNs, registrars, and SSL certs to reveal coordinated attack campaigns.", color: "text-indigo-500", bg: "bg-indigo-500/10" },
+              { icon: Camera, title: "Forensic Evidence", desc: "Tamper-proof DNS, WHOIS, SSL, and page captures with SHA-256 hashes and full chain-of-custody metadata for legal proceedings.", color: "text-amber-500", bg: "bg-amber-500/10" },
+              { icon: BarChart3, title: "Trust Score Trends", desc: "Historical trust score tracking with automated alerts when significant score drops indicate active attacks or misconfigurations.", color: "text-violet-500", bg: "bg-violet-500/10" },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="bg-card border border-border rounded-xl p-5"
+              >
+                <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center mb-4`}>
+                  <item.icon className={`w-5 h-5 ${item.color}`} />
+                </div>
+                <h3 className="text-sm font-bold text-foreground mb-2">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -474,7 +586,7 @@ export default function Landing() {
             <div className="flex items-center gap-2">
               <Satellite className="w-4 h-4 text-primary" />
               <span className="text-sm font-bold text-foreground tracking-wider">TRUST RADAR</span>
-              <span className="text-[10px] text-muted-foreground font-mono">v4.0.0</span>
+              <span className="text-[10px] text-muted-foreground font-mono">v4.1</span>
             </div>
             <span className="text-[10px] text-muted-foreground font-mono">🇨🇦 Canadian Owned & Operated</span>
           </div>
