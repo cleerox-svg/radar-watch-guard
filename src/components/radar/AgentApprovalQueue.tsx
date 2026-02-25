@@ -1,11 +1,11 @@
 /**
- * AgentApprovalQueue.tsx — Human-in-the-loop approval queue for all agentic actions.
+ * AgentApprovalQueue.tsx — Human-in-the-loop approval queue with rich formatting.
  * Okta-ready: displays identity_provider context when available.
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle2, XCircle, Clock, Shield, AlertTriangle, Eye, ChevronDown, ChevronUp, Filter, Fingerprint } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2, XCircle, Clock, Shield, AlertTriangle, Eye, ChevronDown, ChevronUp, Fingerprint, Gavel, Camera, Network, Inbox, TrendingDown, Target } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,20 +32,31 @@ interface Approval {
   expires_at: string;
 }
 
-const priorityConfig: Record<string, { color: string; label: string }> = {
-  critical: { color: "text-red-500 border-red-500/30 bg-red-500/10", label: "CRITICAL" },
-  high: { color: "text-orange-500 border-orange-500/30 bg-orange-500/10", label: "HIGH" },
-  medium: { color: "text-amber-500 border-amber-500/30 bg-amber-500/10", label: "MEDIUM" },
-  low: { color: "text-muted-foreground border-border bg-muted/30", label: "LOW" },
+const priorityConfig: Record<string, { color: string; label: string; ring: string }> = {
+  critical: { color: "text-red-500 border-red-500/30 bg-red-500/10", label: "CRITICAL", ring: "ring-red-500/20" },
+  high: { color: "text-orange-500 border-orange-500/30 bg-orange-500/10", label: "HIGH", ring: "ring-orange-500/20" },
+  medium: { color: "text-amber-500 border-amber-500/30 bg-amber-500/10", label: "MEDIUM", ring: "ring-amber-500/20" },
+  low: { color: "text-muted-foreground border-border bg-muted/30", label: "LOW", ring: "ring-border" },
 };
 
-const agentTypeLabels: Record<string, string> = {
-  takedown: "Takedown Orchestrator",
-  impersonation: "Impersonation Detector",
-  evidence: "Evidence Preservation",
-  campaign: "Campaign Correlator",
+const agentIcons: Record<string, typeof Shield> = {
+  takedown: Gavel,
+  impersonation: Fingerprint,
+  evidence: Camera,
+  campaign: Network,
+  trust_monitor: TrendingDown,
+  abuse_mailbox: Inbox,
+  triage: Target,
+};
+
+const agentLabels: Record<string, string> = {
+  takedown: "Takedown",
+  impersonation: "Impersonation",
+  evidence: "Evidence",
+  campaign: "Campaign",
   trust_monitor: "Trust Monitor",
   abuse_mailbox: "Abuse Mailbox",
+  triage: "Triage",
 };
 
 export function AgentApprovalQueue() {
@@ -83,10 +94,8 @@ export function AgentApprovalQueue() {
         reviewed_at: new Date().toISOString(),
         review_notes: reviewNotes[id] || null,
       }).eq("id", id);
-
       if (error) throw error;
 
-      // If approved takedown, create the erasure action
       const approval = approvals.find(a => a.id === id);
       if (action === "approved" && approval?.action_type === "takedown" && approval.payload) {
         await supabase.from("erasure_actions").insert({
@@ -98,8 +107,6 @@ export function AgentApprovalQueue() {
           created_by: user?.id,
         });
       }
-
-      // If approved campaign, confirm the cluster
       if (action === "approved" && approval?.action_type === "campaign_tag" && approval.payload?.cluster_id) {
         await supabase.from("campaign_clusters").update({
           status: "confirmed",
@@ -107,7 +114,6 @@ export function AgentApprovalQueue() {
           confirmed_at: new Date().toISOString(),
         }).eq("id", approval.payload.cluster_id);
       }
-
       toast.success(`Action ${action}`, { description: approval?.title });
     } catch (e: any) {
       toast.error("Failed to process", { description: e.message });
@@ -121,23 +127,17 @@ export function AgentApprovalQueue() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold text-foreground">Approval Queue</h3>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground">Human Review</h3>
           {pendingCount > 0 && (
-            <Badge variant="destructive" className="text-xs">{pendingCount} pending</Badge>
+            <Badge variant="destructive" className="text-[10px] h-5">{pendingCount} pending</Badge>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5 border border-border/50">
           {(["pending", "approved", "rejected", "all"] as const).map(f => (
-            <Button
-              key={f}
-              size="sm"
-              variant={filter === f ? "default" : "ghost"}
-              onClick={() => setFilter(f)}
-              className="text-xs capitalize"
-            >
+            <Button key={f} size="sm" variant={filter === f ? "default" : "ghost"} onClick={() => setFilter(f)} className="text-[10px] h-6 px-2 capitalize">
               {f}
             </Button>
           ))}
@@ -145,117 +145,109 @@ export function AgentApprovalQueue() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Clock className="w-5 h-5 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-8">
+          <Clock className="w-4 h-4 animate-spin text-muted-foreground" />
         </div>
       ) : approvals.length === 0 ? (
-        <Card className="border-dashed border-border">
-          <CardContent className="py-12 text-center">
-            <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500/50 mb-2" />
-            <p className="text-sm text-muted-foreground">No {filter === "all" ? "" : filter} approvals</p>
-          </CardContent>
-        </Card>
+        <div className="py-8 text-center border border-dashed border-border rounded-xl">
+          <CheckCircle2 className="w-6 h-6 mx-auto text-emerald-500/40 mb-1.5" />
+          <p className="text-xs text-muted-foreground">No {filter === "all" ? "" : filter} items</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {approvals.map(approval => {
             const isExpanded = expandedId === approval.id;
             const isExpired = new Date(approval.expires_at) < new Date();
             const pConfig = priorityConfig[approval.priority] || priorityConfig.medium;
+            const AgentIcon = agentIcons[approval.agent_type] || Shield;
 
             return (
               <Card key={approval.id} className={cn(
-                "border transition-all",
-                approval.status === "pending" && !isExpired && "border-primary/30",
-                approval.status === "approved" && "border-emerald-500/20 opacity-80",
-                approval.status === "rejected" && "border-destructive/20 opacity-60",
-                isExpired && approval.status === "pending" && "border-amber-500/30 opacity-70",
+                "border transition-all overflow-hidden",
+                approval.status === "pending" && !isExpired && "border-primary/20",
+                approval.status === "approved" && "border-emerald-500/15 opacity-75",
+                approval.status === "rejected" && "border-destructive/15 opacity-60",
+                isExpired && approval.status === "pending" && "border-amber-500/20 opacity-65",
               )}>
-                <button
-                  onClick={() => setExpandedId(isExpanded ? null : approval.id)}
-                  className="w-full text-left"
-                >
-                  <CardHeader className="pb-2 px-4 pt-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <Badge className={cn("text-[10px] shrink-0", pConfig.color)}>{pConfig.label}</Badge>
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="text-sm font-medium truncate">{approval.title}</CardTitle>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="outline" className="text-[10px]">{agentTypeLabels[approval.agent_type] || approval.agent_type}</Badge>
-                            <span className="text-[10px] text-muted-foreground font-mono">
-                              {formatDistanceToNow(new Date(approval.created_at), { addSuffix: true })}
-                            </span>
-                            {approval.identity_provider !== "internal" && (
-                              <Badge variant="outline" className="text-[10px] gap-1">
-                                <Fingerprint className="w-2.5 h-2.5" />
-                                {approval.identity_provider}
-                              </Badge>
-                            )}
-                            {isExpired && approval.status === "pending" && (
-                              <Badge variant="outline" className="text-[10px] text-amber-500">EXPIRED</Badge>
-                            )}
-                          </div>
-                        </div>
+                <button onClick={() => setExpandedId(isExpanded ? null : approval.id)} className="w-full text-left p-3">
+                  <div className="flex items-start gap-3">
+                    {/* Agent icon */}
+                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border", pConfig.color)}>
+                      <AgentIcon className="w-4 h-4" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm font-medium text-foreground truncate">{approval.title}</span>
+                        {isExpired && approval.status === "pending" && (
+                          <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30">EXPIRED</Badge>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {approval.status === "approved" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                        {approval.status === "rejected" && <XCircle className="w-4 h-4 text-destructive" />}
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={cn("text-[9px] h-4 px-1.5", pConfig.color)}>{pConfig.label}</Badge>
+                        <span className="text-[10px] text-muted-foreground">{agentLabels[approval.agent_type] || approval.agent_type}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {formatDistanceToNow(new Date(approval.created_at), { addSuffix: true })}
+                        </span>
+                        {approval.identity_provider && approval.identity_provider !== "internal" && (
+                          <Badge variant="outline" className="text-[9px] gap-0.5 h-4">
+                            <Fingerprint className="w-2 h-2" />
+                            {approval.identity_provider}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                  </CardHeader>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {approval.status === "approved" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                      {approval.status === "rejected" && <XCircle className="w-4 h-4 text-destructive" />}
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                    </div>
+                  </div>
                 </button>
 
                 {isExpanded && (
-                  <CardContent className="pt-0 px-4 pb-4 space-y-3">
+                  <CardContent className="pt-0 px-3 pb-3 space-y-3 border-t border-border/30">
                     {approval.description && (
-                      <p className="text-xs text-muted-foreground">{approval.description}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-3">{approval.description}</p>
                     )}
 
-                    {/* Payload details */}
-                    <div className="bg-muted/30 rounded-lg p-3 border border-border/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                        <p className="text-xs font-medium">Details</p>
-                      </div>
-                      <pre className="text-[10px] font-mono whitespace-pre-wrap text-muted-foreground max-h-48 overflow-y-auto">
-                        {JSON.stringify(approval.payload, null, 2)}
-                      </pre>
-                    </div>
+                    {/* Structured payload display */}
+                    <PayloadView payload={approval.payload} actionType={approval.action_type} />
 
-                    {/* Review notes */}
+                    {/* Existing review notes */}
                     {approval.review_notes && (
-                      <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-                        <p className="text-xs font-medium text-foreground mb-1">Review Notes</p>
-                        <p className="text-xs text-muted-foreground">{approval.review_notes}</p>
+                      <div className="bg-primary/5 rounded-lg p-3 border border-primary/15">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Review Notes</p>
+                        <p className="text-xs text-foreground">{approval.review_notes}</p>
                       </div>
                     )}
 
-                    {/* Action buttons for pending items */}
+                    {/* Actions */}
                     {approval.status === "pending" && !isExpired && (
-                      <div className="space-y-2">
+                      <div className="space-y-2 pt-1">
                         <Textarea
                           placeholder="Add review notes (optional)..."
                           value={reviewNotes[approval.id] || ""}
                           onChange={e => setReviewNotes(prev => ({ ...prev, [approval.id]: e.target.value }))}
-                          className="text-xs min-h-[60px]"
+                          className="text-xs min-h-[50px] bg-background"
                         />
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             onClick={() => handleAction(approval.id, "approved")}
                             disabled={processing === approval.id}
-                            className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            Approve & Execute
+                            Approve
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleAction(approval.id, "rejected")}
                             disabled={processing === approval.id}
-                            className="flex-1 gap-1.5"
+                            className="flex-1 gap-1.5 h-8 text-xs"
                           >
                             <XCircle className="w-3.5 h-3.5" />
                             Reject
@@ -270,6 +262,99 @@ export function AgentApprovalQueue() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Structured Payload Display ─────────────────── */
+
+function PayloadView({ payload, actionType }: { payload: any; actionType: string }) {
+  if (!payload) return null;
+
+  // Takedown-specific view
+  if (actionType === "takedown" && payload.domain) {
+    return (
+      <div className="bg-muted/20 rounded-lg p-3 border border-border/30 space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <Gavel className="w-3.5 h-3.5 text-muted-foreground" />
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Takedown Details</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Domain</p>
+            <p className="font-mono text-foreground">{payload.domain}</p>
+          </div>
+          {payload.brand && (
+            <div>
+              <p className="text-[10px] text-muted-foreground">Brand</p>
+              <p className="text-foreground">{payload.brand}</p>
+            </div>
+          )}
+          {payload.confidence_score && (
+            <div>
+              <p className="text-[10px] text-muted-foreground">Confidence</p>
+              <p className="text-foreground font-mono">{payload.confidence_score}%</p>
+            </div>
+          )}
+        </div>
+        {payload.recommended_recipients?.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground mr-1">Recipients:</span>
+            {payload.recommended_recipients.map((r: string, i: number) => (
+              <Badge key={i} variant="outline" className="text-[9px]">{r}</Badge>
+            ))}
+          </div>
+        )}
+        {payload.abuse_notice && (
+          <details className="text-[11px]">
+            <summary className="cursor-pointer text-primary hover:text-primary/80 transition-colors font-medium">View abuse notice</summary>
+            <pre className="mt-2 p-3 bg-card rounded-lg text-[10px] whitespace-pre-wrap max-h-36 overflow-y-auto border border-border/30 text-muted-foreground">{payload.abuse_notice}</pre>
+          </details>
+        )}
+      </div>
+    );
+  }
+
+  // Campaign tag view
+  if (actionType === "campaign_tag") {
+    return (
+      <div className="bg-muted/20 rounded-lg p-3 border border-border/30 space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <Network className="w-3.5 h-3.5 text-muted-foreground" />
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Campaign Cluster</p>
+        </div>
+        {payload.campaign_name && <p className="text-xs font-semibold text-foreground">{payload.campaign_name}</p>}
+        {payload.threat_count && <p className="text-[11px] text-muted-foreground">{payload.threat_count} related threats</p>}
+        {payload.brands_targeted?.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {payload.brands_targeted.map((b: string, i: number) => (
+              <Badge key={i} variant="secondary" className="text-[9px]">{b}</Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Generic fallback — structured key-value instead of raw JSON
+  return (
+    <div className="bg-muted/20 rounded-lg p-3 border border-border/30">
+      <div className="flex items-center gap-2 mb-2">
+        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Details</p>
+      </div>
+      <div className="space-y-1">
+        {Object.entries(payload).slice(0, 12).map(([key, value]) => (
+          <div key={key} className="flex items-start gap-2 text-xs">
+            <span className="text-muted-foreground font-mono text-[10px] shrink-0 w-28 truncate">{key}</span>
+            <span className="text-foreground break-all text-[11px]">
+              {typeof value === "object" && value !== null
+                ? Array.isArray(value) ? (value as any[]).join(", ") : JSON.stringify(value)
+                : String(value)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
