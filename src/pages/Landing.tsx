@@ -143,42 +143,42 @@ export default function Landing() {
     <div className="min-h-screen bg-background bg-noise">
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-          <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 flex items-center justify-center">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shrink-0">
               <div className="absolute inset-0 bg-primary/20 rounded-xl animate-pulse" />
-              <Satellite className="w-5 h-5 text-primary relative z-10" />
+              <Satellite className="w-4 h-4 sm:w-5 sm:h-5 text-primary relative z-10" />
             </div>
-            <div>
-              <span className="text-lg font-extrabold tracking-wider text-foreground">TRUST RADAR</span>
+            <div className="min-w-0">
+              <span className="text-sm sm:text-lg font-extrabold tracking-wider text-foreground">TRUST RADAR</span>
               <span className="hidden sm:block text-[10px] text-primary font-mono tracking-[0.2em] uppercase">Trust Intelligence Platform</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Link to="/scan">
-              <Button variant="ghost" size="sm" className="text-xs gap-1.5">
+              <Button variant="ghost" size="sm" className="text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 h-8">
                 <Scan className="w-3.5 h-3.5" />
-                Free Trust Score
+                <span className="hidden xs:inline">Free</span> Score
               </Button>
             </Link>
             {user ? (
               <>
-                <Link to="/profile">
-                  <Button variant="ghost" size="sm" className="text-xs gap-1.5">
+                <Link to="/profile" className="hidden sm:block">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-8">
                     <UserCircle className="w-3.5 h-3.5" />
                     Profile
                   </Button>
                 </Link>
                 <Link to="/dashboard">
-                  <Button size="sm" className="text-xs gap-1.5">
+                  <Button size="sm" className="text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 h-8">
                     <LayoutDashboard className="w-3.5 h-3.5" />
-                    Dashboard
+                    <span className="hidden sm:inline">Dashboard</span>
                   </Button>
                 </Link>
               </>
             ) : (
               <Link to="/login">
-                <Button size="sm" className="text-xs gap-1.5">
+                <Button size="sm" className="text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 h-8">
                   Sign In
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
@@ -193,7 +193,7 @@ export default function Landing() {
         <HeroMapBackground />
         <div className="absolute inset-0 bg-grid opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-32 lg:pb-24 text-center">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-10 sm:pt-20 sm:pb-16 lg:pt-32 lg:pb-24 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -208,7 +208,7 @@ export default function Landing() {
               AI-POWERED TRUST INTELLIGENCE
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
               Know Your Brand's<br />
               <span className="text-gradient-radar">Trust Score</span>
             </h1>
@@ -238,7 +238,7 @@ export default function Landing() {
 
       {/* ═══ SOCIAL PROOF STATS ═══ */}
       <section className="border-y border-border bg-card/50">
-        <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -257,12 +257,12 @@ export default function Landing() {
       </section>
 
       {/* ═══ AI AGENTS SHOWCASE (Hero-level) ═══ */}
-      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
-        <div className="text-center mb-12">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
+        <div className="text-center mb-8 sm:mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
             <Bot className="w-3.5 h-3.5" /> 5 AI TRUST AGENTS
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">
             Meet Your Autonomous Trust Guardians
           </h2>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
@@ -270,7 +270,7 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {agents.map((agent, i) => (
             <motion.div
               key={agent.name}
@@ -298,15 +298,15 @@ export default function Landing() {
 
       {/* ═══ HOW IT WORKS: Measure → Monitor → Defend → Report ═══ */}
       <section className="border-t border-border bg-card/30">
-        <div className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">How Trust Radar Works</h2>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">How Trust Radar Works</h2>
             <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
               Four stages of trust lifecycle management — from assessment to executive reporting.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {howItWorks.map((item, i) => (
               <motion.div
                 key={item.step}
@@ -335,19 +335,19 @@ export default function Landing() {
       </section>
 
       {/* ═══ TRUST VISIBILITY ═══ */}
-      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
-        <div className="text-center mb-10">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
+        <div className="text-center mb-8 sm:mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-xs font-mono mb-4">
             <Globe className="w-3.5 h-3.5" /> FULL VISIBILITY
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-foreground">
             See What Your Customers See
           </h2>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
             Real-time visibility into your brand's trust posture — email authentication health, impersonation attempts, credential exposure, and dark web activity, all on one dashboard.
           </p>
         </div>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             { icon: ShieldCheck, title: "Email Trust", desc: "SPF, DKIM, and DMARC compliance monitoring — see who can send email as your brand.", color: "text-emerald-500", bg: "bg-emerald-500/10" },
             { icon: Skull, title: "Dark Web Monitoring", desc: "Continuous checks for leaked credentials, ransomware group mentions, and Tor exit node tracking.", color: "text-orange-500", bg: "bg-orange-500/10" },
@@ -373,15 +373,15 @@ export default function Landing() {
       </section>
 
       {/* ═══ AI BRIEFING REQUEST ═══ */}
-      <section id="ai-briefing-request" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+      <section id="ai-briefing-request" className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 overflow-hidden"
+          className="relative bg-card border border-primary/20 rounded-2xl p-5 sm:p-8 md:p-12 overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-primary/5" />
-          <div className="relative grid md:grid-cols-2 gap-8 items-center">
+          <div className="relative grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/20 bg-violet-500/5 text-violet-500 text-xs font-mono mb-4">
                 <Brain className="w-3.5 h-3.5" /> AI-POWERED
@@ -403,15 +403,15 @@ export default function Landing() {
       </section>
 
       {/* ═══ REQUEST ACCESS ═══ */}
-      <section id="request-access" className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+      <section id="request-access" className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 overflow-hidden"
+          className="relative bg-card border border-primary/20 rounded-2xl p-5 sm:p-8 md:p-12 overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-cyan-500/5" />
-          <div className="relative grid md:grid-cols-2 gap-8 items-center">
+          <div className="relative grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-mono mb-4">
                 <ShieldCheck className="w-3.5 h-3.5" /> INVITE-ONLY ACCESS
@@ -433,12 +433,12 @@ export default function Landing() {
       </section>
 
       {/* ═══ BOTTOM CTA ═══ */}
-      <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-card border border-primary/20 rounded-2xl p-8 sm:p-12 text-center overflow-hidden"
+          className="relative bg-card border border-primary/20 rounded-2xl p-5 sm:p-8 md:p-12 text-center overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
           <div className="relative">
@@ -469,20 +469,21 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-card/50">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Satellite className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-foreground tracking-wider">TRUST RADAR</span>
-            <span className="text-[10px] text-muted-foreground font-mono ml-2">v4.0.0</span>
-            <span className="mx-2 text-border">|</span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-2">
+              <Satellite className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-foreground tracking-wider">TRUST RADAR</span>
+              <span className="text-[10px] text-muted-foreground font-mono">v4.0.0</span>
+            </div>
             <span className="text-[10px] text-muted-foreground font-mono">🇨🇦 Canadian Owned & Operated</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4">
             <a href="mailto:sales@trustradar.com" className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono">
               sales@trustradar.com
             </a>
             <p className="text-[10px] text-muted-foreground font-mono">
-              © {new Date().getFullYear()} Trust Radar · Trust Intelligence Platform
+              © {new Date().getFullYear()} Trust Radar
             </p>
           </div>
         </div>
