@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      abuse_mailbox: {
+        Row: {
+          auto_actions_taken: Json | null
+          classification: string | null
+          confidence_score: number | null
+          created_at: string
+          cross_ref_threat_ids: string[] | null
+          extracted_iocs: Json | null
+          extracted_urls: string[] | null
+          id: string
+          identity_provider: string | null
+          reporter_email: string
+          sender_domain: string | null
+          sender_email: string | null
+          status: string
+          subject: string | null
+          triaged_at: string | null
+          triaged_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_actions_taken?: Json | null
+          classification?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          cross_ref_threat_ids?: string[] | null
+          extracted_iocs?: Json | null
+          extracted_urls?: string[] | null
+          id?: string
+          identity_provider?: string | null
+          reporter_email: string
+          sender_domain?: string | null
+          sender_email?: string | null
+          status?: string
+          subject?: string | null
+          triaged_at?: string | null
+          triaged_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_actions_taken?: Json | null
+          classification?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          cross_ref_threat_ids?: string[] | null
+          extracted_iocs?: Json | null
+          extracted_urls?: string[] | null
+          id?: string
+          identity_provider?: string | null
+          reporter_email?: string
+          sender_domain?: string | null
+          sender_email?: string | null
+          status?: string
+          subject?: string | null
+          triaged_at?: string | null
+          triaged_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       access_groups: {
         Row: {
           created_at: string | null
@@ -40,6 +100,83 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      agent_approvals: {
+        Row: {
+          action_type: string
+          agent_run_id: string | null
+          agent_type: string
+          created_at: string
+          description: string | null
+          expires_at: string
+          id: string
+          identity_context: Json | null
+          identity_provider: string | null
+          mfa_verified: boolean | null
+          payload: Json
+          policy_decision: Json | null
+          priority: string
+          requested_by: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          agent_run_id?: string | null
+          agent_type: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          identity_context?: Json | null
+          identity_provider?: string | null
+          mfa_verified?: boolean | null
+          payload?: Json
+          policy_decision?: Json | null
+          priority?: string
+          requested_by?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          agent_run_id?: string | null
+          agent_type?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          identity_context?: Json | null
+          identity_provider?: string | null
+          mfa_verified?: boolean | null
+          payload?: Json
+          policy_decision?: Json | null
+          priority?: string
+          requested_by?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_approvals_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_runs: {
         Row: {
@@ -203,6 +340,60 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_clusters: {
+        Row: {
+          brands_targeted: string[] | null
+          campaign_name: string | null
+          confidence_score: number | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          identity_provider: string | null
+          infrastructure_pattern: Json | null
+          ioc_count: number | null
+          priority: string
+          status: string
+          threat_ids: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          brands_targeted?: string[] | null
+          campaign_name?: string | null
+          confidence_score?: number | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          identity_provider?: string | null
+          infrastructure_pattern?: Json | null
+          ioc_count?: number | null
+          priority?: string
+          status?: string
+          threat_ids?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          brands_targeted?: string[] | null
+          campaign_name?: string | null
+          confidence_score?: number | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          identity_provider?: string | null
+          infrastructure_pattern?: Json | null
+          ioc_count?: number | null
+          priority?: string
+          status?: string
+          threat_ids?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_auth_reports: {
         Row: {
           created_at: string
@@ -286,6 +477,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      evidence_captures: {
+        Row: {
+          capture_type: string
+          chain_of_custody: Json
+          created_at: string
+          domain: string
+          evidence_data: Json
+          id: string
+          identity_provider: string | null
+          status: string
+          tagged_at: string | null
+          tagged_by: string | null
+          tags: string[] | null
+          threat_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          capture_type?: string
+          chain_of_custody?: Json
+          created_at?: string
+          domain: string
+          evidence_data?: Json
+          id?: string
+          identity_provider?: string | null
+          status?: string
+          tagged_at?: string | null
+          tagged_by?: string | null
+          tags?: string[] | null
+          threat_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capture_type?: string
+          chain_of_custody?: Json
+          created_at?: string
+          domain?: string
+          evidence_data?: Json
+          id?: string
+          identity_provider?: string | null
+          status?: string
+          tagged_at?: string | null
+          tagged_by?: string | null
+          tags?: string[] | null
+          threat_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_captures_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feed_ingestions: {
         Row: {
@@ -880,6 +1127,39 @@ export type Database = {
           id?: string
           ip_address?: string
           last_seen?: string
+        }
+        Relationships: []
+      }
+      trust_score_history: {
+        Row: {
+          alert_triggered: boolean | null
+          brand: string
+          created_at: string
+          delta: number | null
+          factors: Json | null
+          grade: string
+          id: string
+          score: number
+        }
+        Insert: {
+          alert_triggered?: boolean | null
+          brand: string
+          created_at?: string
+          delta?: number | null
+          factors?: Json | null
+          grade: string
+          id?: string
+          score: number
+        }
+        Update: {
+          alert_triggered?: boolean | null
+          brand?: string
+          created_at?: string
+          delta?: number | null
+          factors?: Json | null
+          grade?: string
+          id?: string
+          score?: number
         }
         Relationships: []
       }
