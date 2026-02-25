@@ -47,7 +47,7 @@ const tabTitles: Record<TabKey, string> = {
   investigations: "Active Investigations",
   knowledge: "Knowledge Base",
   briefing: "Today's Threat Briefing",
-  chat: "Ask the AI",
+  chat: "TrustBot",
   agents: "AI Agent Command Center",
   heatmap: "Global Threat Map",
   "social-monitor": "Community Threat Feed",

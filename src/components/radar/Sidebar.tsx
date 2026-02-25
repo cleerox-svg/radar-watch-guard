@@ -68,7 +68,7 @@ const navGroups: { label: string; accent?: string; items: { key: TabKey; icon: t
     accent: "text-emerald-400",
     items: [
       { key: "agents", icon: Bot, label: "Agent Hub", description: "AI agent command center & approvals", accent: "text-emerald-500" },
-      { key: "chat", icon: MessageSquare, label: "Copilot", description: "AI assistant for threat analysis", accent: "text-violet-400" },
+      { key: "chat", icon: MessageSquare, label: "TrustBot", description: "AI assistant for threat analysis", accent: "text-violet-400" },
     ],
   },
   {
