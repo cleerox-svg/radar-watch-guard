@@ -1,6 +1,6 @@
 /**
  * SigentDashboard.tsx — Main dashboard page for the Sigent influencer protection platform.
- * Shell layout with sidebar + content area, similar to the Radar Index page.
+ * Shell layout with sidebar + content area. Admin users see extra management tabs.
  */
 
 import { useState, useCallback } from "react";
@@ -8,6 +8,11 @@ import { Menu, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SigentSidebar, type SigentTabKey } from "@/components/sigent/SigentSidebar";
 import { SigentOverview } from "@/components/sigent/SigentOverview";
+import { SigentMonitoredAccounts } from "@/components/sigent/SigentMonitoredAccounts";
+import { SigentReports } from "@/components/sigent/SigentReports";
+import { SigentTakedowns } from "@/components/sigent/SigentTakedowns";
+import { SigentSettings } from "@/components/sigent/SigentSettings";
+import { SigentAdminPanel } from "@/components/sigent/SigentAdminPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -18,6 +23,7 @@ const tabTitles: Record<SigentTabKey, string> = {
   takedowns: "Takedown Requests",
   widget: "Report Widget",
   settings: "Account Settings",
+  admin: "Sigent Admin",
 };
 
 const SigentDashboard = () => {
@@ -25,7 +31,7 @@ const SigentDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isAdmin } = useAuth();
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -35,6 +41,20 @@ const SigentDashboard = () => {
   const handleTabChange = (tab: SigentTabKey) => {
     setCurrentTab(tab);
     setSidebarOpen(false);
+  };
+
+  /** Render active tab content */
+  const renderContent = () => {
+    switch (currentTab) {
+      case "overview": return <SigentOverview />;
+      case "accounts": return <SigentMonitoredAccounts />;
+      case "reports": return <SigentReports />;
+      case "takedowns": return <SigentTakedowns />;
+      case "settings": return <SigentSettings />;
+      case "admin": return isAdmin ? <SigentAdminPanel /> : <PlaceholderTab label="Access Denied" />;
+      case "widget": return <PlaceholderTab label="Report Widget Config — Coming soon" />;
+      default: return null;
+    }
   };
 
   return (
@@ -56,6 +76,7 @@ const SigentDashboard = () => {
           onClose={() => setSidebarOpen(false)}
           userDisplayName={profile?.display_name}
           onSignOut={handleSignOut}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -86,36 +107,20 @@ const SigentDashboard = () => {
         </header>
 
         <div className="flex-1 overflow-auto p-4 lg:p-8 scrollbar-cyber">
-          {currentTab === "overview" && <SigentOverview />}
-          {currentTab === "accounts" && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <p className="text-sm">Monitored Accounts — Coming soon</p>
-            </div>
-          )}
-          {currentTab === "reports" && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <p className="text-sm">Impersonation Reports — Coming soon</p>
-            </div>
-          )}
-          {currentTab === "takedowns" && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <p className="text-sm">Takedown Requests — Coming soon</p>
-            </div>
-          )}
-          {currentTab === "widget" && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <p className="text-sm">Report Widget Config — Coming soon</p>
-            </div>
-          )}
-          {currentTab === "settings" && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <p className="text-sm">Account Settings — Coming soon</p>
-            </div>
-          )}
+          {renderContent()}
         </div>
       </main>
     </div>
   );
 };
+
+/** Simple placeholder for tabs not yet built */
+function PlaceholderTab({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center h-64 text-muted-foreground">
+      <p className="text-sm">{label}</p>
+    </div>
+  );
+}
 
 export default SigentDashboard;

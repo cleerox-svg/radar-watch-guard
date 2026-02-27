@@ -17,7 +17,8 @@ export type SigentTabKey =
   | "reports"
   | "takedowns"
   | "widget"
-  | "settings";
+  | "settings"
+  | "admin";
 
 interface SigentSidebarProps {
   currentTab: SigentTabKey;
@@ -25,15 +26,17 @@ interface SigentSidebarProps {
   onClose?: () => void;
   userDisplayName?: string | null;
   onSignOut?: () => void;
+  isAdmin?: boolean;
 }
 
-const navItems: { key: SigentTabKey; icon: typeof Shield; label: string; description: string }[] = [
+const navItems: { key: SigentTabKey; icon: typeof Shield; label: string; description: string; adminOnly?: boolean }[] = [
   { key: "overview", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & stats" },
   { key: "accounts", icon: Users, label: "My Accounts", description: "Managed social accounts" },
   { key: "reports", icon: AlertTriangle, label: "Impersonators", description: "Detected & reported fakes" },
   { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking" },
   { key: "widget", icon: Eye, label: "Report Widget", description: "Embeddable follower reporting" },
   { key: "settings", icon: Settings, label: "Settings", description: "Profile & subscription" },
+  { key: "admin", icon: Shield, label: "Admin Panel", description: "Manage all influencers & feeds", adminOnly: true },
 ];
 
 const themeOptions = [
@@ -42,8 +45,9 @@ const themeOptions = [
   { value: "system" as const, icon: Monitor, label: "Auto" },
 ];
 
-export function SigentSidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut }: SigentSidebarProps) {
+export function SigentSidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin }: SigentSidebarProps) {
   const { theme, setTheme } = useTheme();
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside className="w-60 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col z-20 shadow-xl">
@@ -63,7 +67,7 @@ export function SigentSidebar({ currentTab, onTabChange, onClose, userDisplayNam
           Protection
         </p>
         <div className="space-y-px">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const active = currentTab === item.key;
             return (
               <Tooltip key={item.key}>
