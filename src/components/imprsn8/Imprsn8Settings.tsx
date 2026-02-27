@@ -1,5 +1,5 @@
 /**
- * SigentSettings.tsx — Influencer account settings: profile, brand info, notification prefs.
+ * Imprsn8Settings.tsx — Influencer account settings: profile, brand info, notification prefs.
  */
 
 import { useState, useEffect } from "react";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Save, Shield } from "lucide-react";
 
-export function SigentSettings() {
+export function Imprsn8Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

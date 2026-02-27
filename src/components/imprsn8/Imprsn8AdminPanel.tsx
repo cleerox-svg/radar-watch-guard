@@ -1,5 +1,5 @@
 /**
- * SigentAdminPanel.tsx — imprsn8 admin-only panel for managing all influencer accounts,
+ * Imprsn8AdminPanel.tsx — imprsn8 admin-only panel for managing all influencer accounts,
  * viewing platform-wide stats, and adding new influencers/feeds.
  */
 
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Users, Shield, AlertTriangle, FileText, Plus, Search, Eye, RefreshCw, UserPlus, BarChart3 } from "lucide-react";
 
-export function SigentAdminPanel() {
+export function Imprsn8AdminPanel() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");

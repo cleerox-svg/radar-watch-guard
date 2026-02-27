@@ -1,5 +1,5 @@
 /**
- * SigentSignup.tsx — Dedicated signup page for influencers joining the imprsn8 platform.
+ * Imprsn8Signup.tsx — Dedicated signup page for influencers joining the imprsn8 platform.
  * Collects display name, brand name, and creates account with 'influencer' metadata.
  */
 
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const SigentSignup = () => {
+const Imprsn8Signup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"details" | "confirm">("details");
@@ -46,7 +46,7 @@ const SigentSignup = () => {
             brand_name: form.brandName || form.displayName,
             account_type: "influencer",
           },
-          emailRedirectTo: window.location.origin + "/sigent",
+          emailRedirectTo: window.location.origin + "/imprsn8",
         },
       });
 
@@ -170,4 +170,4 @@ const SigentSignup = () => {
   );
 };
 
-export default SigentSignup;
+export default Imprsn8Signup;

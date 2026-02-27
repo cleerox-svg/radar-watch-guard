@@ -1,5 +1,5 @@
 /**
- * agent-sigent-scanner — Alert-only agent that scans monitored accounts for impersonators.
+ * agent-imprsn8-scanner — Alert-only agent that scans monitored accounts for impersonators.
  * Iterates all active monitored_accounts, calls the AI gateway to assess potential fakes,
  * and creates impersonation_reports for human review.
  *
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     // 1. Create agent run record
     const { data: run, error: runErr } = await supabase.from("agent_runs").insert({
-      agent_type: "sigent_scanner",
+      agent_type: "imprsn8_scanner",
       trigger_type: body.trigger_type || "manual",
       status: "running",
       started_at: new Date().toISOString(),

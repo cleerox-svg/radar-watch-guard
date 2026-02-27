@@ -1,5 +1,5 @@
 /**
- * SigentOverview.tsx — Dashboard overview for influencer protection.
+ * Imprsn8Overview.tsx — Dashboard overview for influencer protection.
  * Shows key metrics, recent reports, and monitored account status.
  */
 
@@ -15,7 +15,7 @@ const mockStats = [
   { label: "Protection Score", value: "—", icon: Shield, change: null },
 ];
 
-export function SigentOverview() {
+export function Imprsn8Overview() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}

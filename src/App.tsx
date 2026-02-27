@@ -11,8 +11,8 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
-import SigentDashboard from "./pages/SigentDashboard";
-import SigentSignup from "./pages/SigentSignup";
+import Imprsn8Dashboard from "./pages/Imprsn8Dashboard";
+import Imprsn8Signup from "./pages/Imprsn8Signup";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -47,8 +47,11 @@ const App = () => (
             <Route path="/scan" element={<PublicScanner />} />
             <Route path="/dashboard" element={<AuthGuard><Index /></AuthGuard>} />
             <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
-            <Route path="/sigent" element={<AuthGuard><SigentDashboard /></AuthGuard>} />
-            <Route path="/sigent/signup" element={<SigentSignup />} />
+            <Route path="/imprsn8" element={<AuthGuard><Imprsn8Dashboard /></AuthGuard>} />
+            <Route path="/imprsn8/signup" element={<Imprsn8Signup />} />
+            {/* Legacy redirects */}
+            <Route path="/sigent" element={<Navigate to="/imprsn8" replace />} />
+            <Route path="/sigent/signup" element={<Navigate to="/imprsn8/signup" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
