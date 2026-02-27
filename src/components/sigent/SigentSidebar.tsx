@@ -1,5 +1,5 @@
 /**
- * SigentSidebar.tsx — Navigation sidebar for the Sigent influencer protection platform.
+ * SigentSidebar.tsx — Navigation sidebar for the imprsn8 influencer protection platform.
  * Uses warm amber/gold accent to differentiate from Trust Radar's emerald theme.
  */
 
@@ -36,7 +36,7 @@ const navItems: { key: SigentTabKey; icon: typeof Shield; label: string; descrip
   { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking" },
   { key: "widget", icon: Eye, label: "Report Widget", description: "Embeddable follower reporting" },
   { key: "settings", icon: Settings, label: "Settings", description: "Profile & subscription" },
-  { key: "admin", icon: Shield, label: "Admin Panel", description: "Manage all influencers & feeds", adminOnly: true },
+  { key: "admin", icon: Shield, label: "Admin Panel", description: "Manage all influencers & feeds (imprsn8)", adminOnly: true },
 ];
 
 const themeOptions = [

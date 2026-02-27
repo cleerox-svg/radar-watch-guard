@@ -1,5 +1,5 @@
 /**
- * SigentAdminPanel.tsx — Admin-only panel for managing all influencer accounts,
+ * SigentAdminPanel.tsx — imprsn8 admin-only panel for managing all influencer accounts,
  * viewing platform-wide stats, and adding new influencers/feeds.
  */
 

@@ -23,7 +23,7 @@ const tabTitles: Record<SigentTabKey, string> = {
   takedowns: "Takedown Requests",
   widget: "Report Widget",
   settings: "Account Settings",
-  admin: "Sigent Admin",
+  admin: "imprsn8 Admin",
 };
 
 const SigentDashboard = () => {
