@@ -31,7 +31,7 @@ const Imprsn8Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { profile, signOut, isAdmin } = useAuth();
+  const { profile, signOut, isAdmin, roles } = useAuth();
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -76,6 +76,7 @@ const Imprsn8Dashboard = () => {
           userDisplayName={profile?.display_name}
           onSignOut={handleSignOut}
           isAdmin={isAdmin}
+          userRole={roles[0] || "influencer"}
         />
       </div>
 

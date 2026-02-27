@@ -14,7 +14,7 @@ interface Profile {
 }
 
 interface UserRole {
-  role: "admin" | "analyst" | "customer";
+  role: "admin" | "analyst" | "customer" | "influencer";
 }
 
 interface AccessGroup {

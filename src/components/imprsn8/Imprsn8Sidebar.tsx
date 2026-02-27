@@ -27,6 +27,7 @@ interface Imprsn8SidebarProps {
   userDisplayName?: string | null;
   onSignOut?: () => void;
   isAdmin?: boolean;
+  userRole?: string;
 }
 
 const navItems: { key: Imprsn8TabKey; icon: typeof Shield; label: string; description: string; adminOnly?: boolean }[] = [
@@ -45,7 +46,7 @@ const themeOptions = [
   { value: "system" as const, icon: Monitor, label: "Auto" },
 ];
 
-export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin }: Imprsn8SidebarProps) {
+export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin, userRole }: Imprsn8SidebarProps) {
   const { theme, setTheme } = useTheme();
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
@@ -116,7 +117,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
             <UserCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground truncate">{userDisplayName}</p>
-              <p className="text-[9px] text-amber-500/70 font-mono">INFLUENCER</p>
+              <p className="text-[9px] text-amber-500/70 font-mono uppercase">{userRole || "INFLUENCER"}</p>
             </div>
           </div>
         )}
