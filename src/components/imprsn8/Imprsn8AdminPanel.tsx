@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Shield, AlertTriangle, FileText, Plus, Search, Eye, RefreshCw, UserPlus, BarChart3 } from "lucide-react";
+import { Users, Shield, AlertTriangle, FileText, Plus, Search, Eye, RefreshCw, UserPlus, BarChart3, Mail, CheckCircle2, Loader2 } from "lucide-react";
 
 export function Imprsn8AdminPanel() {
   const { toast } = useToast();
@@ -95,6 +95,35 @@ export function Imprsn8AdminPanel() {
     },
   });
 
+  /** Invite a new influencer via edge function */
+  const inviteInfluencer = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("invite-influencer", {
+        body: {
+          email: newEmail,
+          display_name: newDisplayName,
+          brand_name: newBrandName || undefined,
+          subscription_tier: newTier,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-influencers"] });
+      toast({ title: "Influencer invited", description: `Invite email sent to ${newEmail}` });
+      setNewEmail("");
+      setNewDisplayName("");
+      setNewBrandName("");
+      setNewTier("free");
+      setAddInfluencerOpen(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Invite failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   /** Filter influencers by search */
   const filtered = influencers.filter((inf) =>
     !searchQuery ||
@@ -143,16 +172,21 @@ export function Imprsn8AdminPanel() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Invite Influencer</DialogTitle>
+                  <DialogTitle>Add Influencer</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label className="text-xs">Display Name</Label>
+                    <Label className="text-xs">Display Name *</Label>
                     <Input value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} placeholder="Creator name" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Brand Name</Label>
                     <Input value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} placeholder="Brand or alias" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Email *</Label>
+                    <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="influencer@example.com" />
+                    <p className="text-[10px] text-muted-foreground">An invite link will be sent to this email after creation.</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Subscription Tier</Label>
@@ -168,8 +202,17 @@ export function Imprsn8AdminPanel() {
                 </div>
                 <DialogFooter>
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-white" disabled>
-                    Send Invite (Coming Soon)
+                  <Button
+                    className="bg-amber-500 hover:bg-amber-600 text-white gap-2"
+                    disabled={!newEmail || !newDisplayName || inviteInfluencer.isPending}
+                    onClick={() => inviteInfluencer.mutate()}
+                  >
+                    {inviteInfluencer.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5" />
+                    )}
+                    {inviteInfluencer.isPending ? "Creating..." : "Create & Send Invite"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
