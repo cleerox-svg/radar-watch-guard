@@ -1,22 +1,22 @@
 /**
- * SigentDashboard.tsx — Main dashboard page for the Sigent influencer protection platform.
+ * Imprsn8Dashboard.tsx — Main dashboard page for the imprsn8 influencer protection platform.
  * Shell layout with sidebar + content area. Admin users see extra management tabs.
  */
 
 import { useState, useCallback } from "react";
 import { Menu, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { SigentSidebar, type SigentTabKey } from "@/components/sigent/SigentSidebar";
-import { SigentOverview } from "@/components/sigent/SigentOverview";
-import { SigentMonitoredAccounts } from "@/components/sigent/SigentMonitoredAccounts";
-import { SigentReports } from "@/components/sigent/SigentReports";
-import { SigentTakedowns } from "@/components/sigent/SigentTakedowns";
-import { SigentSettings } from "@/components/sigent/SigentSettings";
-import { SigentAdminPanel } from "@/components/sigent/SigentAdminPanel";
+import { Imprsn8Sidebar, type Imprsn8TabKey } from "@/components/imprsn8/Imprsn8Sidebar";
+import { Imprsn8Overview } from "@/components/imprsn8/Imprsn8Overview";
+import { Imprsn8MonitoredAccounts } from "@/components/imprsn8/Imprsn8MonitoredAccounts";
+import { Imprsn8Reports } from "@/components/imprsn8/Imprsn8Reports";
+import { Imprsn8Takedowns } from "@/components/imprsn8/Imprsn8Takedowns";
+import { Imprsn8Settings } from "@/components/imprsn8/Imprsn8Settings";
+import { Imprsn8AdminPanel } from "@/components/imprsn8/Imprsn8AdminPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 
-const tabTitles: Record<SigentTabKey, string> = {
+const tabTitles: Record<Imprsn8TabKey, string> = {
   overview: "Protection Dashboard",
   accounts: "Monitored Accounts",
   reports: "Impersonation Reports",
@@ -26,8 +26,8 @@ const tabTitles: Record<SigentTabKey, string> = {
   admin: "imprsn8 Admin",
 };
 
-const SigentDashboard = () => {
-  const [currentTab, setCurrentTab] = useState<SigentTabKey>("overview");
+const Imprsn8Dashboard = () => {
+  const [currentTab, setCurrentTab] = useState<Imprsn8TabKey>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -38,20 +38,19 @@ const SigentDashboard = () => {
     navigate("/login");
   }, [signOut, navigate]);
 
-  const handleTabChange = (tab: SigentTabKey) => {
+  const handleTabChange = (tab: Imprsn8TabKey) => {
     setCurrentTab(tab);
     setSidebarOpen(false);
   };
 
-  /** Render active tab content */
   const renderContent = () => {
     switch (currentTab) {
-      case "overview": return <SigentOverview />;
-      case "accounts": return <SigentMonitoredAccounts />;
-      case "reports": return <SigentReports />;
-      case "takedowns": return <SigentTakedowns />;
-      case "settings": return <SigentSettings />;
-      case "admin": return isAdmin ? <SigentAdminPanel /> : <PlaceholderTab label="Access Denied" />;
+      case "overview": return <Imprsn8Overview />;
+      case "accounts": return <Imprsn8MonitoredAccounts />;
+      case "reports": return <Imprsn8Reports />;
+      case "takedowns": return <Imprsn8Takedowns />;
+      case "settings": return <Imprsn8Settings />;
+      case "admin": return isAdmin ? <Imprsn8AdminPanel /> : <PlaceholderTab label="Access Denied" />;
       case "widget": return <PlaceholderTab label="Report Widget Config — Coming soon" />;
       default: return null;
     }
@@ -70,7 +69,7 @@ const SigentDashboard = () => {
         fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <SigentSidebar
+        <Imprsn8Sidebar
           currentTab={currentTab}
           onTabChange={handleTabChange}
           onClose={() => setSidebarOpen(false)}
@@ -114,7 +113,6 @@ const SigentDashboard = () => {
   );
 };
 
-/** Simple placeholder for tabs not yet built */
 function PlaceholderTab({ label }: { label: string }) {
   return (
     <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -123,4 +121,4 @@ function PlaceholderTab({ label }: { label: string }) {
   );
 }
 
-export default SigentDashboard;
+export default Imprsn8Dashboard;

@@ -1,5 +1,5 @@
 /**
- * SigentTakedowns.tsx — Track and manage takedown requests for confirmed impersonators.
+ * Imprsn8Takedowns.tsx — Track and manage takedown requests for confirmed impersonators.
  * Shows status pipeline: draft → submitted → acknowledged → resolved/rejected.
  */
 
@@ -20,7 +20,7 @@ const statusMeta: Record<string, { icon: typeof Clock; color: string; label: str
   rejected: { icon: XCircle, color: "text-red-500", label: "Rejected" },
 };
 
-export function SigentTakedowns() {
+export function Imprsn8Takedowns() {
   const { user } = useAuth();
 
   const { data: profile } = useQuery({

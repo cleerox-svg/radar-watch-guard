@@ -1,5 +1,5 @@
 /**
- * SigentMonitoredAccounts.tsx — CRUD interface for managing monitored social media accounts.
+ * Imprsn8MonitoredAccounts.tsx — CRUD interface for managing monitored social media accounts.
  * Supports Twitter/X, Instagram, TikTok, and YouTube with platform-specific cards.
  */
 
@@ -34,7 +34,7 @@ const statusIcons: Record<string, typeof CheckCircle2> = {
   scanning: RefreshCw,
 };
 
-export function SigentMonitoredAccounts() {
+export function Imprsn8MonitoredAccounts() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

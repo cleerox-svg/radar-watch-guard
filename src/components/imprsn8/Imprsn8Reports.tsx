@@ -1,5 +1,5 @@
 /**
- * SigentReports.tsx — View and manage impersonation reports.
+ * Imprsn8Reports.tsx — View and manage impersonation reports.
  * Shows detected impersonators with severity ratings, status, and action buttons.
  */
 
@@ -29,7 +29,7 @@ const statusColors: Record<string, string> = {
   takedown_sent: "bg-violet-500/10 text-violet-500 border-violet-500/30",
 };
 
-export function SigentReports() {
+export function Imprsn8Reports() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

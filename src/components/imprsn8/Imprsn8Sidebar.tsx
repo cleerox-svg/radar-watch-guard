@@ -1,5 +1,5 @@
 /**
- * SigentSidebar.tsx — Navigation sidebar for the imprsn8 influencer protection platform.
+ * Imprsn8Sidebar.tsx — Navigation sidebar for the imprsn8 influencer protection platform.
  * Uses warm amber/gold accent to differentiate from Trust Radar's emerald theme.
  */
 
@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlatformSwitcher } from "@/components/PlatformSwitcher";
 
-export type SigentTabKey =
+export type Imprsn8TabKey =
   | "overview"
   | "accounts"
   | "reports"
@@ -20,16 +20,16 @@ export type SigentTabKey =
   | "settings"
   | "admin";
 
-interface SigentSidebarProps {
-  currentTab: SigentTabKey;
-  onTabChange: (tab: SigentTabKey) => void;
+interface Imprsn8SidebarProps {
+  currentTab: Imprsn8TabKey;
+  onTabChange: (tab: Imprsn8TabKey) => void;
   onClose?: () => void;
   userDisplayName?: string | null;
   onSignOut?: () => void;
   isAdmin?: boolean;
 }
 
-const navItems: { key: SigentTabKey; icon: typeof Shield; label: string; description: string; adminOnly?: boolean }[] = [
+const navItems: { key: Imprsn8TabKey; icon: typeof Shield; label: string; description: string; adminOnly?: boolean }[] = [
   { key: "overview", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & stats" },
   { key: "accounts", icon: Users, label: "My Accounts", description: "Managed social accounts" },
   { key: "reports", icon: AlertTriangle, label: "Impersonators", description: "Detected & reported fakes" },
@@ -45,7 +45,7 @@ const themeOptions = [
   { value: "system" as const, icon: Monitor, label: "Auto" },
 ];
 
-export function SigentSidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin }: SigentSidebarProps) {
+export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin }: Imprsn8SidebarProps) {
   const { theme, setTheme } = useTheme();
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
@@ -83,7 +83,7 @@ export function SigentSidebar({ currentTab, onTabChange, onClose, userDisplayNam
                   >
                     {active && (
                       <motion.div
-                        layoutId="sigent-sidebar-active"
+                        layoutId="imprsn8-sidebar-active"
                         className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-full"
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       />

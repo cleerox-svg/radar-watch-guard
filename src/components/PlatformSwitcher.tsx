@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Platform {
-  id: "radar" | "sigent";
+  id: "radar" | "imprsn8";
   name: string;
   tagline: string;
   icon: typeof Satellite;
@@ -28,11 +28,11 @@ const platforms: Platform[] = [
     accentClass: "text-primary",
   },
   {
-    id: "sigent",
+    id: "imprsn8",
     name: "IMPRSN8",
     tagline: "Influencer Shield",
     icon: Shield,
-    path: "/sigent",
+    path: "/imprsn8",
     accentClass: "text-amber-500",
   },
 ];
@@ -46,7 +46,7 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentPlatform = location.pathname.startsWith("/sigent")
+  const currentPlatform = location.pathname.startsWith("/imprsn8")
     ? platforms[1]
     : platforms[0];
 
@@ -66,7 +66,7 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
         <div className="relative w-8 h-8 flex items-center justify-center">
           <div className={cn(
             "absolute inset-0 rounded-lg animate-pulse-slow",
-            currentPlatform.id === "sigent" ? "bg-amber-500/20" : "bg-primary/20"
+            currentPlatform.id === "imprsn8" ? "bg-amber-500/20" : "bg-primary/20"
           )} />
           <currentPlatform.icon className={cn(
             "w-4 h-4 relative z-10",
@@ -82,7 +82,7 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
           </span>
           <span className={cn(
             "block text-[9px] font-mono tracking-[0.15em] uppercase",
-            currentPlatform.id === "sigent" ? "text-amber-500/70" : "text-primary/70"
+            currentPlatform.id === "imprsn8" ? "text-amber-500/70" : "text-primary/70"
           )}>
             {currentPlatform.tagline}
           </span>
