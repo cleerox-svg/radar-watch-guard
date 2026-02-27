@@ -650,6 +650,131 @@ export type Database = {
           },
         ]
       }
+      impersonation_reports: {
+        Row: {
+          ai_analysis: Json | null
+          created_at: string
+          evidence_urls: string[] | null
+          id: string
+          impersonator_display_name: string | null
+          impersonator_url: string | null
+          impersonator_username: string
+          influencer_id: string
+          platform: string
+          reporter_description: string | null
+          reporter_email: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screenshot_url: string | null
+          severity: string
+          similarity_score: number | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          impersonator_display_name?: string | null
+          impersonator_url?: string | null
+          impersonator_username: string
+          influencer_id: string
+          platform: string
+          reporter_description?: string | null
+          reporter_email?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          severity?: string
+          similarity_score?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          created_at?: string
+          evidence_urls?: string[] | null
+          id?: string
+          impersonator_display_name?: string | null
+          impersonator_url?: string | null
+          impersonator_username?: string
+          influencer_id?: string
+          platform?: string
+          reporter_description?: string | null
+          reporter_email?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          severity?: string
+          similarity_score?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_reports_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      influencer_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          brand_name: string | null
+          created_at: string
+          display_name: string
+          id: string
+          max_monitored_accounts: number | null
+          onboarding_completed: boolean | null
+          report_email: string | null
+          subscription_tier: string
+          updated_at: string
+          user_id: string
+          website_url: string | null
+          widget_token: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          brand_name?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          max_monitored_accounts?: number | null
+          onboarding_completed?: boolean | null
+          report_email?: string | null
+          subscription_tier?: string
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+          widget_token?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          brand_name?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          max_monitored_accounts?: number | null
+          onboarding_completed?: boolean | null
+          report_email?: string | null
+          subscription_tier?: string
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+          widget_token?: string | null
+        }
+        Relationships: []
+      }
       ingestion_jobs: {
         Row: {
           batch_size: number
@@ -757,6 +882,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      monitored_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          influencer_id: string
+          last_scanned_at: string | null
+          metadata: Json | null
+          platform: string
+          platform_url: string
+          platform_user_id: string | null
+          platform_username: string
+          scan_status: string | null
+          updated_at: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          influencer_id: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          platform: string
+          platform_url: string
+          platform_user_id?: string | null
+          platform_username: string
+          scan_status?: string | null
+          updated_at?: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          influencer_id?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          platform?: string
+          platform_url?: string
+          platform_user_id?: string | null
+          platform_username?: string
+          scan_status?: string | null
+          updated_at?: string
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitored_accounts_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -967,6 +1145,72 @@ export type Database = {
           trap_address?: string
         }
         Relationships: []
+      }
+      takedown_requests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          influencer_id: string
+          notes: string | null
+          platform: string
+          platform_case_id: string | null
+          report_id: string
+          request_type: string
+          resolved_at: string | null
+          response_data: Json | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          influencer_id: string
+          notes?: string | null
+          platform: string
+          platform_case_id?: string | null
+          report_id: string
+          request_type?: string
+          resolved_at?: string | null
+          response_data?: Json | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          influencer_id?: string
+          notes?: string | null
+          platform?: string
+          platform_case_id?: string | null
+          report_id?: string
+          request_type?: string
+          resolved_at?: string | null
+          response_data?: Json | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takedown_requests_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takedown_requests_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "impersonation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       threat_briefings: {
         Row: {
@@ -1233,7 +1477,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "analyst" | "customer"
+      app_role: "admin" | "analyst" | "customer" | "influencer"
       feed_source_type:
         | "phishtank"
         | "urlhaus"
@@ -1389,7 +1633,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "analyst", "customer"],
+      app_role: ["admin", "analyst", "customer", "influencer"],
       feed_source_type: [
         "phishtank",
         "urlhaus",
