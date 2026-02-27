@@ -1,5 +1,5 @@
 /**
- * PlatformSwitcher.tsx — Toggle between Trust Radar and Sigent sub-platforms.
+ * PlatformSwitcher.tsx — Toggle between Trust Radar and imprsn8 sub-platforms.
  * Renders as a compact dropdown in the sidebar header area.
  */
 
@@ -29,7 +29,7 @@ const platforms: Platform[] = [
   },
   {
     id: "sigent",
-    name: "SIGENT",
+    name: "IMPRSN8",
     tagline: "Influencer Shield",
     icon: Shield,
     path: "/sigent",

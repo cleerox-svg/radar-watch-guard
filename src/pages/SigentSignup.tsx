@@ -1,5 +1,5 @@
 /**
- * SigentSignup.tsx — Dedicated signup page for influencers joining the Sigent platform.
+ * SigentSignup.tsx — Dedicated signup page for influencers joining the imprsn8 platform.
  * Collects display name, brand name, and creates account with 'influencer' metadata.
  */
 
@@ -72,7 +72,7 @@ const SigentSignup = () => {
             <h2 className="text-xl font-bold text-foreground">Check Your Email</h2>
             <p className="text-sm text-muted-foreground">
               We've sent a verification link to <strong>{form.email}</strong>. 
-              Click the link to activate your Sigent account and start protecting your brand.
+              Click the link to activate your imprsn8 account and start protecting your brand.
             </p>
             <Button variant="outline" onClick={() => navigate("/login")} className="mt-4">
               Go to Login
@@ -91,7 +91,7 @@ const SigentSignup = () => {
             <Shield className="w-6 h-6 text-amber-500" />
           </div>
           <CardTitle className="text-xl">
-            <span className="text-amber-500 font-extrabold tracking-wider">SIGENT</span>
+            <span className="text-amber-500 font-extrabold tracking-wider">IMPRSN8</span>
           </CardTitle>
           <CardDescription>
             Protect your social media identity. Free to get started.

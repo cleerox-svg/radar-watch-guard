@@ -25,10 +25,10 @@ export function SigentOverview() {
             <div>
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Shield className="w-5 h-5 text-amber-500" />
-                Welcome to Sigent
+                Welcome to imprsn8
               </h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-                Your social media identity protection platform. Add your verified accounts to start monitoring for impersonators across Twitter/X, Instagram, TikTok, and YouTube.
+                Your social media identity protection platform powered by imprsn8. Add your verified accounts to start monitoring for impersonators across Twitter/X, Instagram, TikTok, and YouTube.
               </p>
             </div>
             <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-[10px]">
@@ -90,7 +90,7 @@ export function SigentOverview() {
               <p className="text-[10px] text-muted-foreground font-mono mb-1">YOUR REPORT LINK</p>
               <div className="flex items-center gap-2">
                 <code className="text-xs text-foreground flex-1 truncate">
-                  /sigent/report/your-token
+                  /imprsn8/report/your-token
                 </code>
                 <Button variant="ghost" size="icon" className="h-6 w-6">
                   <ExternalLink className="w-3 h-3" />
