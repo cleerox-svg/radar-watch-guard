@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { PlatformSwitcher } from "@/components/PlatformSwitcher";
 
 export type TabKey =
   | "exposure"
@@ -123,16 +124,7 @@ export function Sidebar({ currentTab, onTabChange, onClose, isAdmin, userDisplay
     <aside className="w-60 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col z-20 shadow-xl">
       {/* Logo */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-border">
-        <Link to="/" className="flex items-center group gap-2.5">
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            <div className="absolute inset-0 bg-primary/20 rounded-lg animate-pulse-slow" />
-            <Satellite className="w-4 h-4 text-primary relative z-10" />
-          </div>
-          <div>
-            <span className="block text-sm font-extrabold tracking-wider text-foreground group-hover:text-primary transition-colors">TRUST RADAR</span>
-            <span className="block text-[9px] text-primary/70 font-mono tracking-[0.15em] uppercase">Intelligence Platform</span>
-          </div>
-        </Link>
+        <PlatformSwitcher className="flex-1" />
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X className="w-4 h-4" />
