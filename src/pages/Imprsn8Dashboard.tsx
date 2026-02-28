@@ -13,6 +13,7 @@ import { Imprsn8Reports } from "@/components/imprsn8/Imprsn8Reports";
 import { Imprsn8Takedowns } from "@/components/imprsn8/Imprsn8Takedowns";
 import { Imprsn8Settings } from "@/components/imprsn8/Imprsn8Settings";
 import { Imprsn8AdminPanel } from "@/components/imprsn8/Imprsn8AdminPanel";
+import { Imprsn8KnowledgeBase } from "@/components/imprsn8/Imprsn8KnowledgeBase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -22,6 +23,7 @@ const tabTitles: Record<Imprsn8TabKey, string> = {
   reports: "Impersonation Reports",
   takedowns: "Takedown Requests",
   widget: "Report Widget",
+  knowledge: "Knowledge Base",
   settings: "Account Settings",
   admin: "imprsn8 Admin",
 };
@@ -50,6 +52,7 @@ const Imprsn8Dashboard = () => {
       case "reports": return <Imprsn8Reports />;
       case "takedowns": return <Imprsn8Takedowns />;
       case "settings": return <Imprsn8Settings />;
+      case "knowledge": return <Imprsn8KnowledgeBase />;
       case "admin": return isAdmin ? <Imprsn8AdminPanel /> : <PlaceholderTab label="Access Denied" />;
       case "widget": return <PlaceholderTab label="Report Widget Config — Coming soon" />;
       default: return null;

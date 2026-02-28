@@ -3,7 +3,7 @@
  * Uses warm amber/gold accent to differentiate from Trust Radar's emerald theme.
  */
 
-import { Shield, X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Eye, MessageSquare } from "lucide-react";
+import { Shield, X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Eye, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
@@ -17,6 +17,7 @@ export type Imprsn8TabKey =
   | "reports"
   | "takedowns"
   | "widget"
+  | "knowledge"
   | "settings"
   | "admin";
 
@@ -36,6 +37,7 @@ const navItems: { key: Imprsn8TabKey; icon: typeof Shield; label: string; descri
   { key: "reports", icon: AlertTriangle, label: "Impersonators", description: "Detected & reported fakes" },
   { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking" },
   { key: "widget", icon: Eye, label: "Report Widget", description: "Embeddable follower reporting" },
+  { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Help docs & status guide" },
   { key: "settings", icon: Settings, label: "Settings", description: "Profile & subscription" },
   { key: "admin", icon: Shield, label: "Admin Panel", description: "Manage all influencers & feeds (imprsn8)", adminOnly: true },
 ];
