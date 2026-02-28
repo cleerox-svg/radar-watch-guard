@@ -1,19 +1,22 @@
 /**
  * PlatformSwitcher.tsx — Toggle between Trust Radar and imprsn8 sub-platforms.
  * Renders as a compact dropdown in the sidebar header area.
+ * imprsn8 now uses the mask logo with purple/gold branding.
  */
 
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Satellite, Shield, ChevronDown } from "lucide-react";
+import { Satellite, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import imprsn8Icon from "@/assets/imprsn8-icon.png";
 
 interface Platform {
   id: "radar" | "imprsn8";
   name: string;
   tagline: string;
-  icon: typeof Satellite;
+  icon?: typeof Satellite;
+  iconImg?: string;
   path: string;
   accentClass: string;
 }
@@ -31,9 +34,9 @@ const platforms: Platform[] = [
     id: "imprsn8",
     name: "IMPRSN8",
     tagline: "Influencer Shield",
-    icon: Shield,
+    iconImg: imprsn8Icon,
     path: "/imprsn8",
-    accentClass: "text-amber-500",
+    accentClass: "text-imprsn8",
   },
 ];
 
@@ -57,6 +60,17 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
     }
   };
 
+  const renderPlatformIcon = (platform: Platform, size = "w-4 h-4") => {
+    if (platform.iconImg) {
+      return <img src={platform.iconImg} alt={platform.name} className={cn(size, "rounded-sm object-contain")} />;
+    }
+    if (platform.icon) {
+      const Icon = platform.icon;
+      return <Icon className={cn(size, platform.accentClass)} />;
+    }
+    return null;
+  };
+
   return (
     <div className={cn("relative", className)}>
       <button
@@ -66,12 +80,11 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
         <div className="relative w-8 h-8 flex items-center justify-center">
           <div className={cn(
             "absolute inset-0 rounded-lg animate-pulse-slow",
-            currentPlatform.id === "imprsn8" ? "bg-amber-500/20" : "bg-primary/20"
+            currentPlatform.id === "imprsn8" ? "bg-imprsn8-purple" : "bg-primary/20"
           )} />
-          <currentPlatform.icon className={cn(
-            "w-4 h-4 relative z-10",
-            currentPlatform.accentClass
-          )} />
+          <div className="relative z-10">
+            {renderPlatformIcon(currentPlatform)}
+          </div>
         </div>
         <div className="flex-1 text-left min-w-0">
           <span className={cn(
@@ -82,7 +95,7 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
           </span>
           <span className={cn(
             "block text-[9px] font-mono tracking-[0.15em] uppercase",
-            currentPlatform.id === "imprsn8" ? "text-amber-500/70" : "text-primary/70"
+            currentPlatform.id === "imprsn8" ? "text-imprsn8/70" : "text-primary/70"
           )}>
             {currentPlatform.tagline}
           </span>
@@ -115,7 +128,7 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
                       : "hover:bg-accent/50"
                   )}
                 >
-                  <platform.icon className={cn("w-4 h-4", platform.accentClass)} />
+                  {renderPlatformIcon(platform)}
                   <div>
                     <p className={cn("text-xs font-bold tracking-wider", platform.accentClass)}>
                       {platform.name}
@@ -125,7 +138,10 @@ export function PlatformSwitcher({ className }: PlatformSwitcherProps) {
                     </p>
                   </div>
                   {platform.id === currentPlatform.id && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                    <div className={cn(
+                      "ml-auto w-1.5 h-1.5 rounded-full",
+                      platform.id === "imprsn8" ? "bg-imprsn8" : "bg-primary"
+                    )} />
                   )}
                 </button>
               ))}

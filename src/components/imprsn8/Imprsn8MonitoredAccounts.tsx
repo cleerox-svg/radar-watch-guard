@@ -56,7 +56,7 @@ function formatCount(n: number | null | undefined): string {
 function StatPill({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
     <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-accent/50 min-w-[80px] flex-1">
-      <Icon className="w-4 h-4 text-amber-500" />
+      <Icon className="w-4 h-4 text-imprsn8" />
       <span className="text-base font-bold text-foreground">{value}</span>
       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
     </div>
@@ -270,20 +270,20 @@ export function Imprsn8MonitoredAccounts() {
 
     return (
       <Sheet open={detailSheet.open} onOpenChange={(open) => setDetailSheet(s => ({ ...s, open }))}>
-        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl p-0 border-t border-amber-500/20">
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl p-0 border-t border-imprsn8/20">
           <ScrollArea className="h-full">
             <div className="flex flex-col">
               {/* Hero header with avatar */}
-              <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-amber-500/10 to-transparent">
+              <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-imprsn8-purple/20 to-transparent">
                 {/* Drag handle */}
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" />
                 
                 <div className="flex flex-col items-center text-center gap-4">
                   {/* Large profile picture */}
                   <div className="relative">
-                    <Avatar className="h-24 w-24 border-4 border-amber-500/30 shadow-lg">
+                    <Avatar className="h-24 w-24 border-4 border-imprsn8/30 shadow-lg">
                       <AvatarImage src={avatarUrl} className="object-cover" />
-                      <AvatarFallback className="text-2xl font-bold bg-amber-500/10 text-amber-500">
+                      <AvatarFallback className="text-2xl font-bold bg-imprsn8-purple text-imprsn8">
                         {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
                       </AvatarFallback>
                     </Avatar>
@@ -354,7 +354,7 @@ export function Imprsn8MonitoredAccounts() {
                 {website && (
                   <div className="flex items-center gap-3 text-sm">
                     <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <a href={website} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:underline truncate">{website}</a>
+                    <a href={website} target="_blank" rel="noopener noreferrer" className="text-imprsn8 hover:underline truncate">{website}</a>
                   </div>
                 )}
                 {accountCreated && (
@@ -410,7 +410,7 @@ export function Imprsn8MonitoredAccounts() {
                     {snap.has_changes && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {(snap.changes_detected as string[])?.map((c: string) => (
-                          <Badge key={c} variant="outline" className="text-[10px] border-amber-500/30 text-amber-500 bg-amber-500/5">
+                          <Badge key={c} variant="outline" className="text-[10px] border-imprsn8/30 text-imprsn8 bg-imprsn8/5">
                             {c.replace(/_/g, " ")}
                           </Badge>
                         ))}
@@ -442,14 +442,14 @@ export function Imprsn8MonitoredAccounts() {
         {!isAllView && (
           <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button disabled={!canAdd} className="gap-2 bg-amber-500 hover:bg-amber-600 text-white"><Plus className="w-4 h-4" /> Add Account</Button>
+              <Button disabled={!canAdd} className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground"><Plus className="w-4 h-4" /> Add Account</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Add Social Media Account</DialogTitle></DialogHeader>
               {renderFormFields()}
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                <Button onClick={() => addAccount.mutate()} disabled={!username || addAccount.isPending} className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Button onClick={() => addAccount.mutate()} disabled={!username || addAccount.isPending} className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground">
                   {addAccount.isPending ? "Adding..." : "Add Account"}
                 </Button>
               </DialogFooter>
@@ -461,7 +461,7 @@ export function Imprsn8MonitoredAccounts() {
       {/* Capacity bar (single influencer only) */}
       {!isAllView && (
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-amber-500 transition-all rounded-full" style={{ width: `${(accounts.length / maxAccounts) * 100}%` }} />
+          <div className="h-full bg-imprsn8 transition-all rounded-full" style={{ width: `${(accounts.length / maxAccounts) * 100}%` }} />
         </div>
       )}
 
@@ -472,7 +472,7 @@ export function Imprsn8MonitoredAccounts() {
           {renderFormFields()}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-            <Button onClick={() => updateAccount.mutate()} disabled={!username || updateAccount.isPending} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Button onClick={() => updateAccount.mutate()} disabled={!username || updateAccount.isPending} className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground">
               {updateAccount.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -497,7 +497,7 @@ export function Imprsn8MonitoredAccounts() {
             ) : (
               <div className="space-y-4">
                 {snapshots.map((snap: any) => (
-                  <Card key={snap.id} className={snap.has_changes ? "border-amber-500/30" : ""}>
+                  <Card key={snap.id} className={snap.has_changes ? "border-imprsn8/30" : ""}>
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12 border border-border">
@@ -509,7 +509,7 @@ export function Imprsn8MonitoredAccounts() {
                           <p className="text-[11px] text-muted-foreground">{new Date(snap.captured_at).toLocaleString()}</p>
                         </div>
                         {snap.has_changes && (
-                          <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500 shrink-0">
+                          <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8 shrink-0">
                             {(snap.changes_detected as string[])?.length} changes
                           </Badge>
                         )}
@@ -524,7 +524,7 @@ export function Imprsn8MonitoredAccounts() {
                       {snap.has_changes && (
                         <div className="flex flex-wrap gap-1">
                           {(snap.changes_detected as string[])?.map((c: string) => (
-                            <Badge key={c} variant="outline" className="text-[9px] border-amber-500/20 text-amber-400">{c.replace(/_/g, " ")}</Badge>
+                            <Badge key={c} variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">{c.replace(/_/g, " ")}</Badge>
                           ))}
                         </div>
                       )}
@@ -546,7 +546,7 @@ export function Imprsn8MonitoredAccounts() {
           {[1, 2].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-32" /></Card>)}
         </div>
       ) : accounts.length === 0 ? (
-        <Card className="border-dashed border-amber-500/20">
+        <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-sm text-muted-foreground text-center">No accounts being monitored yet.</p>
           </CardContent>
@@ -560,14 +560,14 @@ export function Imprsn8MonitoredAccounts() {
             const isFetching = fetchingId === acct.id;
             const hasProfile = !!(acct as any).current_avatar_url || !!(acct as any).current_display_name;
             return (
-              <Card key={acct.id} className="group hover:border-amber-500/30 transition-colors cursor-pointer active:scale-[0.99]"
+              <Card key={acct.id} className="group hover:border-imprsn8/30 transition-colors cursor-pointer active:scale-[0.99]"
                 onClick={() => setDetailSheet({ open: true, account: acct })}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     {/* Profile avatar */}
-                    <Avatar className="h-14 w-14 border-2 border-amber-500/20 shrink-0 shadow-sm">
+                    <Avatar className="h-14 w-14 border-2 border-imprsn8/20 shrink-0 shadow-sm">
                       <AvatarImage src={(acct as any).current_avatar_url} className="object-cover" />
-                      <AvatarFallback className="text-sm font-bold bg-amber-500/10 text-amber-500">
+                      <AvatarFallback className="text-sm font-bold bg-imprsn8-purple text-imprsn8">
                         {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
                       </AvatarFallback>
                     </Avatar>
@@ -589,17 +589,17 @@ export function Imprsn8MonitoredAccounts() {
 
                         {/* Action buttons - stop propagation so they don't open detail */}
                         <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
                             title="Fetch profile snapshot" onClick={() => fetchProfile(acct)} disabled={isFetching}>
                             {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
                             onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
                             {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                           </Button>
                           {!isAllView && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all" onClick={() => openEdit(acct)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all" onClick={() => openEdit(acct)}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)}>
@@ -623,7 +623,7 @@ export function Imprsn8MonitoredAccounts() {
                             <span>{formatCount((acct as any).current_post_count)} posts</span>
                           )}
                           {(acct as any).profile_changes_count > 0 && (
-                            <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-400">
+                            <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">
                               {(acct as any).profile_changes_count} changes
                             </Badge>
                           )}
@@ -641,7 +641,7 @@ export function Imprsn8MonitoredAccounts() {
                           <StatusIcon className="w-3 h-3" />
                           <span className="capitalize">{acct.scan_status ?? "pending"}</span>
                           {isAllView && acct.influencer_profiles && (
-                            <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">{acct.influencer_profiles.display_name}</Badge>
+                            <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">{acct.influencer_profiles.display_name}</Badge>
                           )}
                         </div>
                         <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
