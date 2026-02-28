@@ -36,6 +36,12 @@ interface ProfileData {
   raw_profile_data: Record<string, unknown>;
 }
 
+/** High-severity changes that warrant automatic alerting */
+const ALERT_WORTHY_CHANGES = ["avatar_url", "display_name", "verified_on_platform"];
+
+/** Stale threshold — accounts not fetched in this many hours get priority */
+const STALE_HOURS = 12;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,11 +55,25 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { monitored_account_id, influencer_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { monitored_account_id, influencer_id, mode } = body;
 
     // Determine which accounts to fetch
     let accounts: any[] = [];
-    if (monitored_account_id) {
+
+    if (mode === "scheduled") {
+      // SCHEDULED MODE: fetch all accounts that are stale (not fetched recently)
+      const cutoff = new Date(Date.now() - STALE_HOURS * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("monitored_accounts")
+        .select("*")
+        .or(`last_profile_fetch_at.is.null,last_profile_fetch_at.lt.${cutoff}`)
+        .order("last_profile_fetch_at", { ascending: true, nullsFirst: true })
+        .limit(20); // batch size to stay within edge function timeout
+      if (error) throw error;
+      accounts = data ?? [];
+      console.log(`Scheduled run: ${accounts.length} stale accounts to process`);
+    } else if (monitored_account_id) {
       const { data, error } = await supabase
         .from("monitored_accounts")
         .select("*")
@@ -68,7 +88,16 @@ Deno.serve(async (req) => {
       if (error) throw error;
       accounts = data ?? [];
     } else {
-      throw new Error("Provide monitored_account_id or influencer_id");
+      // Default: process all stale accounts (same as scheduled)
+      const cutoff = new Date(Date.now() - STALE_HOURS * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("monitored_accounts")
+        .select("*")
+        .or(`last_profile_fetch_at.is.null,last_profile_fetch_at.lt.${cutoff}`)
+        .order("last_profile_fetch_at", { ascending: true, nullsFirst: true })
+        .limit(20);
+      if (error) throw error;
+      accounts = data ?? [];
     }
 
     const results: { account_id: string; success: boolean; changes: string[] }[] = [];
@@ -218,7 +247,7 @@ Deno.serve(async (req) => {
 
         // Insert new snapshot
         const storagePath = profileData.raw_profile_data?.avatar_storage_path as string | undefined;
-        const { error: snapError } = await supabase
+        const { data: snap, error: snapError } = await supabase
           .from("account_profile_snapshots")
           .insert({
             monitored_account_id: acct.id,
@@ -261,6 +290,49 @@ Deno.serve(async (req) => {
           .eq("id", acct.id);
 
         if (updateErr) console.error("Account update error:", updateErr.message);
+
+        // AUTO-ALERT: Create impersonation report when high-severity profile changes detected
+        const alertChanges = changes.filter((c) => ALERT_WORTHY_CHANGES.includes(c));
+        if (alertChanges.length > 0 && prev) {
+          const severity = alertChanges.includes("avatar_url") ? "high" : "medium";
+          const description = alertChanges
+            .map((c) => {
+              if (c === "avatar_url") return `Profile picture changed from previous image`;
+              if (c === "display_name") return `Display name changed from "${prev.display_name}" to "${profileData.display_name}"`;
+              if (c === "verified_on_platform") return `Verification status changed to ${profileData.verified_on_platform ? "verified" : "unverified"}`;
+              return `${c} changed`;
+            })
+            .join(". ");
+
+          const { error: alertErr } = await supabase
+            .from("impersonation_reports")
+            .insert({
+              influencer_id: acct.influencer_id,
+              platform: acct.platform,
+              impersonator_username: acct.platform_username,
+              impersonator_url: acct.platform_url,
+              impersonator_display_name: profileData.display_name,
+              source: "profile_monitor",
+              severity,
+              status: "new",
+              reporter_description: `Automated profile change detection: ${description}`,
+              ai_analysis: {
+                trigger: "profile_change",
+                changes: alertChanges,
+                previous_avatar: prev.avatar_url,
+                new_avatar: profileData.avatar_url,
+                previous_name: prev.display_name,
+                new_name: profileData.display_name,
+                snapshot_id: snap?.id || null,
+              },
+            });
+
+          if (alertErr) {
+            console.error("Alert creation error:", alertErr.message);
+          } else {
+            console.log(`Alert created for ${acct.platform_username}: ${alertChanges.join(", ")}`);
+          }
+        }
 
         results.push({ account_id: acct.id, success: true, changes });
       } catch (acctErr: unknown) {
