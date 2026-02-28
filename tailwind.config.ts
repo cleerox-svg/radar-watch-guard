@@ -39,6 +39,14 @@ export default {
         },
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
+        imprsn8: {
+          DEFAULT: "hsl(var(--imprsn8))",
+          foreground: "hsl(var(--imprsn8-foreground))",
+          purple: "hsl(var(--imprsn8-purple))",
+          "purple-light": "hsl(var(--imprsn8-purple-light))",
+          gold: "hsl(var(--imprsn8-gold))",
+          "gold-dim": "hsl(var(--imprsn8-gold-dim))",
+        },
         "surface-elevated": "hsl(var(--surface-elevated))",
         "surface-overlay": "hsl(var(--surface-overlay))",
         sidebar: {

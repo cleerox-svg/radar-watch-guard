@@ -1,9 +1,9 @@
 /**
- * Imprsn8Sidebar.tsx — Redesigned navigation sidebar for imprsn8.
- * Role-based tabs: influencers see their data, admins see consolidated + admin tools.
+ * Imprsn8Sidebar.tsx — Navigation sidebar for imprsn8 with purple/gold branding.
+ * Uses the imprsn8 design tokens for a distinctive look separate from Trust Radar.
  */
 
-import { Shield, X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Bot, Eye, ChevronDown } from "lucide-react";
+import { X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Bot, Eye, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion } from "framer-motion";
@@ -40,14 +40,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // Main section — visible to all
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & alerts", section: "main" },
   { key: "accounts", icon: Eye, label: "My Accounts", description: "Monitored social handles & scan status", section: "main" },
   { key: "threats", icon: AlertTriangle, label: "Threats Found", description: "Impersonation reports from all agents", section: "main" },
   { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking", section: "main" },
   { key: "agents", icon: Bot, label: "AI Agents", description: "Agent health, runs & manual triggers", section: "main" },
   { key: "settings", icon: Settings, label: "Settings", description: "Profile & notification preferences", section: "main" },
-  // Admin section
   { key: "all_influencers", icon: Users, label: "All Influencers", description: "Master roster of all influencers", section: "admin", adminOnly: true },
   { key: "admin", icon: Shield, label: "Admin Console", description: "Users, groups, feeds & access control", section: "admin", adminOnly: true },
 ];
@@ -75,20 +73,20 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
             className={cn(
               "flex items-center w-full px-3 py-2 transition-all duration-200 rounded-lg text-left group relative overflow-hidden",
               active
-                ? "bg-amber-500/10 text-foreground"
+                ? "bg-imprsn8-purple-light text-foreground"
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
             )}
           >
             {active && (
               <motion.div
                 layoutId="imprsn8-sidebar-active"
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-full"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-imprsn8 rounded-full"
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
             )}
             <item.icon className={cn(
               "w-3.5 h-3.5 mr-2.5 shrink-0 transition-colors duration-200",
-              active ? "text-amber-500" : "group-hover:text-foreground"
+              active ? "text-imprsn8" : "group-hover:text-foreground"
             )} />
             <span className={cn(
               "text-[13px] truncate block transition-colors",
@@ -119,7 +117,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto scrollbar-cyber">
-        <p className="px-3 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-500">
+        <p className="px-3 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-imprsn8">
           Protection
         </p>
         <div className="space-y-px">
@@ -129,7 +127,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
         {isAdminView && (
           <>
             <div className="my-3 mx-3 border-t border-border" />
-            <p className="px-3 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-500/70">
+            <p className="px-3 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-imprsn8/70">
               Administration
             </p>
             <div className="space-y-px">
@@ -146,7 +144,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
             <UserCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground truncate">{userDisplayName}</p>
-              <p className="text-[9px] text-amber-500/70 font-mono uppercase">{userRole || "INFLUENCER"}</p>
+              <p className="text-[9px] text-imprsn8/70 font-mono uppercase">{userRole || "INFLUENCER"}</p>
             </div>
           </div>
         )}
@@ -158,7 +156,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
               onClick={() => setTheme(opt.value)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 py-1 rounded text-[10px] transition-colors",
-                theme === opt.value ? "bg-amber-500/10 text-amber-500" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                theme === opt.value ? "bg-imprsn8-gold-dim text-imprsn8" : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               <opt.icon className="w-3 h-3" />
@@ -180,10 +178,10 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
           <p className="text-[9px] text-muted-foreground/50 font-mono">v2.0</p>
           <div className="flex items-center gap-1">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-imprsn8 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-imprsn8" />
             </span>
-            <p className="text-[9px] text-amber-500/70 font-mono">GUARDING</p>
+            <p className="text-[9px] text-imprsn8/70 font-mono">GUARDING</p>
           </div>
         </div>
       </div>

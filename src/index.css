@@ -55,6 +55,14 @@
     --alert: 0 84% 60%;
     --alert-dim: 0 30% 92%;
 
+    /* imprsn8 tokens — purple/gold */
+    --imprsn8: 43 96% 56%;
+    --imprsn8-foreground: 0 0% 100%;
+    --imprsn8-purple: 270 40% 25%;
+    --imprsn8-purple-light: 270 30% 92%;
+    --imprsn8-gold: 43 96% 56%;
+    --imprsn8-gold-dim: 43 60% 85%;
+
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
 
@@ -128,6 +136,14 @@
 
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
+
+    /* imprsn8 tokens — purple/gold dark */
+    --imprsn8: 43 96% 56%;
+    --imprsn8-foreground: 270 30% 8%;
+    --imprsn8-purple: 270 40% 14%;
+    --imprsn8-purple-light: 270 30% 22%;
+    --imprsn8-gold: 43 96% 56%;
+    --imprsn8-gold-dim: 43 50% 25%;
 
     --surface-elevated: 217 33% 12%;
     --surface-overlay: 217 33% 8%;
