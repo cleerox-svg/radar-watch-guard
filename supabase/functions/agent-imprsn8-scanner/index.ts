@@ -222,8 +222,7 @@ Deno.serve(async (req) => {
 
     // 2. Fetch monitored accounts
     let query = supabase.from("monitored_accounts")
-      .select("*, influencer_profiles(id, display_name, brand_name)")
-      .eq("verified", true);
+      .select("*, influencer_profiles(id, display_name, brand_name)");
     if (influencerId) query = query.eq("influencer_id", influencerId);
     if (platform) query = query.eq("platform", platform);
 

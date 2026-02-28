@@ -116,7 +116,6 @@ Deno.serve(async (req) => {
     // Fetch monitored accounts (limit per run for rate limiting)
     let query = supabase.from("monitored_accounts")
       .select("*, influencer_profiles(id, display_name, brand_name)")
-      .eq("verified", true)
       .limit(MAX_ACCOUNTS_PER_RUN);
     if (body.influencer_id) query = query.eq("influencer_id", body.influencer_id);
 
