@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Shield, AlertTriangle, FileText, Plus, Search, Eye, RefreshCw, UserPlus, BarChart3, Mail, CheckCircle2, Loader2 } from "lucide-react";
+import { Users, Shield, AlertTriangle, FileText, Plus, Search, Eye, RefreshCw, UserPlus, BarChart3, Mail, CheckCircle2, Loader2, Rss } from "lucide-react";
+import { Imprsn8DataFeeds } from "./Imprsn8DataFeeds";
 
 export function Imprsn8AdminPanel() {
   const { toast } = useToast();
@@ -139,8 +140,11 @@ export function Imprsn8AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="influencers">
+      <Tabs defaultValue="feeds">
         <TabsList className="bg-muted/50">
+          <TabsTrigger value="feeds" className="text-xs gap-1.5">
+            <Rss className="w-3.5 h-3.5" /> Data Feeds
+          </TabsTrigger>
           <TabsTrigger value="influencers" className="text-xs gap-1.5">
             <Users className="w-3.5 h-3.5" /> Influencers
           </TabsTrigger>
@@ -151,6 +155,11 @@ export function Imprsn8AdminPanel() {
             <BarChart3 className="w-3.5 h-3.5" /> Platform Stats
           </TabsTrigger>
         </TabsList>
+
+        {/* ───── Data Feeds Tab ───── */}
+        <TabsContent value="feeds" className="mt-4">
+          <Imprsn8DataFeeds />
+        </TabsContent>
 
         {/* ───── Influencers Tab ───── */}
         <TabsContent value="influencers" className="space-y-4 mt-4">
