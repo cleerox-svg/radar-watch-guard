@@ -101,6 +101,90 @@ export type Database = {
         }
         Relationships: []
       }
+      account_profile_snapshots: {
+        Row: {
+          account_created_at: string | null
+          avatar_hash: string | null
+          avatar_storage_path: string | null
+          avatar_url: string | null
+          bio: string | null
+          captured_at: string
+          changes_detected: Json | null
+          created_at: string
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          has_changes: boolean | null
+          id: string
+          influencer_id: string
+          location: string | null
+          monitored_account_id: string
+          post_count: number | null
+          raw_profile_data: Json | null
+          verified_on_platform: boolean | null
+          website_url: string | null
+        }
+        Insert: {
+          account_created_at?: string | null
+          avatar_hash?: string | null
+          avatar_storage_path?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          captured_at?: string
+          changes_detected?: Json | null
+          created_at?: string
+          display_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          has_changes?: boolean | null
+          id?: string
+          influencer_id: string
+          location?: string | null
+          monitored_account_id: string
+          post_count?: number | null
+          raw_profile_data?: Json | null
+          verified_on_platform?: boolean | null
+          website_url?: string | null
+        }
+        Update: {
+          account_created_at?: string | null
+          avatar_hash?: string | null
+          avatar_storage_path?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          captured_at?: string
+          changes_detected?: Json | null
+          created_at?: string
+          display_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          has_changes?: boolean | null
+          id?: string
+          influencer_id?: string
+          location?: string | null
+          monitored_account_id?: string
+          post_count?: number | null
+          raw_profile_data?: Json | null
+          verified_on_platform?: boolean | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_profile_snapshots_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_profile_snapshots_monitored_account_id_fkey"
+            columns: ["monitored_account_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_approvals: {
         Row: {
           action_type: string
@@ -886,42 +970,69 @@ export type Database = {
       monitored_accounts: {
         Row: {
           created_at: string
+          current_avatar_url: string | null
+          current_bio: string | null
+          current_display_name: string | null
+          current_follower_count: number | null
+          current_following_count: number | null
+          current_post_count: number | null
+          current_verified: boolean | null
           id: string
           influencer_id: string
+          last_profile_fetch_at: string | null
           last_scanned_at: string | null
           metadata: Json | null
           platform: string
           platform_url: string
           platform_user_id: string | null
           platform_username: string
+          profile_changes_count: number | null
           scan_status: string | null
           updated_at: string
           verified: boolean | null
         }
         Insert: {
           created_at?: string
+          current_avatar_url?: string | null
+          current_bio?: string | null
+          current_display_name?: string | null
+          current_follower_count?: number | null
+          current_following_count?: number | null
+          current_post_count?: number | null
+          current_verified?: boolean | null
           id?: string
           influencer_id: string
+          last_profile_fetch_at?: string | null
           last_scanned_at?: string | null
           metadata?: Json | null
           platform: string
           platform_url: string
           platform_user_id?: string | null
           platform_username: string
+          profile_changes_count?: number | null
           scan_status?: string | null
           updated_at?: string
           verified?: boolean | null
         }
         Update: {
           created_at?: string
+          current_avatar_url?: string | null
+          current_bio?: string | null
+          current_display_name?: string | null
+          current_follower_count?: number | null
+          current_following_count?: number | null
+          current_post_count?: number | null
+          current_verified?: boolean | null
           id?: string
           influencer_id?: string
+          last_profile_fetch_at?: string | null
           last_scanned_at?: string | null
           metadata?: Json | null
           platform?: string
           platform_url?: string
           platform_user_id?: string | null
           platform_username?: string
+          profile_changes_count?: number | null
           scan_status?: string | null
           updated_at?: string
           verified?: boolean | null

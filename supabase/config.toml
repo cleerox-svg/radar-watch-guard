@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.agent-copilot]
 verify_jwt = false
+
+[functions.fetch-profile-snapshot]
+verify_jwt = false
