@@ -2,6 +2,7 @@
  * Imprsn8MonitoredAccounts.tsx — CRUD interface for managing monitored social media accounts.
  * Shows profile pictures, account details, and change history from profile snapshots.
  * Uses Imprsn8Context for influencer scoping. Supports scan-now and profile-fetch triggers.
+ * Enhanced with mobile-friendly profile detail sheets showing latest pulled account data.
  */
 
 import { useState } from "react";
@@ -17,12 +18,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useImprsn8 } from "./Imprsn8Context";
 import {
   Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertCircle,
   RefreshCw, Pencil, Zap, Loader2, Camera, History, Users,
-  Eye, ShieldCheck, MapPin, Link, Calendar
+  Eye, ShieldCheck, MapPin, Link, Calendar, Globe, AtSign,
+  TrendingUp, FileText, BarChart3, ChevronRight
 } from "lucide-react";
 
 const PLATFORMS = {
@@ -49,6 +52,17 @@ function formatCount(n: number | null | undefined): string {
   return n.toString();
 }
 
+/** Stat pill for the profile detail view */
+function StatPill({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-accent/50 min-w-[80px] flex-1">
+      <Icon className="w-4 h-4 text-amber-500" />
+      <span className="text-base font-bold text-foreground">{value}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
+    </div>
+  );
+}
+
 export function Imprsn8MonitoredAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -66,6 +80,9 @@ export function Imprsn8MonitoredAccounts() {
   const [historySheet, setHistorySheet] = useState<{ open: boolean; accountId: string | null; accountName: string }>({
     open: false, accountId: null, accountName: "",
   });
+  const [detailSheet, setDetailSheet] = useState<{ open: boolean; account: any | null }>({
+    open: false, account: null,
+  });
 
   /** Fetch monitored accounts — scoped by context */
   const { data: accounts = [], isLoading } = useQuery({
@@ -77,6 +94,24 @@ export function Imprsn8MonitoredAccounts() {
       if (error) throw error;
       return data;
     },
+  });
+
+  /** Fetch latest snapshot for the detail sheet */
+  const { data: latestSnapshot, isLoading: snapshotLoading } = useQuery({
+    queryKey: ["latest-snapshot", detailSheet.account?.id],
+    queryFn: async () => {
+      if (!detailSheet.account?.id) return null;
+      const { data, error } = await supabase
+        .from("account_profile_snapshots")
+        .select("*")
+        .eq("monitored_account_id", detailSheet.account.id)
+        .order("captured_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!detailSheet.account?.id,
   });
 
   /** Fetch snapshot history for a specific account */
@@ -175,6 +210,7 @@ export function Imprsn8MonitoredAccounts() {
       });
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["profile-snapshots"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-snapshot"] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Profile fetch failed";
       toast({ title: "Fetch failed", description: msg, variant: "destructive" });
@@ -213,6 +249,185 @@ export function Imprsn8MonitoredAccounts() {
       <div className="space-y-2"><Label>Profile URL</Label><Input placeholder={PLATFORMS[platform].urlPrefix + "username"} value={url} onChange={(e) => setUrl(e.target.value)} /></div>
     </div>
   );
+
+  /** Render the profile detail sheet — mobile-first, rich view */
+  const renderDetailSheet = () => {
+    const acct = detailSheet.account;
+    if (!acct) return null;
+    const platMeta = PLATFORMS[acct.platform as PlatformKey] ?? PLATFORMS.twitter;
+    const snap = latestSnapshot;
+    const avatarUrl = snap?.avatar_url || acct.current_avatar_url;
+    const displayName = snap?.display_name || acct.current_display_name || `@${acct.platform_username}`;
+    const bio = snap?.bio || acct.current_bio;
+    const followers = snap?.follower_count ?? acct.current_follower_count;
+    const following = snap?.following_count ?? acct.current_following_count;
+    const posts = snap?.post_count ?? acct.current_post_count;
+    const verified = snap?.verified_on_platform ?? acct.current_verified;
+    const location = snap?.location;
+    const website = snap?.website_url;
+    const accountCreated = snap?.account_created_at;
+    const isFetching = fetchingId === acct.id;
+
+    return (
+      <Sheet open={detailSheet.open} onOpenChange={(open) => setDetailSheet(s => ({ ...s, open }))}>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl p-0 border-t border-amber-500/20">
+          <ScrollArea className="h-full">
+            <div className="flex flex-col">
+              {/* Hero header with avatar */}
+              <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-amber-500/10 to-transparent">
+                {/* Drag handle */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" />
+                
+                <div className="flex flex-col items-center text-center gap-4">
+                  {/* Large profile picture */}
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 border-4 border-amber-500/30 shadow-lg">
+                      <AvatarImage src={avatarUrl} className="object-cover" />
+                      <AvatarFallback className="text-2xl font-bold bg-amber-500/10 text-amber-500">
+                        {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    {verified && (
+                      <div className="absolute -bottom-1 -right-1 bg-sky-500 rounded-full p-1.5 shadow-md">
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name and handle */}
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">{displayName}</h2>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                      <Badge variant="outline" className={platMeta.color + " text-xs font-mono"}>{platMeta.label}</Badge>
+                      <span className="text-sm text-muted-foreground">@{acct.platform_username}</span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => fetchProfile(acct)} disabled={isFetching}>
+                      {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                      Fetch Latest
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs" asChild>
+                      <a href={acct.platform_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-3.5 h-3.5" /> View Profile
+                      </a>
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs"
+                      onClick={() => { setDetailSheet({ open: false, account: null }); setHistorySheet({ open: true, accountId: acct.id, accountName: acct.platform_username }); }}>
+                      <History className="w-3.5 h-3.5" /> History
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="px-4 py-4">
+                <div className="flex gap-2">
+                  <StatPill icon={Users} label="Followers" value={formatCount(followers)} />
+                  <StatPill icon={Eye} label="Following" value={formatCount(following)} />
+                  <StatPill icon={FileText} label="Posts" value={formatCount(posts)} />
+                </div>
+              </div>
+
+              <Separator className="mx-6" />
+
+              {/* Bio */}
+              {bio && (
+                <div className="px-6 py-4">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bio</h4>
+                  <p className="text-sm text-foreground leading-relaxed">{bio}</p>
+                </div>
+              )}
+
+              {/* Profile details */}
+              <div className="px-6 py-4 space-y-3">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Details</h4>
+                
+                {location && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-foreground">{location}</span>
+                  </div>
+                )}
+                {website && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <a href={website} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:underline truncate">{website}</a>
+                  </div>
+                )}
+                {accountCreated && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-foreground">Joined {new Date(accountCreated).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 text-sm">
+                  <AtSign className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-foreground font-mono text-xs">{acct.platform_url}</span>
+                </div>
+              </div>
+
+              <Separator className="mx-6" />
+
+              {/* Monitoring status */}
+              <div className="px-6 py-4 space-y-3">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monitoring Status</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-accent/30">
+                    <p className="text-[10px] text-muted-foreground uppercase">Scan Status</p>
+                    <p className="text-sm font-semibold text-foreground capitalize mt-0.5">{acct.scan_status ?? "pending"}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent/30">
+                    <p className="text-[10px] text-muted-foreground uppercase">Profile Changes</p>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{acct.profile_changes_count ?? 0}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent/30">
+                    <p className="text-[10px] text-muted-foreground uppercase">Last Scanned</p>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">
+                      {acct.last_scanned_at ? new Date(acct.last_scanned_at).toLocaleDateString() : "Never"}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent/30">
+                    <p className="text-[10px] text-muted-foreground uppercase">Last Fetched</p>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">
+                      {acct.last_profile_fetch_at ? new Date(acct.last_profile_fetch_at).toLocaleDateString() : "Never"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Snapshot metadata */}
+              {snap && (
+                <>
+                  <Separator className="mx-6" />
+                  <div className="px-6 py-4 space-y-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Latest Snapshot</h4>
+                    <p className="text-[11px] text-muted-foreground">
+                      Captured {new Date(snap.captured_at).toLocaleString()}
+                    </p>
+                    {snap.has_changes && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {(snap.changes_detected as string[])?.map((c: string) => (
+                          <Badge key={c} variant="outline" className="text-[10px] border-amber-500/30 text-amber-500 bg-amber-500/5">
+                            {c.replace(/_/g, " ")}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Bottom padding for safe area */}
+              <div className="h-8" />
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -266,7 +481,7 @@ export function Imprsn8MonitoredAccounts() {
 
       {/* Profile Snapshot History Sheet */}
       <Sheet open={historySheet.open} onOpenChange={(open) => setHistorySheet((s) => ({ ...s, open }))}>
-        <SheetContent className="w-[420px] sm:w-[540px]">
+        <SheetContent className="w-full sm:w-[420px] sm:max-w-[540px]">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <History className="w-4 h-4" /> Profile History — @{historySheet.accountName}
@@ -322,6 +537,9 @@ export function Imprsn8MonitoredAccounts() {
         </SheetContent>
       </Sheet>
 
+      {/* Profile Detail Sheet */}
+      {renderDetailSheet()}
+
       {/* Account cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,13 +560,14 @@ export function Imprsn8MonitoredAccounts() {
             const isFetching = fetchingId === acct.id;
             const hasProfile = !!(acct as any).current_avatar_url || !!(acct as any).current_display_name;
             return (
-              <Card key={acct.id} className="group hover:border-amber-500/30 transition-colors">
+              <Card key={acct.id} className="group hover:border-amber-500/30 transition-colors cursor-pointer active:scale-[0.99]"
+                onClick={() => setDetailSheet({ open: true, account: acct })}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     {/* Profile avatar */}
-                    <Avatar className="h-11 w-11 border border-border shrink-0">
-                      <AvatarImage src={(acct as any).current_avatar_url} />
-                      <AvatarFallback className="text-xs bg-muted font-mono">
+                    <Avatar className="h-14 w-14 border-2 border-amber-500/20 shrink-0 shadow-sm">
+                      <AvatarImage src={(acct as any).current_avatar_url} className="object-cover" />
+                      <AvatarFallback className="text-sm font-bold bg-amber-500/10 text-amber-500">
                         {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
                       </AvatarFallback>
                     </Avatar>
@@ -364,23 +583,15 @@ export function Imprsn8MonitoredAccounts() {
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <Badge variant="outline" className={platMeta.color + " text-[10px] font-mono"}>{platMeta.label}</Badge>
-                            <a href={acct.platform_url} target="_blank" rel="noopener noreferrer"
-                              className="text-[11px] text-muted-foreground hover:text-amber-500 flex items-center gap-0.5 truncate">
-                              @{acct.platform_username} <ExternalLink className="w-3 h-3 shrink-0" />
-                            </a>
+                            <span className="text-[11px] text-muted-foreground truncate">@{acct.platform_username}</span>
                           </div>
                         </div>
 
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-0.5 shrink-0">
+                        {/* Action buttons - stop propagation so they don't open detail */}
+                        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
                             title="Fetch profile snapshot" onClick={() => fetchProfile(acct)} disabled={isFetching}>
                             {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
-                            title="View profile history"
-                            onClick={() => setHistorySheet({ open: true, accountId: acct.id, accountName: acct.platform_username })}>
-                            <History className="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
                             onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
@@ -399,7 +610,7 @@ export function Imprsn8MonitoredAccounts() {
                         </div>
                       </div>
 
-                      {/* Profile details row */}
+                      {/* Stats row */}
                       {hasProfile && (
                         <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
                           {(acct as any).current_follower_count != null && (
@@ -413,7 +624,7 @@ export function Imprsn8MonitoredAccounts() {
                           )}
                           {(acct as any).profile_changes_count > 0 && (
                             <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-400">
-                              {(acct as any).profile_changes_count} profile changes
+                              {(acct as any).profile_changes_count} changes
                             </Badge>
                           )}
                         </div>
@@ -425,19 +636,15 @@ export function Imprsn8MonitoredAccounts() {
                       )}
 
                       {/* Status footer */}
-                      <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
-                        <StatusIcon className="w-3 h-3" />
-                        <span className="capitalize">{acct.scan_status ?? "pending"}</span>
-                        {acct.verified && <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-500">Verified</Badge>}
-                        {isAllView && acct.influencer_profiles && (
-                          <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">{acct.influencer_profiles.display_name}</Badge>
-                        )}
-                        {acct.last_scanned_at && <span className="ml-auto">Scanned: {new Date(acct.last_scanned_at).toLocaleDateString()}</span>}
-                        {(acct as any).last_profile_fetch_at && (
-                          <span className="ml-auto flex items-center gap-1">
-                            <Camera className="w-3 h-3" /> {new Date((acct as any).last_profile_fetch_at).toLocaleDateString()}
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <StatusIcon className="w-3 h-3" />
+                          <span className="capitalize">{acct.scan_status ?? "pending"}</span>
+                          {isAllView && acct.influencer_profiles && (
+                            <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">{acct.influencer_profiles.display_name}</Badge>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                       </div>
                     </div>
                   </div>
