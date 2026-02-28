@@ -1,39 +1,44 @@
 /**
- * Imprsn8Dashboard.tsx — Main dashboard page for the imprsn8 influencer protection platform.
- * Shell layout with sidebar + content area. Admin users see extra management tabs.
+ * Imprsn8Dashboard.tsx — Main dashboard for imprsn8 platform.
+ * Wraps with Imprsn8Provider for influencer context. Admin/SOC see switcher + admin tabs.
  */
 
 import { useState, useCallback } from "react";
 import { Menu, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Imprsn8Provider, useImprsn8 } from "@/components/imprsn8/Imprsn8Context";
 import { Imprsn8Sidebar, type Imprsn8TabKey } from "@/components/imprsn8/Imprsn8Sidebar";
+import { Imprsn8InfluencerSwitcher } from "@/components/imprsn8/Imprsn8InfluencerSwitcher";
 import { Imprsn8Overview } from "@/components/imprsn8/Imprsn8Overview";
 import { Imprsn8MonitoredAccounts } from "@/components/imprsn8/Imprsn8MonitoredAccounts";
-import { Imprsn8Reports } from "@/components/imprsn8/Imprsn8Reports";
+import { Imprsn8ThreatsFound } from "@/components/imprsn8/Imprsn8ThreatsFound";
 import { Imprsn8Takedowns } from "@/components/imprsn8/Imprsn8Takedowns";
+import { Imprsn8AgentsPanel } from "@/components/imprsn8/Imprsn8AgentsPanel";
 import { Imprsn8Settings } from "@/components/imprsn8/Imprsn8Settings";
-import { Imprsn8AdminPanel } from "@/components/imprsn8/Imprsn8AdminPanel";
-import { Imprsn8KnowledgeBase } from "@/components/imprsn8/Imprsn8KnowledgeBase";
+import { Imprsn8AllInfluencers } from "@/components/imprsn8/Imprsn8AllInfluencers";
+import { Imprsn8AdminConsole } from "@/components/imprsn8/Imprsn8AdminConsole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 
 const tabTitles: Record<Imprsn8TabKey, string> = {
-  overview: "Protection Dashboard",
+  dashboard: "Protection Dashboard",
   accounts: "Monitored Accounts",
-  reports: "Impersonation Reports",
+  threats: "Threats Found",
   takedowns: "Takedown Requests",
-  widget: "Report Widget",
-  knowledge: "Knowledge Base",
+  agents: "AI Agents",
   settings: "Account Settings",
-  admin: "imprsn8 Admin",
+  all_influencers: "All Influencers",
+  admin: "Admin Console",
 };
 
-const Imprsn8Dashboard = () => {
-  const [currentTab, setCurrentTab] = useState<Imprsn8TabKey>("overview");
+/** Inner component that uses the Imprsn8 context */
+function Imprsn8DashboardInner() {
+  const [currentTab, setCurrentTab] = useState<Imprsn8TabKey>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { profile, signOut, isAdmin, roles } = useAuth();
+  const { profile, signOut, roles } = useAuth();
+  const { isAdminView } = useImprsn8();
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -47,14 +52,14 @@ const Imprsn8Dashboard = () => {
 
   const renderContent = () => {
     switch (currentTab) {
-      case "overview": return <Imprsn8Overview />;
+      case "dashboard": return <Imprsn8Overview />;
       case "accounts": return <Imprsn8MonitoredAccounts />;
-      case "reports": return <Imprsn8Reports />;
+      case "threats": return <Imprsn8ThreatsFound />;
       case "takedowns": return <Imprsn8Takedowns />;
+      case "agents": return <Imprsn8AgentsPanel />;
       case "settings": return <Imprsn8Settings />;
-      case "knowledge": return <Imprsn8KnowledgeBase />;
-      case "admin": return isAdmin ? <Imprsn8AdminPanel /> : <PlaceholderTab label="Access Denied" />;
-      case "widget": return <PlaceholderTab label="Report Widget Config — Coming soon" />;
+      case "all_influencers": return isAdminView ? <Imprsn8AllInfluencers /> : <PlaceholderTab label="Access Denied" />;
+      case "admin": return isAdminView ? <Imprsn8AdminConsole /> : <PlaceholderTab label="Access Denied" />;
       default: return null;
     }
   };
@@ -78,7 +83,6 @@ const Imprsn8Dashboard = () => {
           onClose={() => setSidebarOpen(false)}
           userDisplayName={profile?.display_name}
           onSignOut={handleSignOut}
-          isAdmin={isAdmin}
           userRole={roles[0] || "influencer"}
         />
       </div>
@@ -99,6 +103,7 @@ const Imprsn8Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Imprsn8InfluencerSwitcher />
             <div className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/20 px-3 py-1.5 rounded-full transition-all">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
@@ -115,7 +120,14 @@ const Imprsn8Dashboard = () => {
       </main>
     </div>
   );
-};
+}
+
+/** Wrapper that provides the Imprsn8 context */
+const Imprsn8Dashboard = () => (
+  <Imprsn8Provider>
+    <Imprsn8DashboardInner />
+  </Imprsn8Provider>
+);
 
 function PlaceholderTab({ label }: { label: string }) {
   return (

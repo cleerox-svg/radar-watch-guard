@@ -1,24 +1,24 @@
 /**
- * Imprsn8Sidebar.tsx — Navigation sidebar for the imprsn8 influencer protection platform.
- * Uses warm amber/gold accent to differentiate from Trust Radar's emerald theme.
+ * Imprsn8Sidebar.tsx — Redesigned navigation sidebar for imprsn8.
+ * Role-based tabs: influencers see their data, admins see consolidated + admin tools.
  */
 
-import { Shield, X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Eye, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Shield, X, Sun, Moon, Monitor, LogOut, UserCircle, LayoutDashboard, Users, AlertTriangle, FileText, Settings, Bot, Eye, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlatformSwitcher } from "@/components/PlatformSwitcher";
+import { useImprsn8 } from "./Imprsn8Context";
 
 export type Imprsn8TabKey =
-  | "overview"
+  | "dashboard"
   | "accounts"
-  | "reports"
+  | "threats"
   | "takedowns"
-  | "widget"
-  | "knowledge"
+  | "agents"
   | "settings"
+  | "all_influencers"
   | "admin";
 
 interface Imprsn8SidebarProps {
@@ -27,19 +27,29 @@ interface Imprsn8SidebarProps {
   onClose?: () => void;
   userDisplayName?: string | null;
   onSignOut?: () => void;
-  isAdmin?: boolean;
   userRole?: string;
 }
 
-const navItems: { key: Imprsn8TabKey; icon: typeof Shield; label: string; description: string; adminOnly?: boolean }[] = [
-  { key: "overview", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & stats" },
-  { key: "accounts", icon: Users, label: "My Accounts", description: "Managed social accounts" },
-  { key: "reports", icon: AlertTriangle, label: "Impersonators", description: "Detected & reported fakes" },
-  { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking" },
-  { key: "widget", icon: Eye, label: "Report Widget", description: "Embeddable follower reporting" },
-  { key: "knowledge", icon: BookOpen, label: "Knowledge Base", description: "Help docs & status guide" },
-  { key: "settings", icon: Settings, label: "Settings", description: "Profile & subscription" },
-  { key: "admin", icon: Shield, label: "Admin Panel", description: "Manage all influencers & feeds (imprsn8)", adminOnly: true },
+interface NavItem {
+  key: Imprsn8TabKey;
+  icon: typeof Shield;
+  label: string;
+  description: string;
+  section: "main" | "admin";
+  adminOnly?: boolean;
+}
+
+const navItems: NavItem[] = [
+  // Main section — visible to all
+  { key: "dashboard", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & alerts", section: "main" },
+  { key: "accounts", icon: Eye, label: "My Accounts", description: "Monitored social handles & scan status", section: "main" },
+  { key: "threats", icon: AlertTriangle, label: "Threats Found", description: "Impersonation reports from all agents", section: "main" },
+  { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking", section: "main" },
+  { key: "agents", icon: Bot, label: "AI Agents", description: "Agent health, runs & manual triggers", section: "main" },
+  { key: "settings", icon: Settings, label: "Settings", description: "Profile & notification preferences", section: "main" },
+  // Admin section
+  { key: "all_influencers", icon: Users, label: "All Influencers", description: "Master roster of all influencers", section: "admin", adminOnly: true },
+  { key: "admin", icon: Shield, label: "Admin Console", description: "Users, groups, feeds & access control", section: "admin", adminOnly: true },
 ];
 
 const themeOptions = [
@@ -48,9 +58,52 @@ const themeOptions = [
   { value: "system" as const, icon: Monitor, label: "Auto" },
 ];
 
-export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, isAdmin, userRole }: Imprsn8SidebarProps) {
+export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayName, onSignOut, userRole }: Imprsn8SidebarProps) {
   const { theme, setTheme } = useTheme();
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const { isAdminView } = useImprsn8();
+
+  const mainItems = navItems.filter((item) => item.section === "main");
+  const adminItems = navItems.filter((item) => item.section === "admin");
+
+  const renderItem = (item: NavItem) => {
+    const active = currentTab === item.key;
+    return (
+      <Tooltip key={item.key}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onTabChange(item.key)}
+            className={cn(
+              "flex items-center w-full px-3 py-2 transition-all duration-200 rounded-lg text-left group relative overflow-hidden",
+              active
+                ? "bg-amber-500/10 text-foreground"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            )}
+          >
+            {active && (
+              <motion.div
+                layoutId="imprsn8-sidebar-active"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-full"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
+            <item.icon className={cn(
+              "w-3.5 h-3.5 mr-2.5 shrink-0 transition-colors duration-200",
+              active ? "text-amber-500" : "group-hover:text-foreground"
+            )} />
+            <span className={cn(
+              "text-[13px] truncate block transition-colors",
+              active ? "font-semibold text-foreground" : "font-medium"
+            )}>
+              {item.label}
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="text-xs max-w-[180px]">
+          {item.description}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
   return (
     <aside className="w-60 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col z-20 shadow-xl">
@@ -70,46 +123,20 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
           Protection
         </p>
         <div className="space-y-px">
-          {visibleItems.map((item) => {
-            const active = currentTab === item.key;
-            return (
-              <Tooltip key={item.key}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onTabChange(item.key)}
-                    className={cn(
-                      "flex items-center w-full px-3 py-2 transition-all duration-200 rounded-lg text-left group relative overflow-hidden",
-                      active
-                        ? "bg-amber-500/10 text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    )}
-                  >
-                    {active && (
-                      <motion.div
-                        layoutId="imprsn8-sidebar-active"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-amber-500 rounded-full"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    <item.icon className={cn(
-                      "w-3.5 h-3.5 mr-2.5 shrink-0 transition-colors duration-200",
-                      active ? "text-amber-500" : "group-hover:text-foreground"
-                    )} />
-                    <span className={cn(
-                      "text-[13px] truncate block transition-colors",
-                      active ? "font-semibold text-foreground" : "font-medium"
-                    )}>
-                      {item.label}
-                    </span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs max-w-[180px]">
-                  {item.description}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+          {mainItems.map(renderItem)}
         </div>
+
+        {isAdminView && (
+          <>
+            <div className="my-3 mx-3 border-t border-border" />
+            <p className="px-3 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-500/70">
+              Administration
+            </p>
+            <div className="space-y-px">
+              {adminItems.map(renderItem)}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
@@ -150,7 +177,7 @@ export function Imprsn8Sidebar({ currentTab, onTabChange, onClose, userDisplayNa
         )}
 
         <div className="flex items-center justify-between px-3 py-0.5">
-          <p className="text-[9px] text-muted-foreground/50 font-mono">v1.0</p>
+          <p className="text-[9px] text-muted-foreground/50 font-mono">v2.0</p>
           <div className="flex items-center gap-1">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
