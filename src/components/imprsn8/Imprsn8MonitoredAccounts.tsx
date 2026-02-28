@@ -1,6 +1,7 @@
 /**
  * Imprsn8MonitoredAccounts.tsx — CRUD interface for managing monitored social media accounts.
- * Now uses Imprsn8Context for influencer scoping. Supports scan-now trigger.
+ * Shows profile pictures, account details, and change history from profile snapshots.
+ * Uses Imprsn8Context for influencer scoping. Supports scan-now and profile-fetch triggers.
  */
 
 import { useState } from "react";
@@ -13,9 +14,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useImprsn8 } from "./Imprsn8Context";
-import { Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertCircle, RefreshCw, Pencil, Zap, Loader2 } from "lucide-react";
+import {
+  Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertCircle,
+  RefreshCw, Pencil, Zap, Loader2, Camera, History, Users,
+  Eye, ShieldCheck, MapPin, Link, Calendar
+} from "lucide-react";
 
 const PLATFORMS = {
   twitter: { label: "Twitter / X", color: "bg-sky-500/10 text-sky-500 border-sky-500/20", urlPrefix: "https://x.com/" },
@@ -33,10 +41,18 @@ const statusIcons: Record<string, typeof CheckCircle2> = {
   scanning: RefreshCw,
 };
 
+/** Format large numbers compactly */
+function formatCount(n: number | null | undefined): string {
+  if (n == null) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
 export function Imprsn8MonitoredAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { selectedId, isAllView, currentInfluencer, getInfluencerFilter, isAdminView } = useImprsn8();
+  const { selectedId, isAllView, currentInfluencer, getInfluencerFilter } = useImprsn8();
   const filter = getInfluencerFilter();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -46,6 +62,10 @@ export function Imprsn8MonitoredAccounts() {
   const [username, setUsername] = useState("");
   const [url, setUrl] = useState("");
   const [scanningId, setScanningId] = useState<string | null>(null);
+  const [fetchingId, setFetchingId] = useState<string | null>(null);
+  const [historySheet, setHistorySheet] = useState<{ open: boolean; accountId: string | null; accountName: string }>({
+    open: false, accountId: null, accountName: "",
+  });
 
   /** Fetch monitored accounts — scoped by context */
   const { data: accounts = [], isLoading } = useQuery({
@@ -57,6 +77,23 @@ export function Imprsn8MonitoredAccounts() {
       if (error) throw error;
       return data;
     },
+  });
+
+  /** Fetch snapshot history for a specific account */
+  const { data: snapshots = [], isLoading: snapshotsLoading } = useQuery({
+    queryKey: ["profile-snapshots", historySheet.accountId],
+    queryFn: async () => {
+      if (!historySheet.accountId) return [];
+      const { data, error } = await supabase
+        .from("account_profile_snapshots")
+        .select("*")
+        .eq("monitored_account_id", historySheet.accountId)
+        .order("captured_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!historySheet.accountId,
   });
 
   const addAccount = useMutation({
@@ -102,7 +139,7 @@ export function Imprsn8MonitoredAccounts() {
     },
   });
 
-  /** Scan Now — triggers imprsn8 scanner for a specific account's influencer */
+  /** Scan Now — triggers imprsn8 scanner */
   const scanNow = async (acct: any) => {
     setScanningId(acct.id);
     try {
@@ -117,6 +154,32 @@ export function Imprsn8MonitoredAccounts() {
       toast({ title: "Scan failed", description: msg, variant: "destructive" });
     } finally {
       setScanningId(null);
+    }
+  };
+
+  /** Fetch Profile — pulls current profile data + avatar */
+  const fetchProfile = async (acct: any) => {
+    setFetchingId(acct.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-profile-snapshot", {
+        body: { monitored_account_id: acct.id },
+      });
+      if (error) throw error;
+      const result = data?.results?.[0];
+      const changeCount = result?.changes?.length ?? 0;
+      toast({
+        title: "Profile fetched",
+        description: changeCount > 0
+          ? `${changeCount} change(s) detected: ${result.changes.join(", ")}`
+          : "Profile snapshot captured — no changes detected.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-snapshots"] });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Profile fetch failed";
+      toast({ title: "Fetch failed", description: msg, variant: "destructive" });
+    } finally {
+      setFetchingId(null);
     }
   };
 
@@ -201,10 +264,68 @@ export function Imprsn8MonitoredAccounts() {
         </DialogContent>
       </Dialog>
 
+      {/* Profile Snapshot History Sheet */}
+      <Sheet open={historySheet.open} onOpenChange={(open) => setHistorySheet((s) => ({ ...s, open }))}>
+        <SheetContent className="w-[420px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <History className="w-4 h-4" /> Profile History — @{historySheet.accountName}
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-120px)] mt-4 pr-2">
+            {snapshotsLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading snapshots…
+              </div>
+            ) : snapshots.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-12">No profile snapshots yet. Click the camera icon to fetch the first one.</p>
+            ) : (
+              <div className="space-y-4">
+                {snapshots.map((snap: any) => (
+                  <Card key={snap.id} className={snap.has_changes ? "border-amber-500/30" : ""}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border border-border">
+                          <AvatarImage src={snap.avatar_url} />
+                          <AvatarFallback className="text-xs bg-muted">{snap.display_name?.[0] ?? "?"}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{snap.display_name ?? "Unknown"}</p>
+                          <p className="text-[11px] text-muted-foreground">{new Date(snap.captured_at).toLocaleString()}</p>
+                        </div>
+                        {snap.has_changes && (
+                          <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500 shrink-0">
+                            {(snap.changes_detected as string[])?.length} changes
+                          </Badge>
+                        )}
+                      </div>
+                      {snap.bio && <p className="text-xs text-muted-foreground line-clamp-2">{snap.bio}</p>}
+                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {formatCount(snap.follower_count)}</span>
+                        <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {formatCount(snap.following_count)}</span>
+                        <span>{formatCount(snap.post_count)} posts</span>
+                        {snap.verified_on_platform && <ShieldCheck className="w-3 h-3 text-sky-500" />}
+                      </div>
+                      {snap.has_changes && (
+                        <div className="flex flex-wrap gap-1">
+                          {(snap.changes_detected as string[])?.map((c: string) => (
+                            <Badge key={c} variant="outline" className="text-[9px] border-amber-500/20 text-amber-400">{c.replace(/_/g, " ")}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
       {/* Account cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-24" /></Card>)}
+          {[1, 2].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-32" /></Card>)}
         </div>
       ) : accounts.length === 0 ? (
         <Card className="border-dashed border-amber-500/20">
@@ -218,43 +339,107 @@ export function Imprsn8MonitoredAccounts() {
             const platMeta = PLATFORMS[acct.platform as PlatformKey] ?? PLATFORMS.twitter;
             const StatusIcon = statusIcons[acct.scan_status ?? "pending"] ?? Clock;
             const isScanning = scanningId === acct.id;
+            const isFetching = fetchingId === acct.id;
+            const hasProfile = !!(acct as any).current_avatar_url || !!(acct as any).current_display_name;
             return (
               <Card key={acct.id} className="group hover:border-amber-500/30 transition-colors">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Badge variant="outline" className={platMeta.color + " text-[10px] font-mono"}>{platMeta.label}</Badge>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">@{acct.platform_username}</p>
-                        <a href={acct.platform_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-amber-500 flex items-center gap-1 truncate">
-                          {acct.platform_url} <ExternalLink className="w-3 h-3 shrink-0" />
-                        </a>
+                  <div className="flex items-start gap-3">
+                    {/* Profile avatar */}
+                    <Avatar className="h-11 w-11 border border-border shrink-0">
+                      <AvatarImage src={(acct as any).current_avatar_url} />
+                      <AvatarFallback className="text-xs bg-muted font-mono">
+                        {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {(acct as any).current_display_name || `@${acct.platform_username}`}
+                            </p>
+                            {(acct as any).current_verified && <ShieldCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Badge variant="outline" className={platMeta.color + " text-[10px] font-mono"}>{platMeta.label}</Badge>
+                            <a href={acct.platform_url} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] text-muted-foreground hover:text-amber-500 flex items-center gap-0.5 truncate">
+                              @{acct.platform_username} <ExternalLink className="w-3 h-3 shrink-0" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
+                            title="Fetch profile snapshot" onClick={() => fetchProfile(acct)} disabled={isFetching}>
+                            {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
+                            title="View profile history"
+                            onClick={() => setHistorySheet({ open: true, accountId: acct.id, accountName: acct.platform_username })}>
+                            <History className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all"
+                            onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
+                            {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                          </Button>
+                          {!isAllView && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all" onClick={() => openEdit(acct)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Profile details row */}
+                      {hasProfile && (
+                        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                          {(acct as any).current_follower_count != null && (
+                            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {formatCount((acct as any).current_follower_count)}</span>
+                          )}
+                          {(acct as any).current_following_count != null && (
+                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {formatCount((acct as any).current_following_count)}</span>
+                          )}
+                          {(acct as any).current_post_count != null && (
+                            <span>{formatCount((acct as any).current_post_count)} posts</span>
+                          )}
+                          {(acct as any).profile_changes_count > 0 && (
+                            <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-400">
+                              {(acct as any).profile_changes_count} profile changes
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bio snippet */}
+                      {(acct as any).current_bio && (
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{(acct as any).current_bio}</p>
+                      )}
+
+                      {/* Status footer */}
+                      <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+                        <StatusIcon className="w-3 h-3" />
+                        <span className="capitalize">{acct.scan_status ?? "pending"}</span>
+                        {acct.verified && <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-500">Verified</Badge>}
+                        {isAllView && acct.influencer_profiles && (
+                          <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">{acct.influencer_profiles.display_name}</Badge>
+                        )}
+                        {acct.last_scanned_at && <span className="ml-auto">Scanned: {new Date(acct.last_scanned_at).toLocaleDateString()}</span>}
+                        {(acct as any).last_profile_fetch_at && (
+                          <span className="ml-auto flex items-center gap-1">
+                            <Camera className="w-3 h-3" /> {new Date((acct as any).last_profile_fetch_at).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all" onClick={() => scanNow(acct)} disabled={isScanning}>
-                        {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                      </Button>
-                      {!isAllView && (
-                        <>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-amber-500 transition-all" onClick={() => openEdit(acct)}>
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
-                    <StatusIcon className="w-3 h-3" />
-                    <span className="capitalize">{acct.scan_status ?? "pending"}</span>
-                    {acct.verified && <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-500">Verified</Badge>}
-                    {isAllView && acct.influencer_profiles && (
-                      <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">{acct.influencer_profiles.display_name}</Badge>
-                    )}
-                    {acct.last_scanned_at && <span className="ml-auto">Last scan: {new Date(acct.last_scanned_at).toLocaleDateString()}</span>}
                   </div>
                 </CardContent>
               </Card>
