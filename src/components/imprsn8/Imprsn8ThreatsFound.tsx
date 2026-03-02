@@ -19,17 +19,17 @@ import { formatDistanceToNow } from "date-fns";
 
 const severityColors: Record<string, string> = {
   critical: "bg-red-500/10 text-red-500 border-red-500/30",
-  high: "bg-orange-500/10 text-orange-500 border-orange-500/30",
-  medium: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+  high: "bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30",
+  medium: "bg-imprsn8/10 text-imprsn8 border-imprsn8/20",
   low: "bg-muted text-muted-foreground border-border",
 };
 
 const statusColors: Record<string, string> = {
   new: "bg-sky-500/10 text-sky-500 border-sky-500/30",
-  reviewing: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+  reviewing: "bg-imprsn8/10 text-imprsn8 border-imprsn8/30",
   confirmed: "bg-red-500/10 text-red-500 border-red-500/30",
   dismissed: "bg-muted text-muted-foreground border-border",
-  takedown_sent: "bg-violet-500/10 text-violet-500 border-violet-500/30",
+  takedown_sent: "bg-imprsn8-purple-accent/10 text-imprsn8-purple-accent border-imprsn8-purple-accent/30",
 };
 
 export function Imprsn8ThreatsFound() {
@@ -99,7 +99,7 @@ export function Imprsn8ThreatsFound() {
           <Card key={s.label}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2 mb-1">
-                <s.icon className="w-3.5 h-3.5 text-amber-500" />
+                <s.icon className="w-3.5 h-3.5 text-imprsn8" />
                 <span className="text-[10px] text-muted-foreground uppercase font-mono">{s.label}</span>
               </div>
               <p className="text-xl font-bold text-foreground">{s.value}</p>
@@ -159,7 +159,7 @@ export function Imprsn8ThreatsFound() {
           {[1, 2, 3].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-20" /></Card>)}
         </div>
       ) : reports.length === 0 ? (
-        <Card className="border-dashed border-amber-500/20">
+        <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <AlertTriangle className="w-10 h-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground text-center">
@@ -172,7 +172,7 @@ export function Imprsn8ThreatsFound() {
           {reports.map((report: any) => {
             const influencerName = report.influencer_profiles?.display_name;
             return (
-              <Card key={report.id} className="hover:border-amber-500/20 transition-colors">
+              <Card key={report.id} className="hover:border-imprsn8/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -185,12 +185,12 @@ export function Imprsn8ThreatsFound() {
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">{report.platform}</Badge>
                         {report.source === "agent" && (
-                          <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-500">
+                          <Badge variant="outline" className="text-[10px] border-imprsn8-purple-accent/30 text-imprsn8-purple-accent">
                             <Bot className="w-2.5 h-2.5 mr-1" />AI
                           </Badge>
                         )}
                         {isAllView && influencerName && (
-                          <Badge variant="outline" className="text-[10px] border-amber-500/20 text-amber-500">
+                          <Badge variant="outline" className="text-[10px] border-imprsn8/20 text-imprsn8">
                             {influencerName}
                           </Badge>
                         )}
@@ -240,7 +240,7 @@ export function Imprsn8ThreatsFound() {
                       {report.status === "confirmed" && (
                         <Button
                           variant="outline" size="sm"
-                          className="h-7 text-[10px] gap-1 border-violet-500/20 text-violet-500 hover:bg-violet-500/10"
+                          className="h-7 text-[10px] gap-1 border-imprsn8-purple-accent/20 text-imprsn8-purple-accent hover:bg-imprsn8-purple-accent/10"
                           onClick={() => updateStatus.mutate({ id: report.id, status: "takedown_sent" })}
                         >
                           <Gavel className="w-3 h-3" /> Takedown

@@ -15,7 +15,7 @@ const statusPipeline = ["draft", "submitted", "acknowledged", "resolved", "rejec
 const statusMeta: Record<string, { icon: typeof Clock; color: string; label: string }> = {
   draft: { icon: FileText, color: "text-muted-foreground", label: "Draft" },
   submitted: { icon: Send, color: "text-sky-500", label: "Submitted" },
-  acknowledged: { icon: Clock, color: "text-amber-500", label: "Acknowledged" },
+  acknowledged: { icon: Clock, color: "text-imprsn8", label: "Acknowledged" },
   resolved: { icon: CheckCircle2, color: "text-emerald-500", label: "Resolved" },
   rejected: { icon: XCircle, color: "text-red-500", label: "Rejected" },
 };
@@ -69,7 +69,7 @@ export function Imprsn8Takedowns() {
       {isLoading ? (
         <div className="space-y-3">{[1, 2].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-20" /></Card>)}</div>
       ) : takedowns.length === 0 ? (
-        <Card className="border-dashed border-amber-500/20">
+        <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="w-10 h-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground text-center">No takedown requests yet.<br />Confirm an impersonation report to initiate a takedown.</p>
@@ -83,7 +83,7 @@ export function Imprsn8Takedowns() {
             const report = td.impersonation_reports;
             const influencerName = td.influencer_profiles?.display_name;
             return (
-              <Card key={td.id} className="hover:border-amber-500/20 transition-colors">
+              <Card key={td.id} className="hover:border-imprsn8/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -93,7 +93,7 @@ export function Imprsn8Takedowns() {
                         <Badge variant="outline" className="text-[10px]">{td.platform}</Badge>
                         <Badge variant="outline" className="text-[10px] uppercase">{td.request_type}</Badge>
                         {isAllView && influencerName && (
-                          <Badge variant="outline" className="text-[10px] border-amber-500/20 text-amber-500">{influencerName}</Badge>
+                          <Badge variant="outline" className="text-[10px] border-imprsn8/20 text-imprsn8">{influencerName}</Badge>
                         )}
                       </div>
                       {report && <p className="text-sm font-semibold text-foreground">vs @{report.impersonator_username}</p>}

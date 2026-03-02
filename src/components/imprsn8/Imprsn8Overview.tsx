@@ -96,8 +96,8 @@ export function Imprsn8Overview() {
 
   const sevColors: Record<string, string> = {
     critical: "bg-red-500/10 text-red-500 border-red-500/30",
-    high: "bg-orange-500/10 text-orange-500 border-orange-500/30",
-    medium: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+    high: "bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30",
+    medium: "bg-imprsn8/10 text-imprsn8 border-imprsn8/30",
     low: "bg-muted text-muted-foreground border-border",
   };
 
@@ -108,12 +108,12 @@ export function Imprsn8Overview() {
   return (
     <div className="space-y-6">
       {/* Welcome / Context */}
-      <Card className="border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
+      <Card className="border-imprsn8/20 bg-gradient-to-r from-imprsn8/5 to-transparent">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Shield className="w-5 h-5 text-amber-500" />
+                <Shield className="w-5 h-5 text-imprsn8" />
                 {isAllView ? "imprsn8 — All Influencers" : currentInfluencer?.display_name ?? "imprsn8 Dashboard"}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
@@ -127,7 +127,7 @@ export function Imprsn8Overview() {
             </div>
             {protectionScore !== null && (
               <div className="text-center">
-                <p className={`text-3xl font-black ${protectionScore >= 80 ? "text-emerald-500" : protectionScore >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                <p className={`text-3xl font-black ${protectionScore >= 80 ? "text-emerald-500" : protectionScore >= 50 ? "text-imprsn8" : "text-red-500"}`}>
                   {protectionScore}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase font-mono">Protection</p>
@@ -148,7 +148,7 @@ export function Imprsn8Overview() {
           <Card key={stat.label}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <stat.icon className="w-4 h-4 text-amber-500" />
+                <stat.icon className="w-4 h-4 text-imprsn8" />
               </div>
               <p className="text-2xl font-bold text-foreground">{stat.value}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
@@ -163,7 +163,7 @@ export function Imprsn8Overview() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" /> Recent Threats
+              <AlertTriangle className="w-4 h-4 text-imprsn8" /> Recent Threats
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -194,7 +194,7 @@ export function Imprsn8Overview() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Bot className="w-4 h-4 text-amber-500" /> Agent Activity
+              <Bot className="w-4 h-4 text-imprsn8-purple-accent" /> Agent Activity
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -205,14 +205,14 @@ export function Imprsn8Overview() {
                 {recentRuns.map((run: any) => (
                   <div key={run.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Badge variant="outline" className={`text-[9px] ${run.status === "completed" ? "border-emerald-500/30 text-emerald-500" : run.status === "failed" ? "border-red-500/30 text-red-500" : "border-amber-500/30 text-amber-500"}`}>
+                      <Badge variant="outline" className={`text-[9px] ${run.status === "completed" ? "border-emerald-500/30 text-emerald-500" : run.status === "failed" ? "border-red-500/30 text-red-500" : "border-imprsn8/30 text-imprsn8"}`}>
                         {run.status}
                       </Badge>
                       <span className="text-xs font-medium truncate">{run.agent_type.replace(/_/g, " ")}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {run.items_flagged > 0 && (
-                        <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500">
+                        <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8">
                           {run.items_flagged} flagged
                         </Badge>
                       )}

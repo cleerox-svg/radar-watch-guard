@@ -50,10 +50,10 @@ const AGENTS: AgentDef[] = [
 ];
 
 const catColors: Record<string, string> = {
-  detect: "text-amber-500",
+  detect: "text-imprsn8",
   respond: "text-blue-400",
   monitor: "text-emerald-400",
-  analyze: "text-violet-400",
+  analyze: "text-imprsn8-purple-accent",
 };
 
 export function Imprsn8AgentsPanel() {
@@ -118,7 +118,7 @@ export function Imprsn8AgentsPanel() {
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card><CardContent className="p-4 text-center">
-          <Bot className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+          <Bot className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
           <p className="text-2xl font-bold">{AGENTS.length}</p>
           <p className="text-[10px] text-muted-foreground uppercase">Active Agents</p>
         </CardContent></Card>
@@ -128,15 +128,15 @@ export function Imprsn8AgentsPanel() {
           <p className="text-[10px] text-muted-foreground uppercase">Completed Runs</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
-          <AlertTriangle className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+          <AlertTriangle className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
           <p className="text-2xl font-bold">{totalFlagged}</p>
           <p className="text-[10px] text-muted-foreground uppercase">Items Flagged</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           {isAdminView && (
             <Button size="sm" variant="outline" onClick={runAll} disabled={running.size > 0}
-              className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10 w-full">
-              <Zap className="w-3 h-3" /> Run All Agents
+               className="gap-1.5 text-xs border-imprsn8/30 text-imprsn8 hover:bg-imprsn8/10 w-full">
+               <Zap className="w-3 h-3" /> Run All Agents
             </Button>
           )}
         </CardContent></Card>
@@ -150,7 +150,7 @@ export function Imprsn8AgentsPanel() {
           const lastTime = latest?.completed_at || latest?.started_at;
 
           return (
-            <Card key={agent.id} className="hover:border-amber-500/20 transition-colors">
+            <Card key={agent.id} className="hover:border-imprsn8/20 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -166,14 +166,14 @@ export function Imprsn8AgentsPanel() {
                       </span>
                       {latest && (
                         <>
-                          <Badge variant="outline" className={`text-[8px] ${latest.status === "completed" ? "border-emerald-500/30 text-emerald-500" : latest.status === "failed" ? "border-red-500/30 text-red-500" : "border-amber-500/30 text-amber-500"}`}>
+                          <Badge variant="outline" className={`text-[8px] ${latest.status === "completed" ? "border-emerald-500/30 text-emerald-500" : latest.status === "failed" ? "border-red-500/30 text-red-500" : "border-imprsn8/30 text-imprsn8"}`}>
                             {latest.status}
                           </Badge>
                           {lastTime && (
                             <span>{formatDistanceToNow(new Date(lastTime), { addSuffix: true })}</span>
                           )}
                           {latest.items_processed > 0 && <span>{latest.items_processed} processed</span>}
-                          {latest.items_flagged > 0 && <span className="text-amber-500">{latest.items_flagged} flagged</span>}
+                          {latest.items_flagged > 0 && <span className="text-imprsn8">{latest.items_flagged} flagged</span>}
                         </>
                       )}
                       {!latest && <span className="text-muted-foreground/50">Never run</span>}
@@ -188,7 +188,7 @@ export function Imprsn8AgentsPanel() {
                     onClick={() => triggerAgent(agent)}
                     className="shrink-0 h-8 w-8 p-0"
                   >
-                    {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" /> : <Play className="w-3.5 h-3.5 text-muted-foreground" />}
+                    {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-imprsn8" /> : <Play className="w-3.5 h-3.5 text-muted-foreground" />}
                   </Button>
                 </div>
               </CardContent>
@@ -217,7 +217,7 @@ export function Imprsn8AgentsPanel() {
                     <span className="text-muted-foreground">{run.trigger_type}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
-                    {run.items_flagged > 0 && <span className="text-amber-500">{run.items_flagged}⚑</span>}
+                    {run.items_flagged > 0 && <span className="text-imprsn8">{run.items_flagged}⚑</span>}
                     <span>{formatDistanceToNow(new Date(run.completed_at || run.created_at), { addSuffix: true })}</span>
                   </div>
                 </div>

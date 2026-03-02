@@ -55,13 +55,15 @@
     --alert: 0 84% 60%;
     --alert-dim: 0 30% 92%;
 
-    /* imprsn8 tokens — purple/gold */
-    --imprsn8: 43 96% 56%;
+    /* imprsn8 tokens — purple/gold (from reference palette) */
+    --imprsn8: 42 100% 27%;
     --imprsn8-foreground: 0 0% 100%;
-    --imprsn8-purple: 270 40% 25%;
-    --imprsn8-purple-light: 270 30% 92%;
-    --imprsn8-gold: 43 96% 56%;
+    --imprsn8-purple: 262 50% 94%;
+    --imprsn8-purple-light: 264 49% 89%;
+    --imprsn8-purple-accent: 263 69% 50%;
+    --imprsn8-gold: 42 100% 27%;
     --imprsn8-gold-dim: 43 60% 85%;
+    --imprsn8-gold-bright: 43 100% 33%;
 
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
@@ -137,13 +139,15 @@
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
 
-    /* imprsn8 tokens — purple/gold dark */
-    --imprsn8: 43 96% 56%;
-    --imprsn8-foreground: 270 30% 8%;
-    --imprsn8-purple: 270 40% 14%;
-    --imprsn8-purple-light: 270 30% 22%;
-    --imprsn8-gold: 43 96% 56%;
-    --imprsn8-gold-dim: 43 50% 25%;
+    /* imprsn8 tokens — purple/gold dark (from reference palette) */
+    --imprsn8: 44 53% 54%;
+    --imprsn8-foreground: 240 45% 6%;
+    --imprsn8-purple: 240 48% 12%;
+    --imprsn8-purple-light: 240 42% 18%;
+    --imprsn8-purple-accent: 262 74% 57%;
+    --imprsn8-gold: 44 53% 54%;
+    --imprsn8-gold-dim: 44 40% 20%;
+    --imprsn8-gold-bright: 42 67% 65%;
 
     --surface-elevated: 217 33% 12%;
     --surface-overlay: 217 33% 8%;
