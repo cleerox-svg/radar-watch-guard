@@ -41,7 +41,6 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Fetch all monitored accounts (admin only) */
   const { data: allAccounts = [] } = useQuery({
     queryKey: ["admin-all-accounts"],
     queryFn: async () => {
@@ -54,7 +53,6 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Fetch all reports (admin only) */
   const { data: allReports = [] } = useQuery({
     queryKey: ["admin-all-reports"],
     queryFn: async () => {
@@ -67,7 +65,6 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Fetch all takedowns (admin only) */
   const { data: allTakedowns = [] } = useQuery({
     queryKey: ["admin-all-takedowns"],
     queryFn: async () => {
@@ -80,7 +77,6 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Update influencer tier */
   const updateTier = useMutation({
     mutationFn: async ({ id, tier }: { id: string; tier: string }) => {
       const maxAccounts = tier === "free" ? 3 : tier === "pro" ? 10 : 50;
@@ -96,7 +92,6 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Invite a new influencer via edge function */
   const inviteInfluencer = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("invite-influencer", {
@@ -125,14 +120,12 @@ export function Imprsn8AdminPanel() {
     },
   });
 
-  /** Filter influencers by search */
   const filtered = influencers.filter((inf) =>
     !searchQuery ||
     inf.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     inf.brand_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  /** Platform distribution stats */
   const platformCounts = allAccounts.reduce((acc, a) => {
     acc[a.platform] = (acc[a.platform] || 0) + 1;
     return acc;
@@ -156,12 +149,10 @@ export function Imprsn8AdminPanel() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ───── Data Feeds Tab ───── */}
         <TabsContent value="feeds" className="mt-4">
           <Imprsn8DataFeeds />
         </TabsContent>
 
-        {/* ───── Influencers Tab ───── */}
         <TabsContent value="influencers" className="space-y-4 mt-4">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
@@ -175,7 +166,7 @@ export function Imprsn8AdminPanel() {
             </div>
             <Dialog open={addInfluencerOpen} onOpenChange={setAddInfluencerOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white h-9 text-xs">
+                <Button className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground h-9 text-xs">
                   <UserPlus className="w-3.5 h-3.5" /> Add Influencer
                 </Button>
               </DialogTrigger>
@@ -212,7 +203,7 @@ export function Imprsn8AdminPanel() {
                 <DialogFooter>
                   <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                   <Button
-                    className="bg-amber-500 hover:bg-amber-600 text-white gap-2"
+                    className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground gap-2"
                     disabled={!newEmail || !newDisplayName || inviteInfluencer.isPending}
                     onClick={() => inviteInfluencer.mutate()}
                   >
@@ -245,7 +236,7 @@ export function Imprsn8AdminPanel() {
                 const reportCount = allReports.filter((r) => r.influencer_id === inf.id).length;
                 const openReports = allReports.filter((r) => r.influencer_id === inf.id && r.status === "new").length;
                 return (
-                  <Card key={inf.id} className="hover:border-amber-500/20 transition-colors">
+                  <Card key={inf.id} className="hover:border-imprsn8/20 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
@@ -256,7 +247,7 @@ export function Imprsn8AdminPanel() {
                             )}
                             <Badge variant="outline" className="text-[9px] uppercase">{inf.subscription_tier}</Badge>
                             {!inf.onboarding_completed && (
-                              <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500">Onboarding</Badge>
+                              <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8">Onboarding</Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-4 text-[11px] text-muted-foreground mt-1">
@@ -285,7 +276,6 @@ export function Imprsn8AdminPanel() {
           )}
         </TabsContent>
 
-        {/* ───── All Reports Tab ───── */}
         <TabsContent value="reports" className="space-y-4 mt-4">
           {allReports.length === 0 ? (
             <Card className="border-dashed">
@@ -296,7 +286,7 @@ export function Imprsn8AdminPanel() {
           ) : (
             <div className="space-y-3">
               {allReports.slice(0, 50).map((report) => (
-                <Card key={report.id} className="hover:border-amber-500/20 transition-colors">
+                <Card key={report.id} className="hover:border-imprsn8/20 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px]">{report.severity.toUpperCase()}</Badge>
@@ -314,33 +304,32 @@ export function Imprsn8AdminPanel() {
           )}
         </TabsContent>
 
-        {/* ───── Platform Stats Tab ───── */}
         <TabsContent value="stats" className="space-y-4 mt-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
-                <Users className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                <Users className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
                 <p className="text-2xl font-bold">{influencers.length}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Total Influencers</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <Eye className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                <Eye className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
                 <p className="text-2xl font-bold">{allAccounts.length}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Monitored Accounts</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <AlertTriangle className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                <AlertTriangle className="w-5 h-5 text-imprsn8-gold mx-auto mb-2" />
                 <p className="text-2xl font-bold">{allReports.length}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Impersonation Reports</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <FileText className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                <FileText className="w-5 h-5 text-imprsn8-purple mx-auto mb-2" />
                 <p className="text-2xl font-bold">{allTakedowns.length}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Takedown Requests</p>
               </CardContent>
@@ -364,7 +353,7 @@ export function Imprsn8AdminPanel() {
                         <span className="text-xs font-medium text-foreground capitalize w-20">{platform}</span>
                         <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-amber-500 rounded-full"
+                            className="h-full bg-imprsn8 rounded-full"
                             style={{ width: `${(count / allAccounts.length) * 100}%` }}
                           />
                         </div>

@@ -28,7 +28,7 @@ const AGENT_TYPES = [
 // ─── Feed definitions ───
 interface Imprsn8Feed {
   id: string;
-  agentType: string; // matches agent_runs.agent_type
+  agentType: string;
   name: string;
   description: string;
   provider: string;
@@ -188,10 +188,10 @@ const IMPRSN8_FEEDS: Imprsn8Feed[] = [
 ];
 
 const CATEGORY_LABELS: Record<string, { label: string; icon: typeof Rss; color: string }> = {
-  detect: { label: "Detect", icon: Search, color: "text-amber-500" },
+  detect: { label: "Detect", icon: Search, color: "text-imprsn8-gold" },
   respond: { label: "Respond", icon: Gavel, color: "text-blue-400" },
   monitor: { label: "Monitor", icon: Eye, color: "text-emerald-400" },
-  analyze: { label: "Analyze", icon: TrendingUp, color: "text-violet-400" },
+  analyze: { label: "Analyze", icon: TrendingUp, color: "text-imprsn8-purple" },
 };
 
 export function Imprsn8DataFeeds() {
@@ -200,7 +200,6 @@ export function Imprsn8DataFeeds() {
   const [runningFeeds, setRunningFeeds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
-  // Fetch recent agent runs for ALL imprsn8 agent types
   const { data: agentRuns = [], isLoading: loadingRuns, refetch: refetchRuns } = useQuery({
     queryKey: ["imprsn8-all-agent-runs"],
     queryFn: async () => {
@@ -216,7 +215,6 @@ export function Imprsn8DataFeeds() {
     refetchInterval: 15000,
   });
 
-  // Stats
   const { data: reportStats } = useQuery({
     queryKey: ["imprsn8-report-stats"],
     queryFn: async () => {
@@ -266,12 +264,10 @@ export function Imprsn8DataFeeds() {
     }
   };
 
-  // Find latest run for a feed
   const getLatestRun = (feed: Imprsn8Feed) => {
     if (!feed.agentType) return null;
     return agentRuns.find((r: any) => {
       if (r.agent_type !== feed.agentType) return false;
-      // For scanner sub-strategies, match input_params
       if (feed.agentType === "imprsn8_scanner" && feed.body?.scan_type) {
         return (r.input_params as any)?.scan_type === feed.body.scan_type;
       }
@@ -295,18 +291,18 @@ export function Imprsn8DataFeeds() {
     return (
       <div key={feed.id} className="flex items-center gap-3 bg-background rounded-lg border border-border px-3 py-3">
         <div className="shrink-0">
-          {isActive ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" /> :
+          {isActive ? <Loader2 className="w-4 h-4 animate-spin text-imprsn8" /> :
            isSuccess ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> :
            isFailed ? <X className="w-4 h-4 text-destructive" /> :
-           lastStatus ? <Clock className="w-4 h-4 text-yellow-400" /> :
+           lastStatus ? <Clock className="w-4 h-4 text-imprsn8-gold" /> :
            <div className="w-4 h-4 rounded-full border-2 border-border" />}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <feed.icon className="w-3.5 h-3.5 text-amber-500" />
+            <feed.icon className="w-3.5 h-3.5 text-imprsn8" />
             <p className="text-xs font-semibold text-foreground">{feed.name}</p>
-            <Badge variant="default" className="text-[8px] px-1.5 py-0 h-3.5 bg-amber-500/20 text-amber-500 border-amber-500/30">
+            <Badge variant="default" className="text-[8px] px-1.5 py-0 h-3.5 bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30">
               <RefreshCw className="w-2 h-2 mr-0.5" />{feed.intervalLabel}
             </Badge>
           </div>
@@ -324,7 +320,7 @@ export function Imprsn8DataFeeds() {
               <p className="text-[9px] text-muted-foreground/60">· {latestRun.items_processed} processed</p>
             )}
             {latestRun?.items_flagged != null && latestRun.items_flagged > 0 && (
-              <p className="text-[9px] text-amber-500">· {latestRun.items_flagged} flagged</p>
+              <p className="text-[9px] text-imprsn8">· {latestRun.items_flagged} flagged</p>
             )}
           </div>
           {latestRun?.error_message && (
@@ -344,7 +340,7 @@ export function Imprsn8DataFeeds() {
           onClick={() => triggerFeed(feed)}
           className="shrink-0 h-8 w-8 p-0"
         >
-          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" /> :
+          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-imprsn8" /> :
            result?.success ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
            result && !result.success ? <AlertTriangle className="w-3.5 h-3.5 text-destructive" /> :
            <Play className="w-3.5 h-3.5 text-muted-foreground" />}
@@ -359,7 +355,7 @@ export function Imprsn8DataFeeds() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <Bot className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+            <Bot className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
             <p className="text-2xl font-bold">{IMPRSN8_FEEDS.filter(f => f.type === "auto").length}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Active Agents</p>
           </CardContent>
@@ -378,18 +374,18 @@ export function Imprsn8DataFeeds() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <Eye className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+            <Eye className="w-5 h-5 text-imprsn8 mx-auto mb-2" />
             <p className="text-2xl font-bold">{accountCount ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Monitored Accounts</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <ShieldAlert className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+            <ShieldAlert className="w-5 h-5 text-imprsn8-gold mx-auto mb-2" />
             <p className="text-2xl font-bold">{reportStats?.total ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Total Detections</p>
             {(reportStats?.pending ?? 0) > 0 && (
-              <Badge className="mt-1 text-[8px] bg-amber-500/20 text-amber-500 border-amber-500/30">
+              <Badge className="mt-1 text-[8px] bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30">
                 {reportStats?.pending} pending
               </Badge>
             )}
@@ -397,7 +393,7 @@ export function Imprsn8DataFeeds() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <TrendingUp className="w-5 h-5 text-violet-400 mx-auto mb-2" />
+            <TrendingUp className="w-5 h-5 text-imprsn8-purple mx-auto mb-2" />
             <p className="text-2xl font-bold">{reportStats?.today ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Today</p>
           </CardContent>
@@ -409,14 +405,14 @@ export function Imprsn8DataFeeds() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <Rss className="w-5 h-5 text-amber-500" />imprsn8 AI Agents & Data Feeds
+              <Rss className="w-5 h-5 text-imprsn8" />imprsn8 AI Agents & Data Feeds
             </CardTitle>
             <Button
               size="sm"
               variant="outline"
               onClick={runAll}
               disabled={runningFeeds.size > 0}
-              className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+              className="gap-1.5 text-xs border-imprsn8/30 text-imprsn8 hover:bg-imprsn8-gold-dim"
             >
               <Zap className="w-3 h-3" />Run All Agents
             </Button>
@@ -465,7 +461,7 @@ export function Imprsn8DataFeeds() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-500" />Recent Agent Runs
+              <Clock className="w-4 h-4 text-imprsn8" />Recent Agent Runs
             </CardTitle>
             <Button size="sm" variant="ghost" onClick={() => refetchRuns()} className="h-7 text-xs gap-1">
               <RefreshCw className="w-3 h-3" />Refresh
@@ -488,8 +484,8 @@ export function Imprsn8DataFeeds() {
                   <div className="shrink-0">
                     {run.status === "completed" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
                      run.status === "failed" ? <X className="w-3.5 h-3.5 text-destructive" /> :
-                     run.status === "running" ? <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" /> :
-                     <Clock className="w-3.5 h-3.5 text-yellow-400" />}
+                     run.status === "running" ? <Loader2 className="w-3.5 h-3.5 animate-spin text-imprsn8" /> :
+                     <Clock className="w-3.5 h-3.5 text-imprsn8-gold" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -503,7 +499,7 @@ export function Imprsn8DataFeeds() {
                       <span>{formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}</span>
                       {run.items_processed != null && <span>{run.items_processed} processed</span>}
                       {run.items_flagged != null && run.items_flagged > 0 && (
-                        <span className="text-amber-500">{run.items_flagged} flagged</span>
+                        <span className="text-imprsn8">{run.items_flagged} flagged</span>
                       )}
                     </div>
                     {run.error_message && <p className="text-[9px] text-destructive truncate">{run.error_message}</p>}
