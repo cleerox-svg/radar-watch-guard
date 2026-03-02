@@ -9,6 +9,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+/** Sanitize user input for ILIKE queries to prevent injection */
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[%_\\]/g, '\\$&').substring(0, 100);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -16,7 +21,28 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // ─── Authenticate user ───
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { run_id, action, params } = await req.json();
 
     await supabase.from('agent_runs').update({ status: 'running', started_at: new Date().toISOString() }).eq('id', run_id);
@@ -27,7 +53,7 @@ Deno.serve(async (req) => {
     if (action === 'query_threats') {
       const { brand, severity, limit: lim } = params || {};
       let query = supabase.from('threats').select('brand, domain, attack_type, severity, confidence, source, country, ip_address, first_seen, last_seen');
-      if (brand) query = query.ilike('brand', `%${brand}%`);
+      if (brand) query = query.ilike('brand', `%${sanitizeSearchTerm(brand)}%`);
       if (severity) query = query.eq('severity', severity);
       const { data } = await query.order('last_seen', { ascending: false }).limit(lim || 20);
       toolResult = { type: 'query_threats', data, count: data?.length || 0 };
@@ -47,7 +73,7 @@ Deno.serve(async (req) => {
       const { brand, threat_summary } = params || {};
       const { data: threats } = await supabase.from('threats')
         .select('domain, ip_address, attack_type, severity, source')
-        .ilike('brand', `%${brand}%`).order('last_seen', { ascending: false }).limit(20);
+        .ilike('brand', `%${sanitizeSearchTerm(brand)}%`).order('last_seen', { ascending: false }).limit(20);
 
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 25000);
@@ -76,7 +102,7 @@ Deno.serve(async (req) => {
     else if (action === 'scan_domain') {
       const { domain } = params || {};
       const { data } = await supabase.from('threats')
-        .select('*').ilike('domain', `%${domain}%`).limit(10);
+        .select('*').ilike('domain', `%${sanitizeSearchTerm(domain)}%`).limit(10);
       toolResult = { type: 'scan_domain', domain, threats_found: data?.length || 0, threats: data };
     }
     else {
