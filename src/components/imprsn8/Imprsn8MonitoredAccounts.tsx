@@ -25,8 +25,9 @@ import {
   Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertCircle,
   RefreshCw, Pencil, Zap, Loader2, Camera, History, Users,
   Eye, ShieldCheck, MapPin, Link, Calendar, Globe, AtSign,
-  TrendingUp, FileText, BarChart3, ChevronRight
+  TrendingUp, FileText, BarChart3, ChevronRight, Compass
 } from "lucide-react";
+import { Imprsn8DiscoveryQueue } from "./Imprsn8DiscoveryQueue";
 
 const PLATFORMS = {
   twitter: { label: "Twitter / X", color: "bg-sky-500/10 text-sky-500 border-sky-500/20", urlPrefix: "https://x.com/" },
@@ -83,6 +84,25 @@ export function Imprsn8MonitoredAccounts() {
   const [detailSheet, setDetailSheet] = useState<{ open: boolean; account: any | null }>({
     open: false, account: null,
   });
+  const [discoveringId, setDiscoveringId] = useState<string | null>(null);
+
+  /** Discover cross-platform accounts from a monitored account */
+  const discoverAccounts = async (acct: any) => {
+    setDiscoveringId(acct.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-cross-platform-discovery", {
+        body: { monitored_account_id: acct.id, influencer_id: acct.influencer_id, trigger_type: "manual" },
+      });
+      if (error) throw error;
+      toast({ title: "Discovery complete", description: data?.summary || `Found ${data?.discovered ?? 0} potential accounts` });
+      queryClient.invalidateQueries({ queryKey: ["account-discoveries"] });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Discovery failed";
+      toast({ title: "Discovery failed", description: msg, variant: "destructive" });
+    } finally {
+      setDiscoveringId(null);
+    }
+  };
 
   /** Fetch monitored accounts — scoped by context */
   const { data: accounts = [], isLoading } = useQuery({
@@ -540,6 +560,9 @@ export function Imprsn8MonitoredAccounts() {
       {/* Profile Detail Sheet */}
       {renderDetailSheet()}
 
+      {/* Cross-Platform Discovery Queue (HITL) */}
+      <Imprsn8DiscoveryQueue />
+
       {/* Account cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -596,6 +619,10 @@ export function Imprsn8MonitoredAccounts() {
                           <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
                             onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
                             {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
+                            onClick={() => discoverAccounts(acct)} disabled={discoveringId === acct.id} title="Discover on other platforms">
+                            {discoveringId === acct.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
                           </Button>
                           {!isAllView && (
                             <>
