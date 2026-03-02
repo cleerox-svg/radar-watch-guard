@@ -123,7 +123,7 @@ function UsersAndTeams() {
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white h-9 text-xs"><UserPlus className="w-3.5 h-3.5" /> Invite User</Button>
+            <Button className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground h-9 text-xs"><UserPlus className="w-3.5 h-3.5" /> Invite User</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Invite Team Member</DialogTitle></DialogHeader>
@@ -139,7 +139,7 @@ function UsersAndTeams() {
             </div>
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-white" disabled={!email || !name || inviteUser.isPending} onClick={() => inviteUser.mutate()}>
+              <Button className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground" disabled={!email || !name || inviteUser.isPending} onClick={() => inviteUser.mutate()}>
                 {inviteUser.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <Mail className="w-3.5 h-3.5 mr-2" />}
                 Send Invite
               </Button>
@@ -152,7 +152,7 @@ function UsersAndTeams() {
         {filtered.map((p: any) => {
           const roles = userRoles.filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role);
           return (
-            <Card key={p.id} className="hover:border-amber-500/20 transition-colors">
+            <Card key={p.id} className="hover:border-imprsn8/20 transition-colors">
               <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="min-w-0">
@@ -225,7 +225,7 @@ function AccessControlPanel() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Shield className="w-4 h-4 text-amber-500" /> imprsn8 Module Permissions
+            <Shield className="w-4 h-4 text-imprsn8" /> imprsn8 Module Permissions
           </CardTitle>
           <CardDescription className="text-xs">Toggle access to imprsn8 modules per access group</CardDescription>
         </CardHeader>
@@ -251,7 +251,7 @@ function AccessControlPanel() {
                           <Switch
                             checked={access}
                             onCheckedChange={() => togglePermission.mutate({ groupId: g.id, moduleKey: mod.key, currentAccess: access })}
-                            className="data-[state=checked]:bg-amber-500"
+                            className="data-[state=checked]:bg-imprsn8"
                           />
                         </td>
                       );

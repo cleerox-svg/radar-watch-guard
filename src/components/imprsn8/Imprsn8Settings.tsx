@@ -82,7 +82,7 @@ export function Imprsn8Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
-            <Shield className="w-4 h-4 text-amber-500" /> Profile Settings
+            <Shield className="w-4 h-4 text-imprsn8" /> Profile Settings
           </CardTitle>
           <CardDescription className="text-xs">Manage your influencer identity and brand info</CardDescription>
         </CardHeader>
@@ -120,7 +120,7 @@ export function Imprsn8Settings() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="border-amber-500/30 text-amber-500 uppercase">
+            <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 uppercase">
               {profile?.subscription_tier ?? "free"}
             </Badge>
             <span className="text-xs text-muted-foreground">
@@ -130,7 +130,7 @@ export function Imprsn8Settings() {
         </CardContent>
       </Card>
 
-      <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+      <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground">
         <Save className="w-4 h-4" />
         {save.isPending ? "Saving..." : "Save Settings"}
       </Button>

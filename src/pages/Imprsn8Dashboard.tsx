@@ -94,8 +94,8 @@ function Imprsn8DashboardInner() {
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2 min-w-0">
-              <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10">
-                <ChevronRight className="w-3 h-3 text-amber-500" />
+              <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-imprsn8/10">
+                <ChevronRight className="w-3 h-3 text-imprsn8" />
               </div>
               <h2 className="text-base lg:text-lg font-bold text-foreground truncate">
                 {tabTitles[currentTab]}
@@ -104,12 +104,12 @@ function Imprsn8DashboardInner() {
           </div>
           <div className="flex items-center gap-3">
             <Imprsn8InfluencerSwitcher />
-            <div className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/20 px-3 py-1.5 rounded-full transition-all">
+            <div className="flex items-center gap-2 bg-imprsn8/5 border border-imprsn8/20 px-3 py-1.5 rounded-full transition-all">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-imprsn8 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-imprsn8" />
               </span>
-              <span className="text-[10px] lg:text-xs font-mono text-amber-500 font-medium hidden sm:inline">PROTECTED</span>
+              <span className="text-[10px] lg:text-xs font-mono text-imprsn8 font-medium hidden sm:inline">PROTECTED</span>
             </div>
           </div>
         </header>

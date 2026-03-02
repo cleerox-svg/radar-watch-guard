@@ -107,10 +107,10 @@ export function Imprsn8AllInfluencers() {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4 text-center"><Users className="w-5 h-5 text-amber-500 mx-auto mb-2" /><p className="text-2xl font-bold">{influencers.length}</p><p className="text-[10px] text-muted-foreground uppercase">Total Influencers</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><Eye className="w-5 h-5 text-amber-500 mx-auto mb-2" /><p className="text-2xl font-bold">{allAccounts.length}</p><p className="text-[10px] text-muted-foreground uppercase">Monitored Accounts</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><AlertTriangle className="w-5 h-5 text-amber-500 mx-auto mb-2" /><p className="text-2xl font-bold">{allReports.length}</p><p className="text-[10px] text-muted-foreground uppercase">Total Reports</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><FileText className="w-5 h-5 text-amber-500 mx-auto mb-2" /><p className="text-2xl font-bold">{allTakedowns.length}</p><p className="text-[10px] text-muted-foreground uppercase">Takedowns</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><Users className="w-5 h-5 text-imprsn8 mx-auto mb-2" /><p className="text-2xl font-bold">{influencers.length}</p><p className="text-[10px] text-muted-foreground uppercase">Total Influencers</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><Eye className="w-5 h-5 text-imprsn8 mx-auto mb-2" /><p className="text-2xl font-bold">{allAccounts.length}</p><p className="text-[10px] text-muted-foreground uppercase">Monitored Accounts</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><AlertTriangle className="w-5 h-5 text-imprsn8 mx-auto mb-2" /><p className="text-2xl font-bold">{allReports.length}</p><p className="text-[10px] text-muted-foreground uppercase">Total Reports</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><FileText className="w-5 h-5 text-imprsn8 mx-auto mb-2" /><p className="text-2xl font-bold">{allTakedowns.length}</p><p className="text-[10px] text-muted-foreground uppercase">Takedowns</p></CardContent></Card>
       </div>
 
       {/* Search + Add */}
@@ -121,7 +121,7 @@ export function Imprsn8AllInfluencers() {
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white h-9 text-xs">
+            <Button className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground h-9 text-xs">
               <UserPlus className="w-3.5 h-3.5" /> Add Influencer
             </Button>
           </DialogTrigger>
@@ -138,7 +138,7 @@ export function Imprsn8AllInfluencers() {
             </div>
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-white gap-2" disabled={!newEmail || !newDisplayName || inviteInfluencer.isPending} onClick={() => inviteInfluencer.mutate()}>
+              <Button className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground gap-2" disabled={!newEmail || !newDisplayName || inviteInfluencer.isPending} onClick={() => inviteInfluencer.mutate()}>
                 {inviteInfluencer.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
                 {inviteInfluencer.isPending ? "Creating..." : "Create & Invite"}
               </Button>
@@ -160,7 +160,7 @@ export function Imprsn8AllInfluencers() {
             const openThreats = allReports.filter((r: any) => r.influencer_id === inf.id && r.status === "new").length;
             const activeTakedowns = allTakedowns.filter((t: any) => t.influencer_id === inf.id && ["draft", "submitted", "acknowledged"].includes(t.status)).length;
             return (
-              <Card key={inf.id} className="hover:border-amber-500/20 transition-colors">
+              <Card key={inf.id} className="hover:border-imprsn8/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -168,11 +168,11 @@ export function Imprsn8AllInfluencers() {
                         <p className="text-sm font-semibold text-foreground">{inf.display_name}</p>
                         {inf.brand_name && <span className="text-xs text-muted-foreground">({inf.brand_name})</span>}
                         <Badge variant="outline" className="text-[9px] uppercase">{inf.subscription_tier}</Badge>
-                        {!inf.onboarding_completed && <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500">Onboarding</Badge>}
+                        {!inf.onboarding_completed && <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8">Onboarding</Badge>}
                       </div>
                       <div className="flex items-center gap-4 text-[11px] text-muted-foreground mt-1 flex-wrap">
                         <span>{acctCount}/{inf.max_monitored_accounts} accounts</span>
-                        <span>{reportCount} reports {openThreats > 0 && <span className="text-amber-500">({openThreats} new)</span>}</span>
+                        <span>{reportCount} reports {openThreats > 0 && <span className="text-imprsn8">({openThreats} new)</span>}</span>
                         <span>{activeTakedowns} active takedowns</span>
                         <span>Since {new Date(inf.created_at).toLocaleDateString()}</span>
                       </div>
@@ -182,7 +182,7 @@ export function Imprsn8AllInfluencers() {
                         <SelectTrigger className="w-24 h-7 text-[10px]"><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="pro">Pro</SelectItem><SelectItem value="enterprise">Enterprise</SelectItem></SelectContent>
                       </Select>
-                      <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 border-amber-500/20 text-amber-500" onClick={() => handleViewInfluencer(inf.id)}>
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 border-imprsn8/20 text-imprsn8" onClick={() => handleViewInfluencer(inf.id)}>
                         <ArrowRight className="w-3 h-3" /> View
                       </Button>
                     </div>

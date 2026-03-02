@@ -16,9 +16,9 @@ export function Imprsn8InfluencerSwitcher() {
   return (
     <div className="flex items-center gap-2">
       <Select value={selectedId || "all"} onValueChange={setSelectedId}>
-        <SelectTrigger className="h-8 w-56 text-xs border-amber-500/20 bg-card">
+        <SelectTrigger className="h-8 w-56 text-xs border-imprsn8/20 bg-card">
           <div className="flex items-center gap-2">
-            {isAllView ? <Users className="w-3 h-3 text-amber-500" /> : <User className="w-3 h-3 text-amber-500" />}
+            {isAllView ? <Users className="w-3 h-3 text-imprsn8" /> : <User className="w-3 h-3 text-imprsn8" />}
             <SelectValue placeholder="Select view..." />
           </div>
         </SelectTrigger>
@@ -41,12 +41,12 @@ export function Imprsn8InfluencerSwitcher() {
         </SelectContent>
       </Select>
       {isAllView && (
-        <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-[9px]">
+        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px]">
           AGGREGATED
         </Badge>
       )}
       {currentInfluencer && !isAllView && (
-        <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-[9px] uppercase">
+        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px] uppercase">
           {currentInfluencer.subscription_tier}
         </Badge>
       )}
