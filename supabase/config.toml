@@ -116,3 +116,9 @@ verify_jwt = false
 
 [functions.fetch-profile-snapshot]
 verify_jwt = false
+
+[functions.agent-cross-platform-discovery]
+verify_jwt = false
+
+[functions.agent-doppelganger-hunter]
+verify_jwt = false

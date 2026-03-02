@@ -101,6 +101,100 @@ export type Database = {
         }
         Relationships: []
       }
+      account_discoveries: {
+        Row: {
+          agent_run_id: string | null
+          ai_analysis: Json | null
+          created_at: string
+          discovered_avatar_url: string | null
+          discovered_bio: string | null
+          discovered_display_name: string | null
+          discovered_follower_count: number | null
+          discovered_platform: string
+          discovered_url: string
+          discovered_username: string
+          id: string
+          influencer_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          similarity_score: number | null
+          source_account_id: string | null
+          source_platform: string
+          source_username: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_run_id?: string | null
+          ai_analysis?: Json | null
+          created_at?: string
+          discovered_avatar_url?: string | null
+          discovered_bio?: string | null
+          discovered_display_name?: string | null
+          discovered_follower_count?: number | null
+          discovered_platform: string
+          discovered_url: string
+          discovered_username: string
+          id?: string
+          influencer_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity_score?: number | null
+          source_account_id?: string | null
+          source_platform: string
+          source_username: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_run_id?: string | null
+          ai_analysis?: Json | null
+          created_at?: string
+          discovered_avatar_url?: string | null
+          discovered_bio?: string | null
+          discovered_display_name?: string | null
+          discovered_follower_count?: number | null
+          discovered_platform?: string
+          discovered_url?: string
+          discovered_username?: string
+          id?: string
+          influencer_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity_score?: number | null
+          source_account_id?: string | null
+          source_platform?: string
+          source_username?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_discoveries_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_discoveries_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_discoveries_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_profile_snapshots: {
         Row: {
           account_created_at: string | null
