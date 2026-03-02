@@ -14,7 +14,7 @@ import {
   Rss, Play, CheckCircle2, AlertTriangle, Loader2, Clock,
   RefreshCw, Zap, Eye, Globe, Users, ShieldAlert, Search, Bot,
   Activity, X, Link2, Fingerprint, Gavel, Shield, TrendingUp,
-  Palette, HeartPulse,
+  Palette, HeartPulse, Radar,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -22,7 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 const AGENT_TYPES = [
   "imprsn8_scanner", "doppelganger_hunter", "deepfake_sentinel",
   "scam_link_detector", "takedown_orchestrator", "follower_shield",
-  "brand_drift_monitor", "reputation_pulse",
+  "brand_drift_monitor", "reputation_pulse", "proactive_sweep",
 ];
 
 // ─── Feed definitions ───
@@ -156,6 +156,18 @@ const IMPRSN8_FEEDS: Imprsn8Feed[] = [
     category: "monitor",
     edgeFn: "agent-imprsn8-scanner",
     body: { scan_type: "full" },
+  },
+  {
+    id: "proactive_sweep",
+    agentType: "proactive_sweep",
+    name: "Proactive Sweep",
+    description: "Google-powered discovery across Facebook, TikTok, X, Instagram, LinkedIn & YouTube — finds impersonators without known usernames",
+    provider: "Firecrawl Search + Lovable AI",
+    intervalLabel: "Every 24 hours",
+    type: "auto" as const,
+    icon: Radar,
+    category: "detect" as const,
+    edgeFn: "agent-proactive-sweep",
   },
 
   // ── ANALYZE ──

@@ -15,7 +15,7 @@ import { useImprsn8 } from "./Imprsn8Context";
 import {
   Bot, Play, CheckCircle2, AlertTriangle, Loader2, Clock,
   Search, Fingerprint, Link2, Gavel, Shield, Palette, HeartPulse,
-  Eye, Users, Globe, RefreshCw, Zap, Activity,
+  Eye, Users, Globe, RefreshCw, Zap, Activity, Radar,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -23,6 +23,7 @@ const AGENT_TYPES = [
   "imprsn8_scanner", "doppelganger_hunter", "deepfake_sentinel",
   "scam_link_detector", "takedown_orchestrator", "follower_shield",
   "brand_drift_monitor", "reputation_pulse", "cross_platform_discovery",
+  "proactive_sweep",
 ];
 
 interface AgentDef {
@@ -47,6 +48,7 @@ const AGENTS: AgentDef[] = [
   { id: "brand_drift", agentType: "brand_drift_monitor", name: "Brand Drift Monitor", description: "Unauthorized brand asset usage on web", interval: "24h", icon: Palette, category: "monitor", edgeFn: "agent-brand-drift-monitor" },
   { id: "reputation", agentType: "reputation_pulse", name: "Reputation Pulse", description: "Daily risk score aggregation per influencer", interval: "24h", icon: HeartPulse, category: "analyze", edgeFn: "agent-reputation-pulse" },
   { id: "cross_platform", agentType: "cross_platform_discovery", name: "Cross-Platform Discovery", description: "Finds same-person accounts across social platforms for monitoring", interval: "7d", icon: Globe, category: "detect", edgeFn: "agent-cross-platform-discovery" },
+  { id: "proactive_sweep", agentType: "proactive_sweep", name: "Proactive Sweep", description: "Google-powered discovery across 6 platforms — finds impersonators without starting from known usernames", interval: "24h", icon: Radar, category: "detect", edgeFn: "agent-proactive-sweep" },
 ];
 
 const catColors: Record<string, string> = {
