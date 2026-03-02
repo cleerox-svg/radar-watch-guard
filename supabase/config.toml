@@ -122,3 +122,6 @@ verify_jwt = false
 
 [functions.agent-doppelganger-hunter]
 verify_jwt = false
+
+[functions.agent-proactive-sweep]
+verify_jwt = false
