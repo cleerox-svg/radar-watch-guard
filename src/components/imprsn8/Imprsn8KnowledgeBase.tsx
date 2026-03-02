@@ -14,10 +14,6 @@ import {
   Globe, Lock, Bell, TrendingUp, Fingerprint, Link2, UserX
 } from "lucide-react";
 
-/* ------------------------------------------------------------------ */
-/*  Knowledge base content                                            */
-/* ------------------------------------------------------------------ */
-
 interface KBArticle {
   id: string;
   title: string;
@@ -39,7 +35,6 @@ const CATEGORIES = [
 ];
 
 const ARTICLES: KBArticle[] = [
-  // Getting Started
   {
     id: "what-is-imprsn8",
     title: "What is imprsn8?",
@@ -101,8 +96,6 @@ Your capacity is shown in the progress bar at the top of the accounts page.`,
 - Daily reputation risk scores
 - Priority support`,
   },
-
-  // Account Statuses
   {
     id: "status-pending",
     title: "What Does 'Pending' Status Mean?",
@@ -196,8 +189,6 @@ Verification helps our AI agents:
 
 Verification is typically done by administrators or through platform-level confirmation signals.`,
   },
-
-  // AI Agents
   {
     id: "agent-doppelganger",
     title: "Doppelgänger Hunter Agent",
@@ -216,8 +207,7 @@ Verification is typically done by administrators or through platform-level confi
 **Rate limiting:** 2-3 second delays between searches, max 20 accounts per run
 
 **Example detections:**
-- \`@yourname\` → \`@y0urname\`, \`@yourname_official\`, \`@your.name\`
-- Profile photo theft or AI-modified versions of your photos`,
+- \`@yourname\` → \`@y0urname\`, \`@yourname_official\`, \`@your.name\``,
   },
   {
     id: "agent-deepfake",
@@ -325,8 +315,6 @@ Verification is typically done by administrators or through platform-level confi
 - **D** (40-59): High risk, action required
 - **F** (0-39): Critical risk, immediate action needed`,
   },
-
-  // Reports
   {
     id: "report-sources",
     title: "How Impersonation Reports Are Created",
@@ -366,8 +354,6 @@ You or your admin can manually create reports for accounts you've discovered you
 
 Only **Confirmed** reports can have takedown requests created against them.`,
   },
-
-  // Takedowns
   {
     id: "takedown-process",
     title: "How Takedowns Work",
@@ -400,8 +386,6 @@ Once approved, the request is submitted. imprsn8 tracks:
 - TikTok: 48-72 hours
 - YouTube: 24-48 hours`,
   },
-
-  // Security
   {
     id: "report-widget",
     title: "Follower Report Widget",
@@ -449,10 +433,6 @@ A simple form to submit the impersonator's username, platform, and description. 
   },
 ];
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                         */
-/* ------------------------------------------------------------------ */
-
 export function Imprsn8KnowledgeBase() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -475,7 +455,7 @@ export function Imprsn8KnowledgeBase() {
       {/* Header */}
       <div>
         <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-amber-500" />
+          <BookOpen className="w-5 h-5 text-imprsn8" />
           Knowledge Base
         </h3>
         <p className="text-sm text-muted-foreground">
@@ -502,7 +482,7 @@ export function Imprsn8KnowledgeBase() {
             onClick={() => setActiveCategory(cat.key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               activeCategory === cat.key
-                ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                ? "bg-imprsn8-gold-dim text-imprsn8 border border-imprsn8/30"
                 : "bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent"
             }`}
           >
@@ -519,7 +499,7 @@ export function Imprsn8KnowledgeBase() {
 
       {/* Articles */}
       {filtered.length === 0 ? (
-        <Card className="border-dashed border-amber-500/20">
+        <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Search className="w-10 h-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground text-center">
@@ -533,13 +513,13 @@ export function Imprsn8KnowledgeBase() {
             <AccordionItem key={article.id} value={article.id} className="border rounded-lg px-1 bg-card/50">
               <AccordionTrigger className="px-3 py-3 hover:no-underline">
                 <div className="flex items-center gap-3 text-left">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500/10 shrink-0">
-                    <article.icon className="w-4 h-4 text-amber-500" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-imprsn8-gold-dim shrink-0">
+                    <article.icon className="w-4 h-4 text-imprsn8" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">{article.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-500">
+                      <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">
                         {CATEGORIES.find((c) => c.key === article.category)?.label}
                       </Badge>
                     </div>
@@ -548,7 +528,7 @@ export function Imprsn8KnowledgeBase() {
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-4">
                 <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground text-[13px] leading-relaxed whitespace-pre-line">
-                  {article.content.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
+                  {article.content.split(/(\*\*[^**]+\*\*)/).map((part, i) => {
                     if (part.startsWith("**") && part.endsWith("**")) {
                       return <strong key={i} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
                     }
@@ -560,7 +540,7 @@ export function Imprsn8KnowledgeBase() {
                     <Badge
                       key={tag}
                       variant="outline"
-                      className="text-[9px] cursor-pointer hover:bg-amber-500/10"
+                      className="text-[9px] cursor-pointer hover:bg-imprsn8-gold-dim"
                       onClick={() => setSearch(tag)}
                     >
                       {tag}

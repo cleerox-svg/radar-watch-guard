@@ -17,16 +17,16 @@ import { AlertTriangle, ExternalLink, Eye, FileText, Clock, CheckCircle2, XCircl
 const severityColors: Record<string, string> = {
   critical: "bg-red-500/10 text-red-500 border-red-500/30",
   high: "bg-orange-500/10 text-orange-500 border-orange-500/30",
-  medium: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+  medium: "bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30",
   low: "bg-muted text-muted-foreground border-border",
 };
 
 const statusColors: Record<string, string> = {
   new: "bg-sky-500/10 text-sky-500 border-sky-500/30",
-  reviewing: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+  reviewing: "bg-imprsn8-gold-dim text-imprsn8 border-imprsn8/30",
   confirmed: "bg-red-500/10 text-red-500 border-red-500/30",
   dismissed: "bg-muted text-muted-foreground border-border",
-  takedown_sent: "bg-violet-500/10 text-violet-500 border-violet-500/30",
+  takedown_sent: "bg-imprsn8-purple-light text-imprsn8-purple border-imprsn8-purple/30",
 };
 
 export function Imprsn8Reports() {
@@ -104,7 +104,7 @@ export function Imprsn8Reports() {
           <Card key={s.label}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2 mb-1">
-                <s.icon className="w-3.5 h-3.5 text-amber-500" />
+                <s.icon className="w-3.5 h-3.5 text-imprsn8" />
                 <span className="text-[10px] text-muted-foreground uppercase font-mono">{s.label}</span>
               </div>
               <p className="text-xl font-bold text-foreground">{s.value}</p>
@@ -145,7 +145,7 @@ export function Imprsn8Reports() {
           {[1, 2, 3].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-20" /></Card>)}
         </div>
       ) : reports.length === 0 ? (
-        <Card className="border-dashed border-amber-500/20">
+        <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <AlertTriangle className="w-10 h-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground text-center">
@@ -156,7 +156,7 @@ export function Imprsn8Reports() {
       ) : (
         <div className="space-y-3">
           {reports.map((report) => (
-            <Card key={report.id} className="hover:border-amber-500/20 transition-colors">
+            <Card key={report.id} className="hover:border-imprsn8/20 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ export function Imprsn8Reports() {
                       </Badge>
                       <Badge variant="outline" className="text-[10px]">{report.platform}</Badge>
                       {report.source === "agent" && (
-                        <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-500">AI Detected</Badge>
+                        <Badge variant="outline" className="text-[10px] border-imprsn8-purple/30 text-imprsn8-purple">AI Detected</Badge>
                       )}
                     </div>
                     <p className="text-sm font-semibold text-foreground">
