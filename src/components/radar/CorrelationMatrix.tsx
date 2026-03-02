@@ -16,6 +16,7 @@ import { Zap, RefreshCw, AlertTriangle, Target, ArrowRight, Loader2, Activity, G
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { useThreats, useEmailAuthReports, useAtoEvents } from "@/hooks/use-threat-data";
 import { motion } from "framer-motion";
 
@@ -166,11 +167,13 @@ export function CorrelationMatrix() {
     setIsLoading(true);
     setError(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
       const resp = await fetch(INTEL_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ auto_create_tickets: createTickets }),
       });

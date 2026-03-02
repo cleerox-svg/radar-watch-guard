@@ -845,10 +845,12 @@ export function ThreatBriefing() {
 
   const loadCached = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/threat-briefing?cached=true`;
       const res = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -882,11 +884,13 @@ export function ThreatBriefing() {
     abortRef.current = controller;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/threat-briefing`;
       const res = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         signal: controller.signal,
