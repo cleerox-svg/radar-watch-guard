@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @layer base {
   html {
@@ -55,13 +55,28 @@
     --alert: 0 84% 60%;
     --alert-dim: 0 30% 92%;
 
-    /* imprsn8 tokens — purple/gold */
-    --imprsn8: 43 96% 56%;
+    /* imprsn8 tokens — deep purple/gold (from reference) */
+    --imprsn8: 43 52% 42%;
     --imprsn8-foreground: 0 0% 100%;
-    --imprsn8-purple: 270 40% 25%;
-    --imprsn8-purple-light: 270 30% 92%;
-    --imprsn8-gold: 43 96% 56%;
-    --imprsn8-gold-dim: 43 60% 85%;
+    --imprsn8-purple: 264 69% 50%;
+    --imprsn8-purple-light: 264 30% 92%;
+    --imprsn8-purple-bright: 264 80% 67%;
+    --imprsn8-gold: 43 52% 42%;
+    --imprsn8-gold-bright: 43 56% 55%;
+    --imprsn8-gold-dim: 43 40% 88%;
+    --imprsn8-nav: 0 0% 100%;
+    --imprsn8-nav-border: 265 30% 88%;
+    --imprsn8-surface: 260 15% 98%;
+    --imprsn8-card-border: 265 30% 88%;
+    --imprsn8-text-muted: 260 16% 42%;
+    --imprsn8-text-dim: 265 20% 78%;
+    --imprsn8-input-bg: 266 30% 96%;
+    --imprsn8-input-border: 265 25% 84%;
+    --imprsn8-divider: 265 20% 90%;
+    --imprsn8-red: 0 84% 50%;
+    --imprsn8-green: 160 81% 38%;
+    --imprsn8-blue: 217 91% 60%;
+    --imprsn8-orange: 38 92% 50%;
 
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
@@ -137,13 +152,28 @@
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
 
-    /* imprsn8 tokens — purple/gold dark */
-    --imprsn8: 43 96% 56%;
+    /* imprsn8 tokens — deep purple/gold dark (from reference) */
+    --imprsn8: 43 52% 42%;
     --imprsn8-foreground: 270 30% 8%;
-    --imprsn8-purple: 270 40% 14%;
-    --imprsn8-purple-light: 270 30% 22%;
-    --imprsn8-gold: 43 96% 56%;
-    --imprsn8-gold-dim: 43 50% 25%;
+    --imprsn8-purple: 264 69% 54%;
+    --imprsn8-purple-light: 260 30% 15%;
+    --imprsn8-purple-bright: 264 80% 67%;
+    --imprsn8-gold: 43 52% 42%;
+    --imprsn8-gold-bright: 43 56% 55%;
+    --imprsn8-gold-dim: 43 40% 18%;
+    --imprsn8-nav: 245 55% 7%;
+    --imprsn8-nav-border: 248 30% 14%;
+    --imprsn8-surface: 245 45% 8%;
+    --imprsn8-card-border: 248 30% 17%;
+    --imprsn8-text-muted: 248 15% 33%;
+    --imprsn8-text-dim: 250 20% 19%;
+    --imprsn8-input-bg: 245 50% 5%;
+    --imprsn8-input-border: 248 25% 15%;
+    --imprsn8-divider: 248 30% 10%;
+    --imprsn8-red: 0 84% 60%;
+    --imprsn8-green: 160 75% 44%;
+    --imprsn8-blue: 217 91% 60%;
+    --imprsn8-orange: 38 92% 50%;
 
     --surface-elevated: 217 33% 12%;
     --surface-overlay: 217 33% 8%;
