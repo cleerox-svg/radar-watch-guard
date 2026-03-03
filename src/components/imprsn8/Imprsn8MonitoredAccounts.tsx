@@ -131,7 +131,7 @@ function InfluencerSummaryCard({ name, accounts }: { name: string; accounts: any
       </div>
       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
         <p className="text-lg font-bold text-muted-foreground">{avgScore ?? "—"}</p>
-        <p className="text-[10px] text-muted-foreground uppercase">Avg Risk</p>
+        <p className="text-[10px] text-muted-foreground uppercase">Avg Score</p>
       </div>
     </div>
   );
@@ -354,17 +354,20 @@ export function Imprsn8MonitoredAccounts() {
 
   /** Score all accounts for an influencer */
   const scoreAllForInfluencer = async (influencerId: string) => {
-    setScoringId(influencerId);
+    const scoringKey = influencerId || "__all__";
+    setScoringId(scoringKey);
     try {
+      const body: Record<string, string> = {};
+      if (influencerId) body.influencer_id = influencerId;
       const { data, error } = await supabase.functions.invoke("agent-risk-scorer", {
-        body: { influencer_id: influencerId },
+        body,
       });
       if (error) throw error;
       toast({ title: "Bulk scoring complete", description: `Scored ${data?.scored ?? 0} accounts` });
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
     } catch (err: unknown) {
       toast({ title: "Scoring failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
-    } finally { setScoringId(null); }
+    } finally { setTimeout(() => setScoringId(null), 500); }
   };
 
   const maxAccounts = currentInfluencer?.max_monitored_accounts ?? 3;
@@ -669,8 +672,8 @@ export function Imprsn8MonitoredAccounts() {
           {isAllView && (
             <Button size="sm" variant="outline" className="gap-1.5 text-xs"
               onClick={() => scoreAllForInfluencer("")} disabled={!!scoringId}>
-              {scoringId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
-              Score All
+              {scoringId === "__all__" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+              {scoringId === "__all__" ? "Scoring..." : "Score All"}
             </Button>
           )}
           {!isAllView && (
