@@ -42,7 +42,10 @@ export function Imprsn8AllInfluencers() {
   const { data: influencers = [], isLoading } = useQuery({
     queryKey: ["admin-influencers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("influencer_profiles").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("influencer_profiles")
+        .select("*, monitored_accounts(current_avatar_url, current_display_name)")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -231,7 +234,10 @@ export function Imprsn8AllInfluencers() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <Avatar className="h-12 w-12 shrink-0 border-2 border-imprsn8/20">
-                        <AvatarImage src={inf.avatar_url} alt={inf.display_name} />
+                        <AvatarImage
+                          src={inf.avatar_url || (inf as any).monitored_accounts?.find((a: any) => a.current_avatar_url)?.current_avatar_url || undefined}
+                          alt={inf.display_name}
+                        />
                         <AvatarFallback className="bg-imprsn8/10 text-imprsn8 text-sm font-bold">
                           {inf.display_name?.slice(0, 2)?.toUpperCase() || "??"}
                         </AvatarFallback>
