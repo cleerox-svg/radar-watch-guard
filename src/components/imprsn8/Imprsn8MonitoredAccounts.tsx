@@ -189,13 +189,18 @@ export function Imprsn8MonitoredAccounts() {
 
   const removeAccount = useMutation({
     mutationFn: async (id: string) => {
+      // Delete related data first (FK constraints)
+      await supabase.from("account_profile_snapshots").delete().eq("monitored_account_id", id);
+      await supabase.from("account_discoveries").delete().eq("source_account_id", id);
       const { error } = await supabase.from("monitored_accounts").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["imprsn8-dash-accounts"] });
       toast({ title: "Account removed" });
     },
+    onError: (err: Error) => toast({ title: "Delete failed", description: err.message, variant: "destructive" }),
   });
 
   /** Scan Now — triggers imprsn8 scanner */
