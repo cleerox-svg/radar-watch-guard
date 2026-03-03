@@ -16,16 +16,17 @@ export function Imprsn8Overview() {
   const { selectedId, isAllView, getInfluencerFilter, currentInfluencer } = useImprsn8();
   const filter = getInfluencerFilter();
 
-  /** Monitored accounts count */
+  /** Monitored accounts count + first avatar as fallback */
   const { data: accountStats } = useQuery({
     queryKey: ["imprsn8-dash-accounts", selectedId],
     queryFn: async () => {
-      let q = supabase.from("monitored_accounts").select("id, scan_status", { count: "exact" });
+      let q = supabase.from("monitored_accounts").select("id, scan_status, current_avatar_url", { count: "exact" });
       if (filter.influencer_id) q = q.eq("influencer_id", filter.influencer_id);
       const { data, count } = await q;
       const active = data?.filter((a) => a.scan_status === "active").length ?? 0;
       const pending = data?.filter((a) => a.scan_status === "pending").length ?? 0;
-      return { total: count ?? 0, active, pending };
+      const firstAvatar = data?.find((a) => a.current_avatar_url)?.current_avatar_url ?? null;
+      return { total: count ?? 0, active, pending, firstAvatar };
     },
   });
 
@@ -116,7 +117,7 @@ export function Imprsn8Overview() {
               <div className="flex items-center gap-3">
                 {!isAllView && currentInfluencer && (
                   <Avatar className="h-10 w-10 border-2 border-imprsn8/30">
-                    <AvatarImage src={currentInfluencer.avatar_url ?? undefined} className="object-cover" />
+                    <AvatarImage src={currentInfluencer.avatar_url || accountStats?.firstAvatar || undefined} className="object-cover" />
                     <AvatarFallback className="bg-imprsn8/10 text-imprsn8 font-bold text-sm">
                       {currentInfluencer.display_name?.[0]?.toUpperCase() ?? "?"}
                     </AvatarFallback>

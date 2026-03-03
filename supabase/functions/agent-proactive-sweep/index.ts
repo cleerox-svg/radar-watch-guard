@@ -65,6 +65,18 @@ const PLATFORM_SEARCH_CONFIG: Record<string, {
     profileUrlPattern: /linkedin\.com\/in\/([a-zA-Z0-9_-]+)/,
     extractUsername: (url) => url.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/)?.[1] || null,
   },
+  twitch: {
+    siteFilter: "site:twitch.tv",
+    excludePatterns: ["-/videos/", "-/clips/", "-/directory/"],
+    profileUrlPattern: /twitch\.tv\/([a-zA-Z0-9_]+)\/?$/,
+    extractUsername: (url) => url.match(/twitch\.tv\/([a-zA-Z0-9_]+)\/?$/)?.[1] || null,
+  },
+  threads: {
+    siteFilter: "site:threads.net",
+    excludePatterns: ["-/post/"],
+    profileUrlPattern: /threads\.net\/@([a-zA-Z0-9_.]+)/,
+    extractUsername: (url) => url.match(/threads\.net\/@([a-zA-Z0-9_.]+)/)?.[1] || null,
+  },
 };
 
 const PLATFORMS = Object.keys(PLATFORM_SEARCH_CONFIG);

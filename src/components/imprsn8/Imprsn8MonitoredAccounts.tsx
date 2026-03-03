@@ -34,6 +34,10 @@ const PLATFORMS = {
   instagram: { label: "Instagram", color: "bg-pink-500/10 text-pink-500 border-pink-500/20", urlPrefix: "https://instagram.com/" },
   tiktok: { label: "TikTok", color: "bg-foreground/10 text-foreground border-foreground/20", urlPrefix: "https://tiktok.com/@" },
   youtube: { label: "YouTube", color: "bg-red-500/10 text-red-500 border-red-500/20", urlPrefix: "https://youtube.com/@" },
+  facebook: { label: "Facebook", color: "bg-blue-600/10 text-blue-600 border-blue-600/20", urlPrefix: "https://facebook.com/" },
+  twitch: { label: "Twitch", color: "bg-purple-500/10 text-purple-500 border-purple-500/20", urlPrefix: "https://twitch.tv/" },
+  linkedin: { label: "LinkedIn", color: "bg-blue-700/10 text-blue-700 border-blue-700/20", urlPrefix: "https://linkedin.com/in/" },
+  threads: { label: "Threads", color: "bg-foreground/10 text-foreground border-foreground/20", urlPrefix: "https://threads.net/@" },
 } as const;
 
 type PlatformKey = keyof typeof PLATFORMS;
