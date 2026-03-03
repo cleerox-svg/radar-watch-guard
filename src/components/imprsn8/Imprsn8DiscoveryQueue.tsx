@@ -47,10 +47,10 @@ interface DiscoveryAction {
 }
 
 const ACTIONS: DiscoveryAction[] = [
-  { status: "confirmed", label: "Monitor", icon: CheckCircle2, variant: "default", description: "Add to monitored accounts" },
-  { status: "verified_safe", label: "Safe", icon: ShieldCheck, variant: "secondary", description: "Known account, not a threat" },
-  { status: "impersonation", label: "Impersonation", icon: AlertTriangle, variant: "destructive", description: "Flag as impersonation" },
-  { status: "dismissed", label: "Dismiss", icon: XCircle, variant: "outline", description: "Not relevant" },
+  { status: "confirmed", label: "Monitor", icon: CheckCircle2, variant: "default", description: "Keep watching — platform will continuously review this account" },
+  { status: "verified_safe", label: "Safe", icon: ShieldCheck, variant: "secondary", description: "Verified as the real person's account — marked legitimate" },
+  { status: "impersonation", label: "Impersonate", icon: AlertTriangle, variant: "destructive", description: "Flag as impersonation — creates report for takedown" },
+  { status: "dismissed", label: "Dismiss", icon: XCircle, variant: "outline", description: "Not relevant, ignore this discovery" },
 ];
 
 export function Imprsn8DiscoveryQueue() {
