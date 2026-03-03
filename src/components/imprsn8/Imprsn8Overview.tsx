@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Users, AlertTriangle, FileText, Bot, Eye, TrendingUp, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useImprsn8 } from "./Imprsn8Context";
 import { formatDistanceToNow } from "date-fns";
 
@@ -112,10 +113,20 @@ export function Imprsn8Overview() {
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Shield className="w-5 h-5 text-imprsn8" />
-                {isAllView ? "imprsn8 — All Influencers" : currentInfluencer?.display_name ?? "imprsn8 Dashboard"}
-              </h3>
+              <div className="flex items-center gap-3">
+                {!isAllView && currentInfluencer && (
+                  <Avatar className="h-10 w-10 border-2 border-imprsn8/30">
+                    <AvatarImage src={currentInfluencer.avatar_url ?? undefined} className="object-cover" />
+                    <AvatarFallback className="bg-imprsn8/10 text-imprsn8 font-bold text-sm">
+                      {currentInfluencer.display_name?.[0]?.toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-imprsn8" />
+                  {isAllView ? "imprsn8 — All Influencers" : currentInfluencer?.display_name ?? "imprsn8 Dashboard"}
+                </h3>
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
                 {isAllView
                   ? "Aggregated view across all monitored influencers"

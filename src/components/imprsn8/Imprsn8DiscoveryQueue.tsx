@@ -103,6 +103,23 @@ export function Imprsn8DiscoveryQueue() {
         if (insertErr) throw insertErr;
       }
 
+      // If verified_safe → also add to monitored_accounts as a known safe account
+      if (status === "verified_safe") {
+        const { error: insertErr } = await supabase.from("monitored_accounts").insert({
+          influencer_id: discovery.influencer_id,
+          platform: discovery.discovered_platform,
+          platform_username: discovery.discovered_username,
+          platform_url: discovery.discovered_url,
+          current_display_name: discovery.discovered_display_name,
+          current_bio: discovery.discovered_bio,
+          current_avatar_url: discovery.discovered_avatar_url,
+          current_follower_count: discovery.discovered_follower_count,
+          verified: true,
+          scan_status: "active",
+        });
+        if (insertErr) throw insertErr;
+      }
+
       // If impersonation → create impersonation report
       if (status === "impersonation") {
         const { error: reportErr } = await supabase.from("impersonation_reports").insert({

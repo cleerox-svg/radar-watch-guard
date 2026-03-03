@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useImprsn8 } from "./Imprsn8Context";
-import { AlertTriangle, ExternalLink, CheckCircle2, XCircle, Filter, Shield, FileText, Clock, Bot, Gavel } from "lucide-react";
+import { AlertTriangle, ExternalLink, CheckCircle2, XCircle, Filter, Shield, FileText, Clock, Bot, Gavel, Globe } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Separator } from "@/components/ui/separator";
 
 const severityColors: Record<string, string> = {
   critical: "bg-red-500/10 text-red-500 border-red-500/30",
@@ -43,6 +44,30 @@ export function Imprsn8ThreatsFound() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+
+  /** Cross-reference: find Trust Radar threats matching influencer brand domains */
+  const { data: radarThreats = [] } = useQuery({
+    queryKey: ["imprsn8-radar-xref", selectedId],
+    queryFn: async () => {
+      // Get brand names for cross-referencing
+      const brands = isAllView
+        ? allInfluencers.map(i => i.brand_name || i.display_name).filter(Boolean)
+        : filter.influencer_id
+          ? allInfluencers.filter(i => i.id === filter.influencer_id).map(i => i.brand_name || i.display_name).filter(Boolean)
+          : [];
+      if (brands.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("threats")
+        .select("id, domain, brand, attack_type, severity, status, first_seen, confidence")
+        .in("brand", brands)
+        .order("first_seen", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: allInfluencers.length > 0,
+  });
 
   /** Fetch reports with context-aware filtering */
   const { data: reports = [], isLoading } = useQuery({
@@ -88,6 +113,35 @@ export function Imprsn8ThreatsFound() {
 
   return (
     <div className="space-y-6">
+      {/* Trust Radar Intel Cross-Reference */}
+      {radarThreats.length > 0 && (
+        <Card className="border-imprsn8-purple-accent/20 bg-imprsn8-purple-accent/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="w-4 h-4 text-imprsn8-purple-accent" />
+              <h4 className="text-sm font-bold text-foreground">Trust Radar Intel</h4>
+              <Badge className="bg-imprsn8-purple-accent/10 text-imprsn8-purple-accent border-imprsn8-purple-accent/20 text-[10px]">
+                {radarThreats.length} matching threats
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Phishing domains and malicious infrastructure targeting your brand detected by Trust Radar feeds.
+            </p>
+            <div className="space-y-1.5">
+              {radarThreats.slice(0, 5).map((t: any) => (
+                <div key={t.id} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge variant="outline" className={`${severityColors[t.severity] || ""} text-[9px]`}>{t.severity}</Badge>
+                    <span className="text-xs font-mono truncate">{t.domain}</span>
+                    <Badge variant="outline" className="text-[9px]">{t.attack_type}</Badge>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{t.confidence}% conf</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -149,6 +203,8 @@ export function Imprsn8ThreatsFound() {
             <SelectItem value="agent">AI Agent</SelectItem>
             <SelectItem value="manual">Manual</SelectItem>
             <SelectItem value="widget">Widget</SelectItem>
+            <SelectItem value="proactive_sweep">Proactive Sweep</SelectItem>
+            <SelectItem value="cross_platform_discovery">Discovery</SelectItem>
           </SelectContent>
         </Select>
       </div>
