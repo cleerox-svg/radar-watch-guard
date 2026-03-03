@@ -3,9 +3,9 @@
  * Wraps with Imprsn8Provider for influencer context. Admin/SOC see switcher + admin tabs.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Menu, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Imprsn8Provider, useImprsn8 } from "@/components/imprsn8/Imprsn8Context";
 import { Imprsn8Sidebar, type Imprsn8TabKey } from "@/components/imprsn8/Imprsn8Sidebar";
 import { Imprsn8InfluencerSwitcher } from "@/components/imprsn8/Imprsn8InfluencerSwitcher";
@@ -33,12 +33,17 @@ const tabTitles: Record<Imprsn8TabKey, string> = {
 
 /** Inner component that uses the Imprsn8 context */
 function Imprsn8DashboardInner() {
-  const [currentTab, setCurrentTab] = useState<Imprsn8TabKey>("dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { profile, signOut, roles } = useAuth();
   const { isAdminView } = useImprsn8();
+
+  // Derive tab from URL search param, default to "dashboard"
+  const tabParam = searchParams.get("tab") as Imprsn8TabKey | null;
+  const validTabs: Imprsn8TabKey[] = ["dashboard", "accounts", "threats", "takedowns", "agents", "settings", "all_influencers", "admin"];
+  const currentTab: Imprsn8TabKey = tabParam && validTabs.includes(tabParam) ? tabParam : "dashboard";
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -46,7 +51,7 @@ function Imprsn8DashboardInner() {
   }, [signOut, navigate]);
 
   const handleTabChange = (tab: Imprsn8TabKey) => {
-    setCurrentTab(tab);
+    setSearchParams({ tab }, { replace: false }); // pushes to history so back works
     setSidebarOpen(false);
   };
 
