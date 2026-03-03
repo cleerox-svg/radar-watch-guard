@@ -52,7 +52,7 @@ function Imprsn8DashboardInner() {
 
   const renderContent = () => {
     switch (currentTab) {
-      case "dashboard": return <Imprsn8Overview />;
+      case "dashboard": return <Imprsn8Overview onNavigate={handleTabChange} />;
       case "accounts": return <Imprsn8MonitoredAccounts />;
       case "threats": return <Imprsn8ThreatsFound />;
       case "takedowns": return <Imprsn8Takedowns />;

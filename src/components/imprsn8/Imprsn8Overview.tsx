@@ -5,14 +5,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, AlertTriangle, FileText, Bot, Eye, TrendingUp, Clock } from "lucide-react";
+import { Shield, Users, AlertTriangle, FileText, Bot, Eye, TrendingUp, Clock, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useImprsn8 } from "./Imprsn8Context";
 import { formatDistanceToNow } from "date-fns";
 
-export function Imprsn8Overview() {
+export function Imprsn8Overview({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { selectedId, isAllView, getInfluencerFilter, currentInfluencer } = useImprsn8();
   const filter = getInfluencerFilter();
 
@@ -152,12 +152,16 @@ export function Imprsn8Overview() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Monitored Accounts", value: accountStats?.total ?? 0, sub: `${accountStats?.active ?? 0} active`, icon: Eye },
-          { label: "Threats Found", value: reportStats?.total ?? 0, sub: `${reportStats?.new ?? 0} new`, icon: AlertTriangle },
-          { label: "Active Takedowns", value: takedownStats?.active ?? 0, sub: `${takedownStats?.resolved ?? 0} resolved`, icon: FileText },
-          { label: "High Severity", value: reportStats?.critical ?? 0, sub: "critical + high", icon: Shield },
+          { label: "Monitored Accounts", value: accountStats?.total ?? 0, sub: `${accountStats?.active ?? 0} active`, icon: Eye, tab: "accounts" },
+          { label: "Threats Found", value: reportStats?.total ?? 0, sub: `${reportStats?.new ?? 0} new`, icon: AlertTriangle, tab: "threats" },
+          { label: "Active Takedowns", value: takedownStats?.active ?? 0, sub: `${takedownStats?.resolved ?? 0} resolved`, icon: FileText, tab: "takedowns" },
+          { label: "High Severity", value: reportStats?.critical ?? 0, sub: "critical + high", icon: Shield, tab: "threats" },
         ].map((stat) => (
-          <Card key={stat.label}>
+          <Card
+            key={stat.label}
+            className="cursor-pointer hover:border-imprsn8/40 transition-colors"
+            onClick={() => onNavigate?.(stat.tab)}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <stat.icon className="w-4 h-4 text-imprsn8" />
@@ -173,9 +177,10 @@ export function Imprsn8Overview() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Threats */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 cursor-pointer hover:bg-accent/50 rounded-t-lg transition-colors" onClick={() => onNavigate?.("threats")}>
             <CardTitle className="text-sm flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-imprsn8" /> Recent Threats
+              <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -204,9 +209,10 @@ export function Imprsn8Overview() {
 
         {/* Recent Agent Activity */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 cursor-pointer hover:bg-accent/50 rounded-t-lg transition-colors" onClick={() => onNavigate?.("agents")}>
             <CardTitle className="text-sm flex items-center gap-2">
               <Bot className="w-4 h-4 text-imprsn8-purple-accent" /> Agent Activity
+              <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground" />
             </CardTitle>
           </CardHeader>
           <CardContent>
