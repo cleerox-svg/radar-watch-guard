@@ -88,23 +88,23 @@ function Imprsn8DashboardInner() {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 lg:h-16 bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 lg:px-8 z-10 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="h-14 lg:h-16 bg-card/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-2 sm:px-4 lg:px-8 z-10 shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2 min-w-0">
-              <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-imprsn8/10">
+              <div className="hidden sm:flex h-6 w-6 items-center justify-center rounded-md bg-imprsn8/10 shrink-0">
                 <ChevronRight className="w-3 h-3 text-imprsn8" />
               </div>
-              <h2 className="text-base lg:text-lg font-bold text-foreground truncate">
+              <h2 className="text-sm sm:text-base lg:text-lg font-bold text-foreground truncate hidden sm:block">
                 {tabTitles[currentTab]}
               </h2>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Imprsn8InfluencerSwitcher />
-            <div className="flex items-center gap-2 bg-imprsn8/5 border border-imprsn8/20 px-3 py-1.5 rounded-full transition-all">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-imprsn8/5 border border-imprsn8/20 px-2 sm:px-3 py-1.5 rounded-full transition-all shrink-0">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-imprsn8 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-imprsn8" />

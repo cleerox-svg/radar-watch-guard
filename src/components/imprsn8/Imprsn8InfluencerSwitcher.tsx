@@ -16,9 +16,9 @@ export function Imprsn8InfluencerSwitcher() {
   return (
     <div className="flex items-center gap-2">
       <Select value={selectedId || "all"} onValueChange={setSelectedId}>
-        <SelectTrigger className="h-8 w-56 text-xs border-imprsn8/20 bg-card">
-          <div className="flex items-center gap-2">
-            {isAllView ? <Users className="w-3 h-3 text-imprsn8" /> : <User className="w-3 h-3 text-imprsn8" />}
+        <SelectTrigger className="h-8 w-32 sm:w-44 lg:w-56 text-xs border-imprsn8/20 bg-card">
+          <div className="flex items-center gap-2 min-w-0">
+            {isAllView ? <Users className="w-3 h-3 text-imprsn8 shrink-0" /> : <User className="w-3 h-3 text-imprsn8 shrink-0" />}
             <SelectValue placeholder="Select view..." />
           </div>
         </SelectTrigger>
@@ -34,19 +34,19 @@ export function Imprsn8InfluencerSwitcher() {
               <div className="flex items-center gap-2">
                 <User className="w-3 h-3" />
                 <span>{inf.display_name}</span>
-                {inf.brand_name && <span className="text-muted-foreground">({inf.brand_name})</span>}
+                {inf.brand_name && <span className="text-muted-foreground hidden sm:inline">({inf.brand_name})</span>}
               </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       {isAllView && (
-        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px]">
+        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px] hidden sm:inline-flex">
           AGGREGATED
         </Badge>
       )}
       {currentInfluencer && !isAllView && (
-        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px] uppercase">
+        <Badge variant="outline" className="border-imprsn8/30 text-imprsn8 text-[9px] uppercase hidden sm:inline-flex">
           {currentInfluencer.subscription_tier}
         </Badge>
       )}
