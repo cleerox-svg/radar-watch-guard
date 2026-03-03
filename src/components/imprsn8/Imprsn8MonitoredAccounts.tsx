@@ -1,11 +1,11 @@
 /**
  * Imprsn8MonitoredAccounts.tsx — CRUD interface for managing monitored social media accounts.
- * Shows profile pictures, account details, and change history from profile snapshots.
+ * In "All Influencers" view: groups accounts by influencer with collapsible sections,
+ * summary cards, risk scores, and category filters.
  * Uses Imprsn8Context for influencer scoping. Supports scan-now and profile-fetch triggers.
- * Enhanced with mobile-friendly profile detail sheets showing latest pulled account data.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,13 +19,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { useImprsn8 } from "./Imprsn8Context";
 import {
   Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertCircle,
   RefreshCw, Pencil, Zap, Loader2, Camera, History, Users,
   Eye, ShieldCheck, MapPin, Link, Calendar, Globe, AtSign,
-  TrendingUp, FileText, BarChart3, ChevronRight, Compass
+  TrendingUp, FileText, BarChart3, ChevronRight, Compass,
+  ChevronDown, ChevronUp, Shield, AlertTriangle, Gauge, Brain
 } from "lucide-react";
 import { Imprsn8DiscoveryQueue } from "./Imprsn8DiscoveryQueue";
 
@@ -43,13 +45,26 @@ const PLATFORMS = {
 type PlatformKey = keyof typeof PLATFORMS;
 
 const statusIcons: Record<string, typeof CheckCircle2> = {
-  active: CheckCircle2,
-  pending: Clock,
-  error: AlertCircle,
-  scanning: RefreshCw,
+  active: CheckCircle2, pending: Clock, error: AlertCircle, scanning: RefreshCw,
 };
 
-/** Format large numbers compactly */
+const CATEGORY_FILTERS = [
+  { value: "all", label: "All Accounts", icon: Users },
+  { value: "legitimate", label: "Legitimate", icon: ShieldCheck },
+  { value: "suspicious", label: "Suspicious", icon: AlertTriangle },
+  { value: "likely_imposter", label: "Likely Imposter", icon: AlertCircle },
+  { value: "unscored", label: "Unscored", icon: Clock },
+] as const;
+
+const RISK_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  legitimate: { bg: "bg-emerald-500/10", text: "text-emerald-500", border: "border-emerald-500/30" },
+  low_risk: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-400/30" },
+  suspicious: { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/30" },
+  likely_imposter: { bg: "bg-red-500/10", text: "text-red-500", border: "border-red-500/30" },
+  confirmed_imposter: { bg: "bg-red-600/10", text: "text-red-600", border: "border-red-600/30" },
+  unscored: { bg: "bg-muted", text: "text-muted-foreground", border: "border-muted-foreground/30" },
+};
+
 function formatCount(n: number | null | undefined): string {
   if (n == null) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -57,13 +72,67 @@ function formatCount(n: number | null | undefined): string {
   return n.toString();
 }
 
-/** Stat pill for the profile detail view */
 function StatPill({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
     <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-accent/50 min-w-[80px] flex-1">
       <Icon className="w-4 h-4 text-imprsn8" />
       <span className="text-base font-bold text-foreground">{value}</span>
       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
+    </div>
+  );
+}
+
+/** Risk score gauge badge */
+function RiskBadge({ score, category }: { score: number | null; category: string }) {
+  const colors = RISK_COLORS[category] || RISK_COLORS.unscored;
+  if (score == null) {
+    return (
+      <Badge variant="outline" className={`text-[10px] ${colors.border} ${colors.text}`}>
+        <Clock className="w-2.5 h-2.5 mr-1" /> Unscored
+      </Badge>
+    );
+  }
+  const label = category === "legitimate" ? "Legit" :
+    category === "low_risk" ? "Low Risk" :
+    category === "suspicious" ? "Suspicious" :
+    category === "likely_imposter" ? "Likely Fake" :
+    category === "confirmed_imposter" ? "Imposter" : "Unknown";
+
+  return (
+    <Badge variant="outline" className={`text-[10px] ${colors.border} ${colors.text} ${colors.bg}`}>
+      <Gauge className="w-2.5 h-2.5 mr-1" /> {score} — {label}
+    </Badge>
+  );
+}
+
+/** Summary card for an influencer group */
+function InfluencerSummaryCard({ name, accounts }: { name: string; accounts: any[] }) {
+  const total = accounts.length;
+  const legitimate = accounts.filter(a => a.risk_category === "legitimate" || a.risk_category === "low_risk").length;
+  const suspicious = accounts.filter(a => a.risk_category === "suspicious" || a.risk_category === "likely_imposter" || a.risk_category === "confirmed_imposter").length;
+  const unscored = accounts.filter(a => !a.risk_score && a.risk_score !== 0).length;
+  const avgScore = accounts.filter(a => a.risk_score != null).length > 0
+    ? Math.round(accounts.filter(a => a.risk_score != null).reduce((s, a) => s + (a.risk_score ?? 0), 0) / accounts.filter(a => a.risk_score != null).length)
+    : null;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+      <div className="p-2.5 rounded-lg bg-accent/40 text-center">
+        <p className="text-lg font-bold text-foreground">{total}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">Monitored</p>
+      </div>
+      <div className="p-2.5 rounded-lg bg-emerald-500/5 text-center">
+        <p className="text-lg font-bold text-emerald-500">{legitimate}</p>
+        <p className="text-[10px] text-emerald-500/70 uppercase">Legitimate</p>
+      </div>
+      <div className="p-2.5 rounded-lg bg-amber-500/5 text-center">
+        <p className="text-lg font-bold text-amber-500">{suspicious}</p>
+        <p className="text-[10px] text-amber-500/70 uppercase">Suspicious</p>
+      </div>
+      <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+        <p className="text-lg font-bold text-muted-foreground">{avgScore ?? "—"}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">Avg Risk</p>
+      </div>
     </div>
   );
 }
@@ -82,37 +151,30 @@ export function Imprsn8MonitoredAccounts() {
   const [url, setUrl] = useState("");
   const [scanningId, setScanningId] = useState<string | null>(null);
   const [fetchingId, setFetchingId] = useState<string | null>(null);
+  const [discoveringId, setDiscoveringId] = useState<string | null>(null);
+  const [scoringId, setScoringId] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [expandedInfluencers, setExpandedInfluencers] = useState<Set<string>>(new Set(["__all__"]));
   const [historySheet, setHistorySheet] = useState<{ open: boolean; accountId: string | null; accountName: string }>({
     open: false, accountId: null, accountName: "",
   });
   const [detailSheet, setDetailSheet] = useState<{ open: boolean; account: any | null }>({
     open: false, account: null,
   });
-  const [discoveringId, setDiscoveringId] = useState<string | null>(null);
 
-  /** Discover cross-platform accounts from a monitored account */
-  const discoverAccounts = async (acct: any) => {
-    setDiscoveringId(acct.id);
-    try {
-      const { data, error } = await supabase.functions.invoke("agent-cross-platform-discovery", {
-        body: { monitored_account_id: acct.id, influencer_id: acct.influencer_id, trigger_type: "manual" },
-      });
-      if (error) throw error;
-      toast({ title: "Discovery complete", description: data?.summary || `Found ${data?.discovered ?? 0} potential accounts` });
-      queryClient.invalidateQueries({ queryKey: ["account-discoveries"] });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Discovery failed";
-      toast({ title: "Discovery failed", description: msg, variant: "destructive" });
-    } finally {
-      setDiscoveringId(null);
-    }
+  const toggleInfluencer = (id: string) => {
+    setExpandedInfluencers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
   /** Fetch monitored accounts — scoped by context */
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["monitored-accounts", selectedId],
     queryFn: async () => {
-      let q = supabase.from("monitored_accounts").select("*, influencer_profiles(display_name)").order("created_at", { ascending: false });
+      let q = supabase.from("monitored_accounts").select("*, influencer_profiles(display_name, avatar_url)").order("created_at", { ascending: false });
       if (filter.influencer_id) q = q.eq("influencer_id", filter.influencer_id);
       const { data, error } = await q;
       if (error) throw error;
@@ -120,48 +182,70 @@ export function Imprsn8MonitoredAccounts() {
     },
   });
 
-  /** Fetch latest snapshot for the detail sheet */
-  const { data: latestSnapshot, isLoading: snapshotLoading } = useQuery({
+  /** Filter accounts by category */
+  const filteredAccounts = useMemo(() => {
+    if (categoryFilter === "all") return accounts;
+    if (categoryFilter === "suspicious") {
+      return accounts.filter((a: any) => ["suspicious", "likely_imposter", "confirmed_imposter"].includes(a.risk_category));
+    }
+    return accounts.filter((a: any) => a.risk_category === categoryFilter);
+  }, [accounts, categoryFilter]);
+
+  /** Group accounts by influencer for all-view */
+  const groupedByInfluencer = useMemo(() => {
+    if (!isAllView) return null;
+    const groups: Record<string, { name: string; avatarUrl: string | null; accounts: any[] }> = {};
+    for (const acct of filteredAccounts) {
+      const infId = acct.influencer_id;
+      if (!groups[infId]) {
+        groups[infId] = {
+          name: (acct as any).influencer_profiles?.display_name || "Unknown",
+          avatarUrl: (acct as any).influencer_profiles?.avatar_url || null,
+          accounts: [],
+        };
+      }
+      groups[infId].accounts.push(acct);
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => a.name.localeCompare(b.name));
+  }, [filteredAccounts, isAllView]);
+
+  /** Fetch latest snapshot for detail sheet */
+  const { data: latestSnapshot } = useQuery({
     queryKey: ["latest-snapshot", detailSheet.account?.id],
     queryFn: async () => {
       if (!detailSheet.account?.id) return null;
       const { data, error } = await supabase
-        .from("account_profile_snapshots")
-        .select("*")
+        .from("account_profile_snapshots").select("*")
         .eq("monitored_account_id", detailSheet.account.id)
-        .order("captured_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("captured_at", { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!detailSheet.account?.id,
   });
 
-  /** Fetch snapshot history for a specific account */
+  /** Fetch snapshot history */
   const { data: snapshots = [], isLoading: snapshotsLoading } = useQuery({
     queryKey: ["profile-snapshots", historySheet.accountId],
     queryFn: async () => {
       if (!historySheet.accountId) return [];
       const { data, error } = await supabase
-        .from("account_profile_snapshots")
-        .select("*")
+        .from("account_profile_snapshots").select("*")
         .eq("monitored_account_id", historySheet.accountId)
-        .order("captured_at", { ascending: false })
-        .limit(50);
+        .order("captured_at", { ascending: false }).limit(50);
       if (error) throw error;
       return data;
     },
     enabled: !!historySheet.accountId,
   });
 
+  // Mutations
   const addAccount = useMutation({
     mutationFn: async () => {
       if (!filter.influencer_id) throw new Error("No influencer selected");
       const platformUrl = url || `${PLATFORMS[platform].urlPrefix}${username}`;
       const { error } = await supabase.from("monitored_accounts").insert({
-        influencer_id: filter.influencer_id,
-        platform, platform_username: username, platform_url: platformUrl,
+        influencer_id: filter.influencer_id, platform, platform_username: username, platform_url: platformUrl,
       });
       if (error) throw error;
     },
@@ -189,7 +273,6 @@ export function Imprsn8MonitoredAccounts() {
 
   const removeAccount = useMutation({
     mutationFn: async (id: string) => {
-      // Delete related data first (FK constraints)
       await supabase.from("account_profile_snapshots").delete().eq("monitored_account_id", id);
       await supabase.from("account_discoveries").delete().eq("source_account_id", id);
       const { error } = await supabase.from("monitored_accounts").delete().eq("id", id);
@@ -203,7 +286,6 @@ export function Imprsn8MonitoredAccounts() {
     onError: (err: Error) => toast({ title: "Delete failed", description: err.message, variant: "destructive" }),
   });
 
-  /** Scan Now — triggers imprsn8 scanner */
   const scanNow = async (acct: any) => {
     setScanningId(acct.id);
     try {
@@ -214,14 +296,10 @@ export function Imprsn8MonitoredAccounts() {
       toast({ title: "Scan complete", description: data?.summary || `Processed ${data?.processed ?? 0} accounts` });
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Scan failed";
-      toast({ title: "Scan failed", description: msg, variant: "destructive" });
-    } finally {
-      setScanningId(null);
-    }
+      toast({ title: "Scan failed", description: err instanceof Error ? err.message : "Scan failed", variant: "destructive" });
+    } finally { setScanningId(null); }
   };
 
-  /** Fetch Profile — pulls current profile data + avatar */
   const fetchProfile = async (acct: any) => {
     setFetchingId(acct.id);
     try {
@@ -233,24 +311,64 @@ export function Imprsn8MonitoredAccounts() {
       const changeCount = result?.changes?.length ?? 0;
       toast({
         title: "Profile fetched",
-        description: changeCount > 0
-          ? `${changeCount} change(s) detected: ${result.changes.join(", ")}`
-          : "Profile snapshot captured — no changes detected.",
+        description: changeCount > 0 ? `${changeCount} change(s) detected` : "No changes detected.",
       });
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["profile-snapshots"] });
-      queryClient.invalidateQueries({ queryKey: ["latest-snapshot"] });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Profile fetch failed";
-      toast({ title: "Fetch failed", description: msg, variant: "destructive" });
-    } finally {
-      setFetchingId(null);
-    }
+      toast({ title: "Fetch failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+    } finally { setFetchingId(null); }
+  };
+
+  const discoverAccounts = async (acct: any) => {
+    setDiscoveringId(acct.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-cross-platform-discovery", {
+        body: { monitored_account_id: acct.id, influencer_id: acct.influencer_id, trigger_type: "manual" },
+      });
+      if (error) throw error;
+      toast({ title: "Discovery complete", description: data?.summary || `Found ${data?.discovered ?? 0} potential accounts` });
+      queryClient.invalidateQueries({ queryKey: ["account-discoveries"] });
+    } catch (err: unknown) {
+      toast({ title: "Discovery failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+    } finally { setDiscoveringId(null); }
+  };
+
+  /** Score a single account with AI */
+  const scoreAccount = async (acct: any) => {
+    setScoringId(acct.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-risk-scorer", {
+        body: { account_id: acct.id, influencer_id: acct.influencer_id },
+      });
+      if (error) throw error;
+      const result = data?.results?.[0];
+      toast({
+        title: "Risk scored",
+        description: result ? `@${result.username}: ${result.risk_score}/100 (${result.risk_category})` : "Scoring complete",
+      });
+      queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+    } catch (err: unknown) {
+      toast({ title: "Scoring failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+    } finally { setScoringId(null); }
+  };
+
+  /** Score all accounts for an influencer */
+  const scoreAllForInfluencer = async (influencerId: string) => {
+    setScoringId(influencerId);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-risk-scorer", {
+        body: { influencer_id: influencerId },
+      });
+      if (error) throw error;
+      toast({ title: "Bulk scoring complete", description: `Scored ${data?.scored ?? 0} accounts` });
+      queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+    } catch (err: unknown) {
+      toast({ title: "Scoring failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+    } finally { setScoringId(null); }
   };
 
   const maxAccounts = currentInfluencer?.max_monitored_accounts ?? 3;
   const canAdd = !isAllView && accounts.length < maxAccounts;
-
   const resetForm = () => { setUsername(""); setUrl(""); setPlatform("twitter"); };
   const handleUsernameChange = (val: string) => {
     const clean = val.replace(/^@/, "");
@@ -279,7 +397,108 @@ export function Imprsn8MonitoredAccounts() {
     </div>
   );
 
-  /** Render the profile detail sheet — mobile-first, rich view */
+  /** Render a single account card */
+  const renderAccountCard = (acct: any, showInfluencer = false) => {
+    const platMeta = PLATFORMS[acct.platform as PlatformKey] ?? PLATFORMS.twitter;
+    const StatusIcon = statusIcons[acct.scan_status ?? "pending"] ?? Clock;
+    const isScanning = scanningId === acct.id;
+    const isFetching = fetchingId === acct.id;
+    const isScoring = scoringId === acct.id;
+    const hasProfile = !!(acct as any).current_avatar_url || !!(acct as any).current_display_name;
+
+    return (
+      <Card key={acct.id} className="group hover:border-imprsn8/30 transition-colors cursor-pointer active:scale-[0.99]"
+        onClick={() => setDetailSheet({ open: true, account: acct })}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Avatar className="h-12 w-12 border-2 border-imprsn8/20 shrink-0 shadow-sm">
+              <AvatarImage src={(acct as any).current_avatar_url} className="object-cover" />
+              <AvatarFallback className="text-sm font-bold bg-imprsn8-purple text-imprsn8">
+                {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {(acct as any).current_display_name || `@${acct.platform_username}`}
+                    </p>
+                    {(acct as any).current_verified && <ShieldCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <Badge variant="outline" className={platMeta.color + " text-[10px] font-mono"}>{platMeta.label}</Badge>
+                    <span className="text-[11px] text-muted-foreground truncate">@{acct.platform_username}</span>
+                    <RiskBadge score={acct.risk_score} category={acct.risk_category || "unscored"} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8"
+                    title="AI Risk Score" onClick={() => scoreAccount(acct)} disabled={isScoring}>
+                    {isScoring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8"
+                    title="Fetch profile" onClick={() => fetchProfile(acct)} disabled={isFetching}>
+                    {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8"
+                    onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
+                    {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8"
+                    onClick={() => discoverAccounts(acct)} disabled={discoveringId === acct.id} title="Discover on other platforms">
+                    {discoveringId === acct.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8" onClick={() => openEdit(acct)} title="Edit">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeAccount.mutate(acct.id)} title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {hasProfile && (
+                <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                  {(acct as any).current_follower_count != null && (
+                    <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {formatCount((acct as any).current_follower_count)}</span>
+                  )}
+                  {(acct as any).current_following_count != null && (
+                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {formatCount((acct as any).current_following_count)}</span>
+                  )}
+                  {(acct as any).current_post_count != null && (
+                    <span>{formatCount((acct as any).current_post_count)} posts</span>
+                  )}
+                  {(acct as any).profile_changes_count > 0 && (
+                    <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">
+                      {(acct as any).profile_changes_count} changes
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {(acct as any).current_bio && (
+                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{(acct as any).current_bio}</p>
+              )}
+
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <StatusIcon className="w-3 h-3" />
+                  <span className="capitalize">{acct.scan_status ?? "pending"}</span>
+                  {showInfluencer && acct.influencer_profiles && (
+                    <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">{acct.influencer_profiles.display_name}</Badge>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  /** Detail sheet */
   const renderDetailSheet = () => {
     const acct = detailSheet.account;
     if (!acct) return null;
@@ -296,19 +515,17 @@ export function Imprsn8MonitoredAccounts() {
     const website = snap?.website_url;
     const accountCreated = snap?.account_created_at;
     const isFetching = fetchingId === acct.id;
+    const isScoring = scoringId === acct.id;
+    const riskFactors = acct.risk_factors && typeof acct.risk_factors === "object" ? acct.risk_factors : {};
 
     return (
       <Sheet open={detailSheet.open} onOpenChange={(open) => setDetailSheet(s => ({ ...s, open }))}>
         <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl p-0 border-t border-imprsn8/20">
           <ScrollArea className="h-full">
             <div className="flex flex-col">
-              {/* Hero header with avatar */}
               <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-imprsn8-purple/20 to-transparent">
-                {/* Drag handle */}
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" />
-                
                 <div className="flex flex-col items-center text-center gap-4">
-                  {/* Large profile picture */}
                   <div className="relative">
                     <Avatar className="h-24 w-24 border-4 border-imprsn8/30 shadow-lg">
                       <AvatarImage src={avatarUrl} className="object-cover" />
@@ -322,18 +539,21 @@ export function Imprsn8MonitoredAccounts() {
                       </div>
                     )}
                   </div>
-
-                  {/* Name and handle */}
                   <div>
                     <h2 className="text-xl font-bold text-foreground">{displayName}</h2>
-                    <div className="flex items-center justify-center gap-2 mt-1">
+                    <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
                       <Badge variant="outline" className={platMeta.color + " text-xs font-mono"}>{platMeta.label}</Badge>
                       <span className="text-sm text-muted-foreground">@{acct.platform_username}</span>
                     </div>
+                    <div className="mt-2">
+                      <RiskBadge score={acct.risk_score} category={acct.risk_category || "unscored"} />
+                    </div>
                   </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => scoreAccount(acct)} disabled={isScoring}>
+                      {isScoring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+                      Score Risk
+                    </Button>
                     <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => fetchProfile(acct)} disabled={isFetching}>
                       {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                       Fetch Latest
@@ -351,7 +571,6 @@ export function Imprsn8MonitoredAccounts() {
                 </div>
               </div>
 
-              {/* Stats row */}
               <div className="px-4 py-4">
                 <div className="flex gap-2">
                   <StatPill icon={Users} label="Followers" value={formatCount(followers)} />
@@ -362,7 +581,33 @@ export function Imprsn8MonitoredAccounts() {
 
               <Separator className="mx-6" />
 
-              {/* Bio */}
+              {/* Risk Factors */}
+              {Object.keys(riskFactors).length > 0 && (
+                <>
+                  <div className="px-6 py-4 space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <Gauge className="w-3.5 h-3.5" /> Risk Factors
+                    </h4>
+                    <div className="space-y-1.5">
+                      {Object.entries(riskFactors).map(([key, val]: [string, any]) => (
+                        <div key={key} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                          <span className={`font-mono ${val?.impact > 0 ? "text-red-500" : val?.impact < 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
+                            {val?.impact > 0 ? "+" : ""}{val?.impact}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {acct.last_risk_scored_at && (
+                      <p className="text-[10px] text-muted-foreground mt-2">
+                        Last scored: {new Date(acct.last_risk_scored_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <Separator className="mx-6" />
+                </>
+              )}
+
               {bio && (
                 <div className="px-6 py-4">
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bio</h4>
@@ -370,37 +615,16 @@ export function Imprsn8MonitoredAccounts() {
                 </div>
               )}
 
-              {/* Profile details */}
               <div className="px-6 py-4 space-y-3">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Details</h4>
-                
-                {location && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-foreground">{location}</span>
-                  </div>
-                )}
-                {website && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <a href={website} target="_blank" rel="noopener noreferrer" className="text-imprsn8 hover:underline truncate">{website}</a>
-                  </div>
-                )}
-                {accountCreated && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-foreground">Joined {new Date(accountCreated).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-3 text-sm">
-                  <AtSign className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-foreground font-mono text-xs">{acct.platform_url}</span>
-                </div>
+                {location && <div className="flex items-center gap-3 text-sm"><MapPin className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-foreground">{location}</span></div>}
+                {website && <div className="flex items-center gap-3 text-sm"><Globe className="w-4 h-4 text-muted-foreground shrink-0" /><a href={website} target="_blank" rel="noopener noreferrer" className="text-imprsn8 hover:underline truncate">{website}</a></div>}
+                {accountCreated && <div className="flex items-center gap-3 text-sm"><Calendar className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-foreground">Joined {new Date(accountCreated).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span></div>}
+                <div className="flex items-center gap-3 text-sm"><AtSign className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-foreground font-mono text-xs">{acct.platform_url}</span></div>
               </div>
 
               <Separator className="mx-6" />
 
-              {/* Monitoring status */}
               <div className="px-6 py-4 space-y-3">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monitoring Status</h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -414,42 +638,15 @@ export function Imprsn8MonitoredAccounts() {
                   </div>
                   <div className="p-3 rounded-lg bg-accent/30">
                     <p className="text-[10px] text-muted-foreground uppercase">Last Scanned</p>
-                    <p className="text-sm font-semibold text-foreground mt-0.5">
-                      {acct.last_scanned_at ? new Date(acct.last_scanned_at).toLocaleDateString() : "Never"}
-                    </p>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{acct.last_scanned_at ? new Date(acct.last_scanned_at).toLocaleDateString() : "Never"}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-accent/30">
                     <p className="text-[10px] text-muted-foreground uppercase">Last Fetched</p>
-                    <p className="text-sm font-semibold text-foreground mt-0.5">
-                      {acct.last_profile_fetch_at ? new Date(acct.last_profile_fetch_at).toLocaleDateString() : "Never"}
-                    </p>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{acct.last_profile_fetch_at ? new Date(acct.last_profile_fetch_at).toLocaleDateString() : "Never"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Snapshot metadata */}
-              {snap && (
-                <>
-                  <Separator className="mx-6" />
-                  <div className="px-6 py-4 space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Latest Snapshot</h4>
-                    <p className="text-[11px] text-muted-foreground">
-                      Captured {new Date(snap.captured_at).toLocaleString()}
-                    </p>
-                    {snap.has_changes && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {(snap.changes_detected as string[])?.map((c: string) => (
-                          <Badge key={c} variant="outline" className="text-[10px] border-imprsn8/30 text-imprsn8 bg-imprsn8/5">
-                            {c.replace(/_/g, " ")}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Bottom padding for safe area */}
               <div className="h-8" />
             </div>
           </ScrollArea>
@@ -461,30 +658,55 @@ export function Imprsn8MonitoredAccounts() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="text-lg font-bold text-foreground">Monitored Accounts</h3>
           <p className="text-sm text-muted-foreground">
             {isAllView ? `${accounts.length} accounts across all influencers` : `${accounts.length} of ${maxAccounts} accounts monitored`}
           </p>
         </div>
-        {!isAllView && (
-          <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button disabled={!canAdd} className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground"><Plus className="w-4 h-4" /> Add Account</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Add Social Media Account</DialogTitle></DialogHeader>
-              {renderFormFields()}
-              <DialogFooter>
-                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                <Button onClick={() => addAccount.mutate()} disabled={!username || addAccount.isPending} className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground">
-                  {addAccount.isPending ? "Adding..." : "Add Account"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+        <div className="flex items-center gap-2">
+          {isAllView && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs"
+              onClick={() => scoreAllForInfluencer("")} disabled={!!scoringId}>
+              {scoringId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+              Score All
+            </Button>
+          )}
+          {!isAllView && (
+            <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button disabled={!canAdd} className="gap-2 bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground"><Plus className="w-4 h-4" /> Add Account</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Add Social Media Account</DialogTitle></DialogHeader>
+                {renderFormFields()}
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={() => addAccount.mutate()} disabled={!username || addAccount.isPending} className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground">
+                    {addAccount.isPending ? "Adding..." : "Add Account"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {CATEGORY_FILTERS.map(({ value, label, icon: Icon }) => {
+          const count = value === "all" ? accounts.length :
+            value === "suspicious" ? accounts.filter((a: any) => ["suspicious", "likely_imposter", "confirmed_imposter"].includes(a.risk_category)).length :
+            accounts.filter((a: any) => a.risk_category === value).length;
+          return (
+            <Button key={value} size="sm" variant={categoryFilter === value ? "default" : "outline"}
+              className={`gap-1.5 text-xs h-8 ${categoryFilter === value ? "bg-imprsn8 text-imprsn8-foreground hover:bg-imprsn8/90" : ""}`}
+              onClick={() => setCategoryFilter(value)}>
+              <Icon className="w-3 h-3" /> {label} <span className="text-[10px] opacity-70">({count})</span>
+            </Button>
+          );
+        })}
       </div>
 
       {/* Capacity bar (single influencer only) */}
@@ -508,7 +730,7 @@ export function Imprsn8MonitoredAccounts() {
         </DialogContent>
       </Dialog>
 
-      {/* Profile Snapshot History Sheet */}
+      {/* Snapshot History Sheet */}
       <Sheet open={historySheet.open} onOpenChange={(open) => setHistorySheet((s) => ({ ...s, open }))}>
         <SheetContent className="w-full sm:w-[420px] sm:max-w-[540px]">
           <SheetHeader>
@@ -522,7 +744,7 @@ export function Imprsn8MonitoredAccounts() {
                 <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading snapshots…
               </div>
             ) : snapshots.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-12">No profile snapshots yet. Click the camera icon to fetch the first one.</p>
+              <p className="text-sm text-muted-foreground text-center py-12">No profile snapshots yet.</p>
             ) : (
               <div className="space-y-4">
                 {snapshots.map((snap: any) => (
@@ -566,124 +788,83 @@ export function Imprsn8MonitoredAccounts() {
         </SheetContent>
       </Sheet>
 
-      {/* Profile Detail Sheet */}
+      {/* Detail Sheet */}
       {renderDetailSheet()}
 
-      {/* Cross-Platform Discovery Queue (HITL) */}
+      {/* Cross-Platform Discovery Queue */}
       <Imprsn8DiscoveryQueue />
 
-      {/* Account cards */}
+      {/* Account list */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2].map((i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-32" /></Card>)}
         </div>
-      ) : accounts.length === 0 ? (
+      ) : filteredAccounts.length === 0 ? (
         <Card className="border-dashed border-imprsn8/20">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground text-center">No accounts being monitored yet.</p>
+            <p className="text-sm text-muted-foreground text-center">
+              {categoryFilter !== "all" ? "No accounts match this filter." : "No accounts being monitored yet."}
+            </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {accounts.map((acct: any) => {
-            const platMeta = PLATFORMS[acct.platform as PlatformKey] ?? PLATFORMS.twitter;
-            const StatusIcon = statusIcons[acct.scan_status ?? "pending"] ?? Clock;
-            const isScanning = scanningId === acct.id;
-            const isFetching = fetchingId === acct.id;
-            const hasProfile = !!(acct as any).current_avatar_url || !!(acct as any).current_display_name;
+      ) : isAllView && groupedByInfluencer ? (
+        /* Grouped by influencer view */
+        <div className="space-y-4">
+          {groupedByInfluencer.map(([infId, group]) => {
+            const isOpen = expandedInfluencers.has(infId) || expandedInfluencers.has("__all__");
             return (
-              <Card key={acct.id} className="group hover:border-imprsn8/30 transition-colors cursor-pointer active:scale-[0.99]"
-                onClick={() => setDetailSheet({ open: true, account: acct })}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {/* Profile avatar */}
-                    <Avatar className="h-14 w-14 border-2 border-imprsn8/20 shrink-0 shadow-sm">
-                      <AvatarImage src={(acct as any).current_avatar_url} className="object-cover" />
-                      <AvatarFallback className="text-sm font-bold bg-imprsn8-purple text-imprsn8">
-                        {acct.platform_username?.[0]?.toUpperCase() ?? "?"}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-foreground truncate">
-                              {(acct as any).current_display_name || `@${acct.platform_username}`}
-                            </p>
-                            {(acct as any).current_verified && <ShieldCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <Badge variant="outline" className={platMeta.color + " text-[10px] font-mono"}>{platMeta.label}</Badge>
-                            <span className="text-[11px] text-muted-foreground truncate">@{acct.platform_username}</span>
-                          </div>
-                        </div>
-
-                        {/* Action buttons - always visible, stop propagation so they don't open detail */}
-                        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
-                            title="Fetch profile snapshot" onClick={() => fetchProfile(acct)} disabled={isFetching}>
-                            {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
-                            onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
-                            {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
-                            onClick={() => discoverAccounts(acct)} disabled={discoveringId === acct.id} title="Discover on other platforms">
-                            {discoveringId === acct.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all" onClick={() => openEdit(acct)} title="Edit account">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)} title="Delete account">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+              <Collapsible key={infId} open={isOpen} onOpenChange={() => toggleInfluencer(infId)}>
+                <Card className="border-imprsn8/10">
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full p-4 flex items-center justify-between hover:bg-accent/30 transition-colors rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border-2 border-imprsn8/20">
+                          <AvatarImage src={group.avatarUrl || undefined} />
+                          <AvatarFallback className="text-sm font-bold bg-imprsn8-purple text-imprsn8">
+                            {group.name[0]?.toUpperCase() ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-left">
+                          <p className="text-sm font-bold text-foreground">{group.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{group.accounts.length} accounts monitored</p>
                         </div>
                       </div>
-
-                      {/* Stats row */}
-                      {hasProfile && (
-                        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
-                          {(acct as any).current_follower_count != null && (
-                            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {formatCount((acct as any).current_follower_count)}</span>
-                          )}
-                          {(acct as any).current_following_count != null && (
-                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {formatCount((acct as any).current_following_count)}</span>
-                          )}
-                          {(acct as any).current_post_count != null && (
-                            <span>{formatCount((acct as any).current_post_count)} posts</span>
-                          )}
-                          {(acct as any).profile_changes_count > 0 && (
-                            <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">
-                              {(acct as any).profile_changes_count} changes
+                      <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center gap-2 text-xs">
+                          {group.accounts.filter(a => ["suspicious", "likely_imposter", "confirmed_imposter"].includes(a.risk_category)).length > 0 && (
+                            <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-[10px]">
+                              <AlertTriangle className="w-2.5 h-2.5 mr-1" />
+                              {group.accounts.filter(a => ["suspicious", "likely_imposter", "confirmed_imposter"].includes(a.risk_category)).length} suspicious
                             </Badge>
                           )}
                         </div>
-                      )}
-
-                      {/* Bio snippet */}
-                      {(acct as any).current_bio && (
-                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{(acct as any).current_bio}</p>
-                      )}
-
-                      {/* Status footer */}
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                          <StatusIcon className="w-3 h-3" />
-                          <span className="capitalize">{acct.scan_status ?? "pending"}</span>
-                          {isAllView && acct.influencer_profiles && (
-                            <Badge variant="outline" className="text-[9px] border-imprsn8/20 text-imprsn8">{acct.influencer_profiles.display_name}</Badge>
-                          )}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground" onClick={(e) => {
+                          e.stopPropagation();
+                          scoreAllForInfluencer(infId);
+                        }} disabled={scoringId === infId} title="Score all accounts">
+                          {scoringId === infId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+                        </Button>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4">
+                      <InfluencerSummaryCard name={group.name} accounts={group.accounts} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {group.accounts.map((acct: any) => renderAccountCard(acct, false))}
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             );
           })}
+        </div>
+      ) : (
+        /* Single influencer flat view */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredAccounts.map((acct: any) => renderAccountCard(acct, false))}
         </div>
       )}
     </div>

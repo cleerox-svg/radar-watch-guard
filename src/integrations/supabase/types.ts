@@ -1074,6 +1074,7 @@ export type Database = {
           id: string
           influencer_id: string
           last_profile_fetch_at: string | null
+          last_risk_scored_at: string | null
           last_scanned_at: string | null
           metadata: Json | null
           platform: string
@@ -1081,6 +1082,9 @@ export type Database = {
           platform_user_id: string | null
           platform_username: string
           profile_changes_count: number | null
+          risk_category: string | null
+          risk_factors: Json | null
+          risk_score: number | null
           scan_status: string | null
           updated_at: string
           verified: boolean | null
@@ -1097,6 +1101,7 @@ export type Database = {
           id?: string
           influencer_id: string
           last_profile_fetch_at?: string | null
+          last_risk_scored_at?: string | null
           last_scanned_at?: string | null
           metadata?: Json | null
           platform: string
@@ -1104,6 +1109,9 @@ export type Database = {
           platform_user_id?: string | null
           platform_username: string
           profile_changes_count?: number | null
+          risk_category?: string | null
+          risk_factors?: Json | null
+          risk_score?: number | null
           scan_status?: string | null
           updated_at?: string
           verified?: boolean | null
@@ -1120,6 +1128,7 @@ export type Database = {
           id?: string
           influencer_id?: string
           last_profile_fetch_at?: string | null
+          last_risk_scored_at?: string | null
           last_scanned_at?: string | null
           metadata?: Json | null
           platform?: string
@@ -1127,6 +1136,9 @@ export type Database = {
           platform_user_id?: string | null
           platform_username?: string
           profile_changes_count?: number | null
+          risk_category?: string | null
+          risk_factors?: Json | null
+          risk_score?: number | null
           scan_status?: string | null
           updated_at?: string
           verified?: boolean | null
