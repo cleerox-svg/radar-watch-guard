@@ -6,16 +6,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useImprsn8 } from "./Imprsn8Context";
-import { Users, UserPlus, Search, Mail, Loader2, Eye, AlertTriangle, FileText, ArrowRight } from "lucide-react";
+import { Users, UserPlus, Search, Mail, Loader2, Eye, AlertTriangle, FileText, ArrowRight, Pencil, Trash2 } from "lucide-react";
 
 export function Imprsn8AllInfluencers() {
   const { toast } = useToast();
@@ -28,6 +31,14 @@ export function Imprsn8AllInfluencers() {
   const [newBrandName, setNewBrandName] = useState("");
   const [newTier, setNewTier] = useState("free");
 
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editBrandName, setEditBrandName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
+  const [editReportEmail, setEditReportEmail] = useState("");
   const { data: influencers = [], isLoading } = useQuery({
     queryKey: ["admin-influencers"],
     queryFn: async () => {
@@ -94,6 +105,61 @@ export function Imprsn8AllInfluencers() {
       toast({ title: "Invite failed", description: err.message, variant: "destructive" });
     },
   });
+
+  const editInfluencer = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase.from("influencer_profiles").update({
+        display_name: editDisplayName,
+        brand_name: editBrandName || null,
+        bio: editBio || null,
+        website_url: editWebsite || null,
+        report_email: editReportEmail || null,
+      }).eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-influencers"] });
+      toast({ title: "Influencer updated" });
+      setEditOpen(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteInfluencer = useMutation({
+    mutationFn: async (id: string) => {
+      // Delete related records first, then the profile
+      await supabase.from("takedown_requests").delete().eq("influencer_id", id);
+      await supabase.from("impersonation_reports").delete().eq("influencer_id", id);
+      await supabase.from("account_discoveries").delete().eq("influencer_id", id);
+      await supabase.from("account_profile_snapshots").delete().eq("influencer_id", id);
+      await supabase.from("monitored_accounts").delete().eq("influencer_id", id);
+      const { error } = await supabase.from("influencer_profiles").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-influencers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-takedowns"] });
+      toast({ title: "Influencer deleted" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const openEditDialog = (inf: any) => {
+    setEditId(inf.id);
+    setEditDisplayName(inf.display_name || "");
+    setEditBrandName(inf.brand_name || "");
+    setEditBio(inf.bio || "");
+    setEditWebsite(inf.website_url || "");
+    setEditReportEmail(inf.report_email || "");
+    setEditOpen(true);
+  };
 
   const filtered = influencers.filter((inf: any) =>
     !searchQuery || inf.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) || inf.brand_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -163,18 +229,26 @@ export function Imprsn8AllInfluencers() {
               <Card key={inf.id} className="hover:border-imprsn8/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="text-sm font-semibold text-foreground">{inf.display_name}</p>
-                        {inf.brand_name && <span className="text-xs text-muted-foreground">({inf.brand_name})</span>}
-                        <Badge variant="outline" className="text-[9px] uppercase">{inf.subscription_tier}</Badge>
-                        {!inf.onboarding_completed && <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8">Onboarding</Badge>}
-                      </div>
-                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground mt-1 flex-wrap">
-                        <span>{acctCount}/{inf.max_monitored_accounts} accounts</span>
-                        <span>{reportCount} reports {openThreats > 0 && <span className="text-imprsn8">({openThreats} new)</span>}</span>
-                        <span>{activeTakedowns} active takedowns</span>
-                        <span>Since {new Date(inf.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-12 w-12 shrink-0 border-2 border-imprsn8/20">
+                        <AvatarImage src={inf.avatar_url} alt={inf.display_name} />
+                        <AvatarFallback className="bg-imprsn8/10 text-imprsn8 text-sm font-bold">
+                          {inf.display_name?.slice(0, 2)?.toUpperCase() || "??"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="text-sm font-semibold text-foreground">{inf.display_name}</p>
+                          {inf.brand_name && <span className="text-xs text-muted-foreground">({inf.brand_name})</span>}
+                          <Badge variant="outline" className="text-[9px] uppercase">{inf.subscription_tier}</Badge>
+                          {!inf.onboarding_completed && <Badge variant="outline" className="text-[9px] border-imprsn8/30 text-imprsn8">Onboarding</Badge>}
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground mt-1 flex-wrap">
+                          <span>{acctCount}/{inf.max_monitored_accounts} accounts</span>
+                          <span>{reportCount} reports {openThreats > 0 && <span className="text-imprsn8">({openThreats} new)</span>}</span>
+                          <span>{activeTakedowns} active takedowns</span>
+                          <span>Since {new Date(inf.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -182,6 +256,30 @@ export function Imprsn8AllInfluencers() {
                         <SelectTrigger className="w-24 h-7 text-[10px]"><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="pro">Pro</SelectItem><SelectItem value="enterprise">Enterprise</SelectItem></SelectContent>
                       </Select>
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1" onClick={() => openEditDialog(inf)}>
+                        <Pencil className="w-3 h-3" /> Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 border-destructive/30 text-destructive hover:bg-destructive/10">
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete {inf.display_name}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this influencer and all their monitored accounts, reports, and takedown requests. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteInfluencer.mutate(inf.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 border-imprsn8/20 text-imprsn8" onClick={() => handleViewInfluencer(inf.id)}>
                         <ArrowRight className="w-3 h-3" /> View
                       </Button>
@@ -193,6 +291,27 @@ export function Imprsn8AllInfluencers() {
           })}
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Influencer</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2"><Label className="text-xs">Display Name *</Label><Input value={editDisplayName} onChange={(e) => setEditDisplayName(e.target.value)} /></div>
+            <div className="space-y-2"><Label className="text-xs">Brand Name</Label><Input value={editBrandName} onChange={(e) => setEditBrandName(e.target.value)} /></div>
+            <div className="space-y-2"><Label className="text-xs">Bio</Label><Textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} /></div>
+            <div className="space-y-2"><Label className="text-xs">Website URL</Label><Input value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="https://..." /></div>
+            <div className="space-y-2"><Label className="text-xs">Report Email</Label><Input type="email" value={editReportEmail} onChange={(e) => setEditReportEmail(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button className="bg-imprsn8 hover:bg-imprsn8/90 text-imprsn8-foreground gap-2" disabled={!editDisplayName || editInfluencer.isPending} onClick={() => editInfluencer.mutate()}>
+              {editInfluencer.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pencil className="w-3.5 h-3.5" />}
+              {editInfluencer.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
