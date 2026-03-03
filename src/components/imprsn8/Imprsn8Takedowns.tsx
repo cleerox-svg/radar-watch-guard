@@ -1,14 +1,16 @@
 /**
  * Imprsn8Takedowns.tsx — Takedown requests with context-aware filtering.
- * Shows pipeline view + list. Uses Imprsn8Context for influencer scoping.
+ * Shows pipeline view + list with status update actions. Uses Imprsn8Context for influencer scoping.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { useImprsn8 } from "./Imprsn8Context";
-import { FileText, Send, CheckCircle2, XCircle, Clock, ArrowRight } from "lucide-react";
+import { FileText, Send, CheckCircle2, XCircle, Clock, ArrowRight, RotateCcw, Loader2 } from "lucide-react";
 
 const statusPipeline = ["draft", "submitted", "acknowledged", "resolved", "rejected"] as const;
 
@@ -20,9 +22,23 @@ const statusMeta: Record<string, { icon: typeof Clock; color: string; label: str
   rejected: { icon: XCircle, color: "text-red-500", label: "Rejected" },
 };
 
+/** Next logical status transitions */
+const nextActions: Record<string, { status: string; label: string; icon: typeof Send; className: string }[]> = {
+  draft: [{ status: "submitted", label: "Submit", icon: Send, className: "border-sky-500/20 text-sky-500 hover:bg-sky-500/10" }],
+  submitted: [{ status: "acknowledged", label: "Acknowledged", icon: CheckCircle2, className: "border-imprsn8/20 text-imprsn8 hover:bg-imprsn8/10" }],
+  acknowledged: [
+    { status: "resolved", label: "Resolve", icon: CheckCircle2, className: "border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10" },
+    { status: "rejected", label: "Rejected", icon: XCircle, className: "border-red-500/20 text-red-500 hover:bg-red-500/10" },
+  ],
+  rejected: [{ status: "draft", label: "Retry", icon: RotateCcw, className: "border-muted-foreground/20 text-muted-foreground hover:bg-accent" }],
+  resolved: [],
+};
+
 export function Imprsn8Takedowns() {
   const { selectedId, isAllView, getInfluencerFilter } = useImprsn8();
   const filter = getInfluencerFilter();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: takedowns = [], isLoading } = useQuery({
     queryKey: ["takedown-requests", selectedId],
@@ -36,6 +52,21 @@ export function Imprsn8Takedowns() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updates: Record<string, any> = { status };
+      if (status === "submitted") updates.submitted_at = new Date().toISOString();
+      if (status === "resolved") updates.resolved_at = new Date().toISOString();
+      const { error } = await supabase.from("takedown_requests").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["takedown-requests"] });
+      toast({ title: "Takedown updated" });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
   const counts = statusPipeline.reduce((acc, s) => {
@@ -82,6 +113,7 @@ export function Imprsn8Takedowns() {
             const Icon = meta.icon;
             const report = td.impersonation_reports;
             const influencerName = td.influencer_profiles?.display_name;
+            const actions = nextActions[td.status] ?? [];
             return (
               <Card key={td.id} className="hover:border-imprsn8/20 transition-colors">
                 <CardContent className="p-4">
@@ -104,6 +136,24 @@ export function Imprsn8Takedowns() {
                         {td.platform_case_id && <span>Case: {td.platform_case_id}</span>}
                       </div>
                     </div>
+                    {/* Action buttons */}
+                    {actions.length > 0 && (
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        {actions.map((action) => (
+                          <Button
+                            key={action.status}
+                            variant="outline"
+                            size="sm"
+                            className={`h-7 text-[10px] gap-1 ${action.className}`}
+                            onClick={() => updateStatus.mutate({ id: td.id, status: action.status })}
+                            disabled={updateStatus.isPending}
+                          >
+                            {updateStatus.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <action.icon className="w-3 h-3" />}
+                            {action.label}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
