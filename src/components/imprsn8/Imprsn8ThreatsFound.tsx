@@ -69,7 +69,7 @@ export function Imprsn8ThreatsFound() {
     enabled: allInfluencers.length > 0,
   });
 
-  /** Fetch reports with context-aware filtering */
+  /** Fetch reports with context-aware filtering + cross-ref monitored account risk scores */
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["imprsn8-threats", selectedId, statusFilter, severityFilter, platformFilter, sourceFilter],
     queryFn: async () => {
@@ -87,6 +87,26 @@ export function Imprsn8ThreatsFound() {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  /** Cross-reference: get risk scores for impersonator usernames from monitored accounts */
+  const { data: riskScoreMap = {} } = useQuery({
+    queryKey: ["imprsn8-threat-risk-xref", reports.length],
+    queryFn: async () => {
+      if (reports.length === 0) return {};
+      const usernames = [...new Set(reports.map((r: any) => r.impersonator_username).filter(Boolean))];
+      if (usernames.length === 0) return {};
+      const { data } = await supabase
+        .from("monitored_accounts")
+        .select("platform_username, risk_score, risk_category")
+        .in("platform_username", usernames);
+      const map: Record<string, { score: number; category: string }> = {};
+      for (const a of data || []) {
+        map[a.platform_username] = { score: a.risk_score, category: a.risk_category };
+      }
+      return map;
+    },
+    enabled: reports.length > 0,
   });
 
   /** Update report status */
@@ -266,9 +286,19 @@ export function Imprsn8ThreatsFound() {
                       {report.reporter_description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{report.reporter_description}</p>
                       )}
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground flex-wrap">
                         <span>{formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}</span>
                         {report.similarity_score > 0 && <span>Similarity: {report.similarity_score}%</span>}
+                        {(() => {
+                          const riskInfo = (riskScoreMap as Record<string, any>)[report.impersonator_username];
+                          if (!riskInfo) return null;
+                          const scoreColor = riskInfo.score >= 70 ? "text-emerald-500" : riskInfo.score >= 40 ? "text-amber-500" : "text-red-500";
+                          return (
+                            <span className={`font-mono ${scoreColor}`}>
+                              Legitimacy: {riskInfo.score}/100
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5 shrink-0">
