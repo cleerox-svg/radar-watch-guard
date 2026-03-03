@@ -1,8 +1,9 @@
 /**
  * agent-risk-scorer — AI-powered Imposter Risk Scoring Agent
- * Analyzes all data points for monitored accounts and calculates a risk score (0-100).
+ * Analyzes all data points for monitored accounts and calculates a legitimacy score (0-100).
  * 0 = definitely fake/imposter, 100 = definitely real/legitimate.
- * Continuously refines scores based on profile snapshots, discoveries, and reports.
+ * Cross-references threat intel feeds (threats, social_iocs, spam_trap_hits) for enhanced accuracy.
+ * Continuously refines scores based on profile snapshots, discoveries, reports, and feed signals.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -15,6 +16,7 @@ interface AccountData {
   id: string;
   platform: string;
   platform_username: string;
+  platform_url: string;
   current_display_name: string | null;
   current_bio: string | null;
   current_follower_count: number | null;
@@ -29,17 +31,111 @@ interface AccountData {
   snapshots_count?: number;
   reports_count?: number;
   has_profile_data: boolean;
+  feed_signals?: FeedSignals;
+}
+
+interface FeedSignals {
+  matching_threats: number;
+  matching_iocs: number;
+  matching_spam_traps: number;
+  threat_domains: string[];
+  ioc_details: string[];
+  spam_domains: string[];
+}
+
+/**
+ * Cross-reference an account against threat intelligence feeds.
+ * Extracts domain from platform_url and username, then queries multiple tables.
+ */
+async function gatherFeedSignals(
+  supabase: any,
+  accounts: any[]
+): Promise<Record<string, FeedSignals>> {
+  const signals: Record<string, FeedSignals> = {};
+
+  // Extract unique domains and usernames for lookup
+  const usernames = accounts.map((a) => a.platform_username.toLowerCase());
+  const domains: string[] = [];
+  for (const acct of accounts) {
+    try {
+      const url = new URL(acct.platform_url);
+      domains.push(url.hostname);
+    } catch { /* skip invalid URLs */ }
+  }
+
+  // Parallel feed queries
+  const [threatsRes, iocsRes, spamRes] = await Promise.all([
+    // Check if any threat domains match account domains or mention usernames in metadata
+    supabase
+      .from("threats")
+      .select("id, domain, brand, attack_type, metadata")
+      .in("status", ["active", "investigating"])
+      .limit(500),
+    // Check social IOCs for matching usernames or domains
+    supabase
+      .from("social_iocs")
+      .select("id, ioc_type, ioc_value, source, tags")
+      .limit(500),
+    // Check spam trap hits for domain matches
+    supabase
+      .from("spam_trap_hits")
+      .select("id, sender_domain, sender_email, category")
+      .limit(200),
+  ]);
+
+  const threats = threatsRes.data || [];
+  const iocs = iocsRes.data || [];
+  const spamHits = spamRes.data || [];
+
+  for (const acct of accounts) {
+    const uname = acct.platform_username.toLowerCase();
+    const displayLower = (acct.current_display_name || "").toLowerCase();
+    let acctDomain = "";
+    try { acctDomain = new URL(acct.platform_url).hostname; } catch {}
+
+    // Find matching threat signals
+    const matchingThreats = threats.filter((t: any) => {
+      const domain = t.domain?.toLowerCase() || "";
+      const brand = t.brand?.toLowerCase() || "";
+      // Match if threat targets the account's username as a brand
+      return brand.includes(uname) || domain.includes(uname) ||
+        (displayLower && (brand.includes(displayLower) || domain.includes(displayLower)));
+    });
+
+    // Find matching IOC signals
+    const matchingIocs = iocs.filter((i: any) => {
+      const val = i.ioc_value?.toLowerCase() || "";
+      return val.includes(uname) || (acctDomain && val.includes(acctDomain));
+    });
+
+    // Find matching spam signals
+    const matchingSpam = spamHits.filter((s: any) => {
+      const senderDomain = s.sender_domain?.toLowerCase() || "";
+      return senderDomain.includes(uname) ||
+        (displayLower && senderDomain.includes(displayLower));
+    });
+
+    signals[acct.id] = {
+      matching_threats: matchingThreats.length,
+      matching_iocs: matchingIocs.length,
+      matching_spam_traps: matchingSpam.length,
+      threat_domains: matchingThreats.slice(0, 5).map((t: any) => t.domain),
+      ioc_details: matchingIocs.slice(0, 5).map((i: any) => `${i.ioc_type}: ${i.ioc_value}`),
+      spam_domains: matchingSpam.slice(0, 5).map((s: any) => s.sender_domain),
+    };
+  }
+
+  return signals;
 }
 
 /**
  * Calculate a LEGITIMACY score: 0 = likely fake, 100 = definitely real.
- * Key principle: accounts with NO profile data yet should score neutral (50),
- * not be penalized as suspicious.
+ * Incorporates feed intelligence for cross-referencing.
  */
 function calculateHeuristicScore(acct: AccountData): { score: number; factors: Record<string, any> } {
   const factors: Record<string, any> = {};
 
-  // If we have no profile data at all, return neutral — we can't judge
+  // If we have no profile data at all, return neutral
   if (!acct.has_profile_data) {
     return {
       score: 50,
@@ -141,6 +237,43 @@ function calculateHeuristicScore(acct: AccountData): { score: number; factors: R
     }
   }
 
+  // === FEED INTELLIGENCE CROSS-REFERENCE ===
+  const signals = acct.feed_signals;
+  if (signals) {
+    // Matching threats associated with this username/brand — boosts legitimacy (they're a target, not a threat)
+    if (signals.matching_threats > 0) {
+      const boost = Math.min(10, signals.matching_threats * 3);
+      score += boost;
+      factors.threat_intel_target = {
+        impact: boost,
+        detail: `${signals.matching_threats} active threat(s) targeting this identity — indicates real brand being targeted`,
+        domains: signals.threat_domains,
+      };
+    }
+
+    // IOC matches could indicate the account domain appears in malicious contexts
+    if (signals.matching_iocs > 0) {
+      const penalty = Math.min(15, signals.matching_iocs * 5);
+      score -= penalty;
+      factors.ioc_matches = {
+        impact: -penalty,
+        detail: `${signals.matching_iocs} IOC(s) match this account's identity — potential threat actor`,
+        iocs: signals.ioc_details,
+      };
+    }
+
+    // Spam trap hits for domain
+    if (signals.matching_spam_traps > 0) {
+      const penalty = Math.min(10, signals.matching_spam_traps * 3);
+      score -= penalty;
+      factors.spam_signals = {
+        impact: -penalty,
+        detail: `${signals.matching_spam_traps} spam trap hit(s) linked to this identity`,
+        domains: signals.spam_domains,
+      };
+    }
+  }
+
   // Clamp to 0-100
   score = Math.max(0, Math.min(100, score));
 
@@ -178,8 +311,19 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { influencer_id, account_id, run_id } = body;
 
-    if (run_id) {
-      await supabase.from("agent_runs").update({ status: "running", started_at: new Date().toISOString() }).eq("id", run_id);
+    // Create a run record if not provided
+    let effectiveRunId = run_id;
+    if (!effectiveRunId) {
+      const { data: runData } = await supabase.from("agent_runs").insert({
+        agent_type: "risk_scorer",
+        trigger_type: "manual",
+        status: "running",
+        started_at: new Date().toISOString(),
+        input_params: { influencer_id, account_id },
+      }).select("id").single();
+      effectiveRunId = runData?.id;
+    } else {
+      await supabase.from("agent_runs").update({ status: "running", started_at: new Date().toISOString() }).eq("id", effectiveRunId);
     }
 
     // Build query for accounts to score
@@ -191,11 +335,16 @@ Deno.serve(async (req) => {
     } else if (influencer_id) {
       query = query.eq("influencer_id", influencer_id);
     }
-    // If neither account_id nor influencer_id provided, score ALL accounts
 
     const { data: accounts, error: acctErr } = await query;
     if (acctErr) throw acctErr;
     if (!accounts || accounts.length === 0) {
+      if (effectiveRunId) {
+        await supabase.from("agent_runs").update({
+          status: "completed", completed_at: new Date().toISOString(),
+          summary: "No accounts to score", items_processed: 0, items_flagged: 0,
+        }).eq("id", effectiveRunId);
+      }
       return new Response(JSON.stringify({ success: true, scored: 0, message: "No accounts to score" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -205,9 +354,11 @@ Deno.serve(async (req) => {
     const accountIds = accounts.map((a: any) => a.id);
     const influencerIds = [...new Set(accounts.map((a: any) => a.influencer_id))];
 
-    const [snapshotsRes, reportsRes] = await Promise.all([
+    // Parallel: snapshots, reports, and feed intelligence
+    const [snapshotsRes, reportsRes, feedSignals] = await Promise.all([
       supabase.from("account_profile_snapshots").select("monitored_account_id").in("monitored_account_id", accountIds),
       supabase.from("impersonation_reports").select("influencer_id").in("influencer_id", influencerIds),
+      gatherFeedSignals(supabase, accounts),
     ]);
 
     const snapshotCounts: Record<string, number> = {};
@@ -223,7 +374,6 @@ Deno.serve(async (req) => {
     const results: any[] = [];
 
     for (const acct of accounts) {
-      // Determine if we have any real profile data
       const hasProfileData = (
         acct.current_follower_count != null ||
         acct.current_following_count != null ||
@@ -238,13 +388,14 @@ Deno.serve(async (req) => {
         snapshots_count: snapshotCounts[acct.id] || 0,
         reports_count: reportCounts[acct.influencer_id] || 0,
         has_profile_data: hasProfileData,
+        feed_signals: feedSignals[acct.id] || undefined,
       };
 
       let finalScore: number;
       let finalFactors: Record<string, any>;
       let aiEnhanced = false;
 
-      // Heuristic scoring first
+      // Heuristic scoring first (now includes feed cross-reference)
       const { score: heuristicScore, factors: heuristicFactors } = calculateHeuristicScore(accountData);
       finalScore = heuristicScore;
       finalFactors = heuristicFactors;
@@ -252,6 +403,15 @@ Deno.serve(async (req) => {
       // AI enhancement only if we have real data to analyze
       if (lovableKey && hasProfileData) {
         try {
+          const feedContext = accountData.feed_signals
+            ? `\nFeed Intelligence:
+- ${accountData.feed_signals.matching_threats} active threats targeting this identity
+- ${accountData.feed_signals.matching_iocs} IOC matches found
+- ${accountData.feed_signals.matching_spam_traps} spam trap signals
+${accountData.feed_signals.threat_domains.length > 0 ? `- Threat domains: ${accountData.feed_signals.threat_domains.join(", ")}` : ""}
+${accountData.feed_signals.ioc_details.length > 0 ? `- IOC matches: ${accountData.feed_signals.ioc_details.join(", ")}` : ""}`
+            : "";
+
           const prompt = `Analyze this social media account and rate its LEGITIMACY on a scale of 0-100 where 0=definitely fake/imposter and 100=definitely real/legitimate. Return ONLY a JSON object with "score" (0-100) and "analysis" (one sentence).
 
 Account: @${acct.platform_username} on ${acct.platform}
@@ -263,9 +423,11 @@ Posts: ${acct.current_post_count ?? "unknown"}
 Platform verified: ${acct.current_verified ? "yes" : "no"}
 Profile changes detected: ${acct.profile_changes_count ?? 0}
 Associated influencer/brand: ${accountData.influencer_name}
+Impersonation reports against: ${accountData.reports_count}
 Current heuristic legitimacy score: ${heuristicScore}/100
+${feedContext}
 
-IMPORTANT: This account is being monitored as part of a brand protection system. A HIGH score means the account appears LEGITIMATE. A LOW score means it appears FAKE or suspicious.`;
+IMPORTANT: This account is being monitored as part of a brand protection system. A HIGH score means the account appears LEGITIMATE. A LOW score means it appears FAKE or suspicious. Consider the feed intelligence data — if threats TARGET this identity, that actually BOOSTS legitimacy (real brands get targeted). If IOCs or spam match, that REDUCES legitimacy.`;
 
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -276,7 +438,7 @@ IMPORTANT: This account is being monitored as part of a brand protection system.
             body: JSON.stringify({
               model: "google/gemini-2.5-flash-lite",
               messages: [
-                { role: "system", content: "You are a social media account legitimacy analyst. Evaluate accounts and determine if they are REAL/LEGITIMATE (high score) or FAKE/IMPOSTER (low score). Return ONLY valid JSON with 'score' (0-100, 100=legitimate) and 'analysis' (one sentence)." },
+                { role: "system", content: "You are a social media account legitimacy analyst for a brand protection platform. Evaluate accounts using ALL available signals — profile data, threat intelligence feeds, IOC matches, and spam indicators. Return ONLY valid JSON with 'score' (0-100, 100=legitimate) and 'analysis' (one sentence)." },
                 { role: "user", content: prompt },
               ],
             }),
@@ -322,21 +484,27 @@ IMPORTANT: This account is being monitored as part of a brand protection system.
         risk_score: finalScore,
         risk_category: category,
         ai_enhanced: aiEnhanced,
+        feed_signals: accountData.feed_signals ? {
+          threats: accountData.feed_signals.matching_threats,
+          iocs: accountData.feed_signals.matching_iocs,
+          spam: accountData.feed_signals.matching_spam_traps,
+        } : null,
       });
     }
 
-    if (run_id) {
+    // Update run record
+    if (effectiveRunId) {
       await supabase.from("agent_runs").update({
         status: "completed",
         completed_at: new Date().toISOString(),
-        summary: `Scored ${scored} accounts. ${results.filter(r => r.risk_score < 40).length} flagged as suspicious+`,
+        summary: `Scored ${scored} accounts (${results.filter(r => r.ai_enhanced).length} AI-enhanced). ${results.filter(r => r.risk_score < 40).length} flagged suspicious+. Feed signals: ${results.filter(r => r.feed_signals?.threats > 0 || r.feed_signals?.iocs > 0).length} with intel matches.`,
         items_processed: scored,
         items_flagged: results.filter(r => r.risk_score < 40).length,
         results: { scores: results },
-      }).eq("id", run_id);
+      }).eq("id", effectiveRunId);
     }
 
-    return new Response(JSON.stringify({ success: true, scored, results }), {
+    return new Response(JSON.stringify({ success: true, scored, results, run_id: effectiveRunId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {

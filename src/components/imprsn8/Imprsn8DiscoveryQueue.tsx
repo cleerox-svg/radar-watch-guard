@@ -137,13 +137,23 @@ export function Imprsn8DiscoveryQueue() {
         if (reportErr) throw reportErr;
       }
     },
-    onSuccess: (_, vars) => {
+    onSuccess: async (_, vars) => {
       const actionLabel = ACTIONS.find(a => a.status === vars.status)?.label || vars.status;
       toast({ title: `Marked as ${actionLabel}`, description: `@${vars.discovery.discovered_username} on ${PLATFORM_LABELS[vars.discovery.discovered_platform] || vars.discovery.discovered_platform}` });
       queryClient.invalidateQueries({ queryKey: ["account-discoveries"] });
       queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["imprsn8-threats"] });
       setProcessingId(null);
+
+      // Auto-trigger risk scoring for newly added accounts
+      if (vars.status === "confirmed" || vars.status === "verified_safe") {
+        try {
+          await supabase.functions.invoke("agent-risk-scorer", {
+            body: { influencer_id: vars.discovery.influencer_id },
+          });
+          queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+        } catch { /* scoring is best-effort */ }
+      }
     },
     onError: (err: Error) => {
       toast({ title: "Action failed", description: err.message, variant: "destructive" });

@@ -1,6 +1,6 @@
 /**
  * Imprsn8AgentsPanel.tsx — AI Agents monitoring tab.
- * Shows all 7 agents with health, last run, items processed/flagged, and manual trigger.
+ * Shows all agents including Risk Scorer with health, last run, items processed/flagged, and manual trigger.
  * Visible to both influencers (their scope) and admins (all).
  */
 
@@ -15,7 +15,7 @@ import { useImprsn8 } from "./Imprsn8Context";
 import {
   Bot, Play, CheckCircle2, AlertTriangle, Loader2, Clock,
   Search, Fingerprint, Link2, Gavel, Shield, Palette, HeartPulse,
-  Eye, Users, Globe, RefreshCw, Zap, Activity, Radar,
+  Eye, Users, Globe, RefreshCw, Zap, Activity, Radar, Brain,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -23,7 +23,7 @@ const AGENT_TYPES = [
   "imprsn8_scanner", "doppelganger_hunter", "deepfake_sentinel",
   "scam_link_detector", "takedown_orchestrator", "follower_shield",
   "brand_drift_monitor", "reputation_pulse", "cross_platform_discovery",
-  "proactive_sweep",
+  "proactive_sweep", "risk_scorer",
 ];
 
 interface AgentDef {
@@ -39,6 +39,7 @@ interface AgentDef {
 }
 
 const AGENTS: AgentDef[] = [
+  { id: "risk_scorer", agentType: "risk_scorer", name: "AI Risk Scorer", description: "Cross-references feed intelligence, profile data & AI analysis to score account legitimacy (0-100)", interval: "auto + daily", icon: Brain, category: "analyze", edgeFn: "agent-risk-scorer" },
   { id: "doppelganger", agentType: "doppelganger_hunter", name: "Doppelgänger Hunter", description: "Fuzzy username matching + visual profile comparison", interval: "6h", icon: Search, category: "detect", edgeFn: "agent-doppelganger-hunter" },
   { id: "deepfake", agentType: "deepfake_sentinel", name: "Deepfake Sentinel", description: "AI vision analysis for stolen/generated imagery", interval: "12h", icon: Fingerprint, category: "detect", edgeFn: "agent-deepfake-sentinel" },
   { id: "scam_link", agentType: "scam_link_detector", name: "Scam Link Detector", description: "Phishing, crypto scams & malicious link detection", interval: "4h", icon: Link2, category: "detect", edgeFn: "agent-scam-link-detector" },
@@ -86,8 +87,11 @@ export function Imprsn8AgentsPanel() {
         body: { ...agent.body, trigger_type: "manual" },
       });
       if (error) throw error;
-      toast({ title: `${agent.name} complete`, description: data?.summary || `Processed ${data?.processed ?? 0}, flagged ${data?.flagged ?? 0}` });
+      toast({ title: `${agent.name} complete`, description: data?.summary || `Processed ${data?.processed ?? data?.scored ?? 0}, flagged ${data?.flagged ?? data?.results?.filter((r: any) => r.risk_score < 40).length ?? 0}` });
       refetch();
+      // Also refresh dashboard and accounts data
+      queryClient.invalidateQueries({ queryKey: ["monitored-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["imprsn8-dash-accounts"] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       toast({ title: `${agent.name} failed`, description: msg, variant: "destructive" });
@@ -108,6 +112,10 @@ export function Imprsn8AgentsPanel() {
 
   const totalCompleted = agentRuns.filter((r: any) => r.status === "completed").length;
   const totalFlagged = agentRuns.reduce((sum: number, r: any) => sum + (r.items_flagged ?? 0), 0);
+
+  // Count risk scorer runs specifically
+  const riskScorerRuns = agentRuns.filter((r: any) => r.agent_type === "risk_scorer");
+  const lastScorerRun = riskScorerRuns[0];
 
   const runAll = async () => {
     for (const agent of AGENTS) {
@@ -150,9 +158,10 @@ export function Imprsn8AgentsPanel() {
           const isRunning = running.has(agent.id);
           const latest = getLatestRun(agent);
           const lastTime = latest?.completed_at || latest?.started_at;
+          const isRiskScorer = agent.agentType === "risk_scorer";
 
           return (
-            <Card key={agent.id} className="hover:border-imprsn8/20 transition-colors">
+            <Card key={agent.id} className={`hover:border-imprsn8/20 transition-colors ${isRiskScorer ? "border-imprsn8/30 bg-imprsn8/[0.02]" : ""}`}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -160,6 +169,9 @@ export function Imprsn8AgentsPanel() {
                       <agent.icon className={`w-4 h-4 ${catColors[agent.category]}`} />
                       <span className="text-sm font-semibold text-foreground">{agent.name}</span>
                       <Badge variant="outline" className="text-[8px] uppercase">{agent.category}</Badge>
+                      {isRiskScorer && (
+                        <Badge variant="outline" className="text-[8px] border-imprsn8/30 text-imprsn8">FEED-ENHANCED</Badge>
+                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">{agent.description}</p>
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
@@ -180,6 +192,9 @@ export function Imprsn8AgentsPanel() {
                       )}
                       {!latest && <span className="text-muted-foreground/50">Never run</span>}
                     </div>
+                    {latest?.summary && isRiskScorer && (
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{latest.summary}</p>
+                    )}
                     {latest?.error_message && (
                       <p className="text-[10px] text-destructive mt-1 truncate">{latest.error_message}</p>
                     )}
@@ -215,7 +230,9 @@ export function Imprsn8AgentsPanel() {
                     <Badge variant="outline" className={`text-[8px] ${run.status === "completed" ? "border-emerald-500/30 text-emerald-500" : run.status === "failed" ? "border-red-500/30 text-red-500" : ""}`}>
                       {run.status}
                     </Badge>
-                    <span className="font-medium truncate">{run.agent_type.replace(/_/g, " ")}</span>
+                    <span className="font-medium truncate">
+                      {run.agent_type === "risk_scorer" ? "🧠 " : ""}{run.agent_type.replace(/_/g, " ")}
+                    </span>
                     <span className="text-muted-foreground">{run.trigger_type}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
