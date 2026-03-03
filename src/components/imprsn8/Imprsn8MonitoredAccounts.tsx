@@ -614,30 +614,26 @@ export function Imprsn8MonitoredAccounts() {
                           </div>
                         </div>
 
-                        {/* Action buttons - stop propagation so they don't open detail */}
+                        {/* Action buttons - always visible, stop propagation so they don't open detail */}
                         <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
                             title="Fetch profile snapshot" onClick={() => fetchProfile(acct)} disabled={isFetching}>
                             {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
                             onClick={() => scanNow(acct)} disabled={isScanning} title="Scan for impersonators">
                             {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all"
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all"
                             onClick={() => discoverAccounts(acct)} disabled={discoveringId === acct.id} title="Discover on other platforms">
                             {discoveringId === acct.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
                           </Button>
-                          {!isAllView && (
-                            <>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-imprsn8 transition-all" onClick={() => openEdit(acct)}>
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-imprsn8 transition-all" onClick={() => openEdit(acct)} title="Edit account">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive transition-all" onClick={() => removeAccount.mutate(acct.id)} title="Delete account">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
 

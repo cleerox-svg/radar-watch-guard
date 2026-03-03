@@ -194,6 +194,10 @@ export function Imprsn8ThreatsFound() {
             <SelectItem value="instagram">Instagram</SelectItem>
             <SelectItem value="tiktok">TikTok</SelectItem>
             <SelectItem value="youtube">YouTube</SelectItem>
+            <SelectItem value="facebook">Facebook</SelectItem>
+            <SelectItem value="twitch">Twitch</SelectItem>
+            <SelectItem value="linkedin">LinkedIn</SelectItem>
+            <SelectItem value="threads">Threads</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
