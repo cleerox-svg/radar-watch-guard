@@ -41,7 +41,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard", description: "Protection overview & alerts", section: "main" },
-  { key: "accounts", icon: Eye, label: "My Accounts", description: "Monitored social handles & scan status", section: "main" },
+  { key: "accounts", icon: Eye, label: "Monitored Accounts", description: "Monitored social handles & scan status", section: "main" },
   { key: "threats", icon: AlertTriangle, label: "Threats Found", description: "Impersonation reports from all agents", section: "main" },
   { key: "takedowns", icon: FileText, label: "Takedowns", description: "Removal request tracking", section: "main" },
   { key: "agents", icon: Bot, label: "AI Agents", description: "Agent health, runs & manual triggers", section: "main" },

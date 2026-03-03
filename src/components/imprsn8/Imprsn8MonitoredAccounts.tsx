@@ -191,9 +191,8 @@ export function Imprsn8MonitoredAccounts() {
     return accounts.filter((a: any) => a.risk_category === categoryFilter);
   }, [accounts, categoryFilter]);
 
-  /** Group accounts by influencer for all-view */
+  /** Group accounts by influencer — always group, even for single influencer */
   const groupedByInfluencer = useMemo(() => {
-    if (!isAllView) return null;
     const groups: Record<string, { name: string; avatarUrl: string | null; accounts: any[] }> = {};
     for (const acct of filteredAccounts) {
       const infId = acct.influencer_id;
@@ -207,7 +206,7 @@ export function Imprsn8MonitoredAccounts() {
       groups[infId].accounts.push(acct);
     }
     return Object.entries(groups).sort(([, a], [, b]) => a.name.localeCompare(b.name));
-  }, [filteredAccounts, isAllView]);
+  }, [filteredAccounts]);
 
   /** Fetch latest snapshot for detail sheet */
   const { data: latestSnapshot } = useQuery({
@@ -669,13 +668,11 @@ export function Imprsn8MonitoredAccounts() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isAllView && (
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs"
-              onClick={() => scoreAllForInfluencer("")} disabled={!!scoringId}>
-              {scoringId === "__all__" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
-              {scoringId === "__all__" ? "Scoring..." : "Score All"}
-            </Button>
-          )}
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs"
+            onClick={() => scoreAllForInfluencer(filter.influencer_id || "")} disabled={!!scoringId}>
+            {scoringId === "__all__" || scoringId === (filter.influencer_id || "__all__") ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+            {scoringId === "__all__" || scoringId === (filter.influencer_id || "__all__") ? "Scoring..." : "Score All"}
+          </Button>
           {!isAllView && (
             <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
@@ -810,8 +807,8 @@ export function Imprsn8MonitoredAccounts() {
             </p>
           </CardContent>
         </Card>
-      ) : isAllView && groupedByInfluencer ? (
-        /* Grouped by influencer view */
+      ) : groupedByInfluencer.length > 0 ? (
+        /* Always grouped by influencer view */
         <div className="space-y-4">
           {groupedByInfluencer.map(([infId, group]) => {
             const isOpen = expandedInfluencers.has(infId) || expandedInfluencers.has("__all__");
@@ -865,7 +862,7 @@ export function Imprsn8MonitoredAccounts() {
           })}
         </div>
       ) : (
-        /* Single influencer flat view */
+        /* Fallback flat view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredAccounts.map((acct: any) => renderAccountCard(acct, false))}
         </div>
