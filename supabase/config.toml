@@ -125,3 +125,12 @@ verify_jwt = false
 
 [functions.agent-proactive-sweep]
 verify_jwt = false
+
+[functions.ingest-cloud-status]
+verify_jwt = false
+
+[functions.ingest-cloudflare-radar]
+verify_jwt = false
+
+[functions.ingest-bgpstream]
+verify_jwt = false

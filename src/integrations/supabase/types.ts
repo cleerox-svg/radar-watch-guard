@@ -572,6 +572,75 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_incidents: {
+        Row: {
+          affected_prefixes: string[] | null
+          asn: string | null
+          attack_type: string | null
+          created_at: string
+          description: string | null
+          id: string
+          impact_score: number | null
+          incident_type: string
+          metadata: Json | null
+          provider: string
+          region: string | null
+          resolved_at: string | null
+          service: string | null
+          severity: string
+          source: string
+          source_url: string | null
+          started_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_prefixes?: string[] | null
+          asn?: string | null
+          attack_type?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_score?: number | null
+          incident_type?: string
+          metadata?: Json | null
+          provider: string
+          region?: string | null
+          resolved_at?: string | null
+          service?: string | null
+          severity?: string
+          source?: string
+          source_url?: string | null
+          started_at?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_prefixes?: string[] | null
+          asn?: string | null
+          attack_type?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_score?: number | null
+          incident_type?: string
+          metadata?: Json | null
+          provider?: string
+          region?: string | null
+          resolved_at?: string | null
+          service?: string | null
+          severity?: string
+          source?: string
+          source_url?: string | null
+          started_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_auth_reports: {
         Row: {
           created_at: string
@@ -1721,6 +1790,9 @@ export type Database = {
         | "virustotal"
         | "ipqualityscore"
         | "ipsum"
+        | "cloud_status"
+        | "cloudflare_radar"
+        | "bgpstream"
       threat_severity: "critical" | "high" | "medium" | "low" | "info"
       threat_status: "active" | "investigating" | "mitigated" | "resolved"
     }
@@ -1877,6 +1949,9 @@ export const Constants = {
         "virustotal",
         "ipqualityscore",
         "ipsum",
+        "cloud_status",
+        "cloudflare_radar",
+        "bgpstream",
       ],
       threat_severity: ["critical", "high", "medium", "low", "info"],
       threat_status: ["active", "investigating", "mitigated", "resolved"],

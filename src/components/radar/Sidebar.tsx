@@ -3,7 +3,7 @@
  * Four clear categories: Mission Control, Agents, Intelligence, Platform.
  */
 
-import { Satellite, X, Sun, Moon, Monitor, LogOut, Shield, Brain, MessageSquare, Globe, Radio, Skull, UsersRound, ShieldCheck, BarChart3, AlertTriangle, Settings, BookOpen, Ticket, MailWarning, UserCircle, UserPlus, Bot, Scan, Zap, Gavel, Fingerprint, Camera, Network, TrendingDown, Inbox } from "lucide-react";
+import { Satellite, X, Sun, Moon, Monitor, LogOut, Shield, Brain, MessageSquare, Globe, Radio, Skull, UsersRound, ShieldCheck, BarChart3, AlertTriangle, Settings, BookOpen, Ticket, MailWarning, UserCircle, UserPlus, Bot, Scan, Zap, Gavel, Fingerprint, Camera, Network, TrendingDown, Inbox, Cloud } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
@@ -31,6 +31,7 @@ export type TabKey =
   | "dark-web"
   | "spam-traps"
   | "leads"
+  | "cloud-status"
   | "admin";
 
 interface SidebarProps {
@@ -81,6 +82,7 @@ const navGroups: { label: string; accent?: string; items: { key: TabKey; icon: t
       { key: "ato", icon: UsersRound, label: "Account Takeover", description: "Suspicious login tracking", accent: "text-pink-500" },
       { key: "email", icon: ShieldCheck, label: "Email Auth", description: "SPF, DKIM, DMARC status", accent: "text-emerald-400" },
       { key: "stats", icon: BarChart3, label: "Analytics", description: "Feed metrics & trends", accent: "text-sky-400" },
+      { key: "cloud-status", icon: Cloud, label: "Cloud Status", description: "CSP outages, DDoS & BGP alerts", accent: "text-indigo-400" },
     ],
   },
 ];
