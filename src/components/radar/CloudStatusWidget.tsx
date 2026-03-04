@@ -1,20 +1,12 @@
 /**
- * CloudStatusWidget.tsx — Real-time Cloud & SaaS Provider Status Panel.
- *
- * Displays live incident data from cloud_incidents table, organized by:
- *   - Active outages and degradation events
- *   - DDoS attack trends from Cloudflare Radar
- *   - BGP routing anomalies for major cloud ASNs
- *   - Incident timeline with resolution tracking
- *
- * Also provides correlation overlay data to ThreatHeatmap and ThreatStatistics.
+ * CloudStatusWidget.tsx — Real-time Cloud, SaaS & Social Media Status Panel.
  */
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Cloud, AlertTriangle, Shield, Globe2, Activity, Wifi,
+  Cloud, AlertTriangle, Shield, Globe2, Wifi,
   WifiOff, RefreshCw, ChevronDown, ChevronUp, Clock, Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +14,57 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+
+// --- Provider logo map (Clearbit + direct URLs) ---
+const PROVIDER_LOGOS: Record<string, string> = {
+  aws: "https://logo.clearbit.com/aws.amazon.com",
+  azure: "https://logo.clearbit.com/azure.microsoft.com",
+  gcp: "https://logo.clearbit.com/cloud.google.com",
+  cloudflare: "https://logo.clearbit.com/cloudflare.com",
+  github: "https://logo.clearbit.com/github.com",
+  datadog: "https://logo.clearbit.com/datadoghq.com",
+  // Social media
+  facebook: "https://logo.clearbit.com/facebook.com",
+  instagram: "https://logo.clearbit.com/instagram.com",
+  x: "https://logo.clearbit.com/x.com",
+  youtube: "https://logo.clearbit.com/youtube.com",
+  tiktok: "https://logo.clearbit.com/tiktok.com",
+  reddit: "https://logo.clearbit.com/reddit.com",
+  discord: "https://logo.clearbit.com/discord.com",
+  twitch: "https://logo.clearbit.com/twitch.tv",
+  linkedin: "https://logo.clearbit.com/linkedin.com",
+  snapchat: "https://logo.clearbit.com/snapchat.com",
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+  aws: "AWS",
+  azure: "Azure",
+  gcp: "GCP",
+  cloudflare: "Cloudflare",
+  github: "GitHub",
+  datadog: "Datadog",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  x: "X",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  reddit: "Reddit",
+  discord: "Discord",
+  twitch: "Twitch",
+  linkedin: "LinkedIn",
+  snapchat: "Snapchat",
+};
+
+const CLOUD_PROVIDERS = ["aws", "azure", "gcp", "cloudflare", "github", "datadog"];
+const SOCIAL_PROVIDERS = ["facebook", "instagram", "x", "youtube", "tiktok", "reddit", "discord", "twitch", "linkedin", "snapchat"];
+
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: "bg-destructive text-destructive-foreground",
+  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  info: "bg-muted text-muted-foreground",
+};
 
 /** Hook: fetch cloud incidents from DB */
 export function useCloudIncidents() {
@@ -40,33 +83,80 @@ export function useCloudIncidents() {
   });
 }
 
-/** Trigger cloud status ingestion functions */
-async function triggerCloudStatusIngestion() {
-  const results = await Promise.allSettled([
-    supabase.functions.invoke("ingest-cloud-status"),
-    supabase.functions.invoke("ingest-cloudflare-radar"),
-    supabase.functions.invoke("ingest-bgpstream"),
-  ]);
-  return results;
+function ProviderLogo({ provider, size = 24 }: { provider: string; size?: number }) {
+  const src = PROVIDER_LOGOS[provider];
+  const label = PROVIDER_LABELS[provider] || provider;
+  if (!src) return <Cloud className="h-5 w-5 text-muted-foreground" />;
+  return (
+    <img
+      src={src}
+      alt={label}
+      width={size}
+      height={size}
+      className="rounded-sm object-contain"
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
+  );
 }
 
-const PROVIDER_ICONS: Record<string, string> = {
-  aws: "🔶",
-  azure: "🔷",
-  gcp: "🟢",
-  cloudflare: "🟠",
-  github: "⚫",
-  datadog: "🟣",
-  internet: "🌐",
-};
+function ProviderHealthGrid({
+  providers,
+  activeIncidents,
+  title,
+}: {
+  providers: string[];
+  activeIncidents: any[];
+  title: string;
+}) {
+  const health = useMemo(() => {
+    return providers.map((p) => {
+      const active = activeIncidents.filter((i: any) => i.provider === p);
+      const worstSeverity = active.reduce((worst: string, i: any) => {
+        const order = ["info", "low", "medium", "high", "critical"];
+        return order.indexOf(i.severity) > order.indexOf(worst) ? i.severity : worst;
+      }, "info");
+      return {
+        provider: p,
+        activeCount: active.length,
+        worstSeverity: active.length > 0 ? worstSeverity : "ok",
+        label: PROVIDER_LABELS[p] || p,
+      };
+    });
+  }, [providers, activeIncidents]);
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: "bg-destructive text-destructive-foreground",
-  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  info: "bg-muted text-muted-foreground",
-};
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{title}</p>
+      <div className="grid grid-cols-5 md:grid-cols-5 lg:grid-cols-5 gap-2">
+        {health.map((p) => (
+          <div
+            key={p.provider}
+            className={`flex flex-col items-center p-2 rounded-lg border transition-colors ${
+              p.activeCount === 0
+                ? "border-green-500/30 bg-green-500/5"
+                : p.worstSeverity === "critical"
+                ? "border-destructive/50 bg-destructive/10"
+                : "border-yellow-500/30 bg-yellow-500/5"
+            }`}
+          >
+            <ProviderLogo provider={p.provider} size={20} />
+            <span className="text-[9px] font-medium text-muted-foreground mt-1 text-center leading-tight">{p.label}</span>
+            {p.activeCount === 0 ? (
+              <Wifi className="h-3 w-3 text-green-500 mt-1" />
+            ) : (
+              <div className="flex items-center gap-1 mt-1">
+                <WifiOff className="h-3 w-3 text-destructive" />
+                <span className="text-[10px] text-destructive font-bold">{p.activeCount}</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function CloudStatusWidget() {
   const { data: incidents, isLoading, refetch } = useCloudIncidents();
@@ -83,24 +173,6 @@ export function CloudStatusWidget() {
     [incidents]
   );
 
-  const providerHealth = useMemo(() => {
-    const providers = ["aws", "azure", "gcp", "cloudflare", "github", "datadog"];
-    return providers.map((p) => {
-      const active = activeIncidents.filter((i: any) => i.provider === p);
-      const worstSeverity = active.reduce((worst: string, i: any) => {
-        const order = ["info", "low", "medium", "high", "critical"];
-        return order.indexOf(i.severity) > order.indexOf(worst) ? i.severity : worst;
-      }, "info");
-      return {
-        provider: p,
-        icon: PROVIDER_ICONS[p] || "☁️",
-        activeCount: active.length,
-        worstSeverity: active.length > 0 ? worstSeverity : "ok",
-        label: p.charAt(0).toUpperCase() + p.slice(1),
-      };
-    });
-  }, [activeIncidents]);
-
   const bgpAlerts = useMemo(
     () => (incidents || []).filter((i: any) => i.source === "bgpstream" && i.status !== "resolved"),
     [incidents]
@@ -114,11 +186,15 @@ export function CloudStatusWidget() {
   const handleIngest = async () => {
     setIngesting(true);
     try {
-      await triggerCloudStatusIngestion();
-      toast.success("Cloud status feeds refreshed");
+      await Promise.allSettled([
+        supabase.functions.invoke("ingest-cloud-status"),
+        supabase.functions.invoke("ingest-cloudflare-radar"),
+        supabase.functions.invoke("ingest-bgpstream"),
+      ]);
+      toast.success("Cloud & social status feeds refreshed");
       refetch();
     } catch {
-      toast.error("Failed to refresh cloud status");
+      toast.error("Failed to refresh status feeds");
     } finally {
       setIngesting(false);
     }
@@ -126,13 +202,12 @@ export function CloudStatusWidget() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      {/* Provider Health Overview */}
       <Card className="border-border/50 bg-card">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Cloud className="h-5 w-5 text-primary" />
-              Cloud & SaaS Status
+              Infrastructure & Social Status
             </CardTitle>
             <button
               onClick={handleIngest}
@@ -144,32 +219,9 @@ export function CloudStatusWidget() {
             </button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
-            {providerHealth.map((p) => (
-              <div
-                key={p.provider}
-                className={`flex flex-col items-center p-2 rounded-lg border transition-colors ${
-                  p.activeCount === 0
-                    ? "border-green-500/30 bg-green-500/5"
-                    : p.worstSeverity === "critical"
-                    ? "border-destructive/50 bg-destructive/10"
-                    : "border-yellow-500/30 bg-yellow-500/5"
-                }`}
-              >
-                <span className="text-xl">{p.icon}</span>
-                <span className="text-[10px] font-medium text-muted-foreground mt-1">{p.label}</span>
-                {p.activeCount === 0 ? (
-                  <Wifi className="h-3 w-3 text-green-500 mt-1" />
-                ) : (
-                  <div className="flex items-center gap-1 mt-1">
-                    <WifiOff className="h-3 w-3 text-destructive" />
-                    <span className="text-[10px] text-destructive font-bold">{p.activeCount}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <CardContent className="space-y-4">
+          <ProviderHealthGrid providers={CLOUD_PROVIDERS} activeIncidents={activeIncidents} title="Cloud & SaaS" />
+          <ProviderHealthGrid providers={SOCIAL_PROVIDERS} activeIncidents={activeIncidents} title="Social Media" />
 
           {/* Summary row */}
           <div className="grid grid-cols-4 gap-2 text-center">
@@ -212,7 +264,6 @@ export function CloudStatusWidget() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Active Incidents */}
             <TabsContent value="active" className="max-h-80 overflow-y-auto space-y-2">
               {isLoading ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">Loading…</div>
@@ -223,60 +274,37 @@ export function CloudStatusWidget() {
                 </div>
               ) : (
                 activeIncidents.map((inc: any) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    expanded={expanded === inc.id}
-                    onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)}
-                  />
+                  <IncidentRow key={inc.id} incident={inc} expanded={expanded === inc.id} onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)} />
                 ))
               )}
             </TabsContent>
 
-            {/* BGP Alerts */}
             <TabsContent value="bgp" className="max-h-80 overflow-y-auto space-y-2">
               {bgpAlerts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">No BGP anomalies detected</div>
               ) : (
                 bgpAlerts.map((inc: any) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    expanded={expanded === inc.id}
-                    onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)}
-                  />
+                  <IncidentRow key={inc.id} incident={inc} expanded={expanded === inc.id} onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)} />
                 ))
               )}
             </TabsContent>
 
-            {/* DDoS Trends */}
             <TabsContent value="ddos" className="max-h-80 overflow-y-auto space-y-2">
               {attackTrends.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">No DDoS data yet — refresh to fetch</div>
               ) : (
                 attackTrends.map((inc: any) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    expanded={expanded === inc.id}
-                    onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)}
-                  />
+                  <IncidentRow key={inc.id} incident={inc} expanded={expanded === inc.id} onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)} />
                 ))
               )}
             </TabsContent>
 
-            {/* Resolved */}
             <TabsContent value="resolved" className="max-h-80 overflow-y-auto space-y-2">
               {resolvedRecent.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">No recent resolutions</div>
               ) : (
                 resolvedRecent.map((inc: any) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    expanded={expanded === inc.id}
-                    onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)}
-                  />
+                  <IncidentRow key={inc.id} incident={inc} expanded={expanded === inc.id} onToggle={() => setExpanded(expanded === inc.id ? null : inc.id)} />
                 ))
               )}
             </TabsContent>
@@ -287,25 +315,11 @@ export function CloudStatusWidget() {
   );
 }
 
-/** Single incident row with expand/collapse */
-function IncidentRow({
-  incident,
-  expanded,
-  onToggle,
-}: {
-  incident: any;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const icon = PROVIDER_ICONS[incident.provider] || "☁️";
-
+function IncidentRow({ incident, expanded, onToggle }: { incident: any; expanded: boolean; onToggle: () => void }) {
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
-      >
-        <span className="text-base">{icon}</span>
+      <button onClick={onToggle} className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors">
+        <ProviderLogo provider={incident.provider} size={18} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-foreground truncate">{incident.title}</span>
@@ -314,9 +328,7 @@ function IncidentRow({
             </Badge>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-muted-foreground">
-              {incident.service || incident.provider}
-            </span>
+            <span className="text-[10px] text-muted-foreground">{PROVIDER_LABELS[incident.provider] || incident.provider}</span>
             <span className="text-[10px] text-muted-foreground">•</span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
               <Clock className="h-2.5 w-2.5" />

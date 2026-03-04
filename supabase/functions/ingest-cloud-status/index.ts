@@ -1,11 +1,9 @@
 /**
  * ingest-cloud-status — Pulls real-time incident/outage data from major
- * cloud & SaaS provider status pages (AWS, Azure, GCP, Cloudflare).
+ * cloud, SaaS, AND social media provider status pages.
  *
  * Each provider publishes a JSON or RSS status feed. We parse and upsert
  * into `cloud_incidents` with deduplication on (provider, title, started_at).
- *
- * Trigger: scheduled via pg_cron every 10 minutes, or manual.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,39 +15,24 @@ const corsHeaders = {
 
 /** Status page endpoints — all free, no API key required */
 const STATUS_FEEDS = [
-  {
-    provider: "aws",
-    url: "https://health.aws.amazon.com/health/status",
-    parser: "aws",
-  },
-  {
-    provider: "azure",
-    url: "https://status.azure.com/en-us/status/feed/",
-    parser: "rss",
-  },
-  {
-    provider: "gcp",
-    url: "https://status.cloud.google.com/incidents.json",
-    parser: "gcp_json",
-  },
-  {
-    provider: "cloudflare",
-    url: "https://www.cloudflarestatus.com/api/v2/incidents.json",
-    parser: "statuspage_api",
-  },
-  {
-    provider: "github",
-    url: "https://www.githubstatus.com/api/v2/incidents.json",
-    parser: "statuspage_api",
-  },
-  {
-    provider: "datadog",
-    url: "https://status.datadoghq.com/api/v2/incidents.json",
-    parser: "statuspage_api",
-  },
+  // Cloud & SaaS
+  { provider: "aws", url: "https://health.aws.amazon.com/health/status", parser: "aws" },
+  { provider: "azure", url: "https://status.azure.com/en-us/status/feed/", parser: "rss" },
+  { provider: "gcp", url: "https://status.cloud.google.com/incidents.json", parser: "gcp_json" },
+  { provider: "cloudflare", url: "https://www.cloudflarestatus.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "github", url: "https://www.githubstatus.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "datadog", url: "https://status.datadoghq.com/api/v2/incidents.json", parser: "statuspage_api" },
+  // Social Media Platforms
+  { provider: "facebook", url: "https://metastatus.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "x", url: "https://api.twitterstat.us/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "reddit", url: "https://www.redditstatus.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "discord", url: "https://discordstatus.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "twitch", url: "https://status.twitch.tv/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "linkedin", url: "https://www.linkedin-status.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "snapchat", url: "https://status.snapchat.com/api/v2/incidents.json", parser: "statuspage_api" },
+  { provider: "tiktok", url: "https://status.tiktok.com/api/v2/incidents.json", parser: "statuspage_api" },
 ];
 
-/** Map statuspage.io impact to our severity scale */
 function mapImpact(impact: string): string {
   switch (impact?.toLowerCase()) {
     case "critical": return "critical";
@@ -73,7 +56,6 @@ function mapStatus(status: string): string {
   }
 }
 
-/** Parse Statuspage.io API format (Cloudflare, GitHub, Datadog, etc.) */
 function parseStatuspageApi(json: any, provider: string) {
   const incidents = json.incidents || [];
   return incidents.slice(0, 25).map((inc: any) => ({
@@ -98,7 +80,6 @@ function parseStatuspageApi(json: any, provider: string) {
   }));
 }
 
-/** Parse GCP incidents.json */
 function parseGcpJson(json: any, provider: string) {
   const incidents = Array.isArray(json) ? json : json.incidents || [];
   return incidents.slice(0, 25).map((inc: any) => {
@@ -160,7 +141,6 @@ Deno.serve(async (req) => {
           const json = await resp.json();
           incidents = parseGcpJson(json, feed.provider);
         } else if (feed.parser === "rss") {
-          // Azure RSS — parse as text and extract items
           const text = await resp.text();
           const itemMatches = text.match(/<item>[\s\S]*?<\/item>/g) || [];
           incidents = itemMatches.slice(0, 25).map((item) => {
@@ -186,16 +166,13 @@ Deno.serve(async (req) => {
             };
           });
         } else if (feed.parser === "aws") {
-          // AWS status page returns HTML — we'll skip deep parsing and use the
-          // Statuspage API fallback if available, otherwise mark as fetched.
-          // AWS doesn't have a clean JSON API — log and continue.
           continue;
         }
 
         totalFetched += incidents.length;
 
         if (incidents.length > 0) {
-          const { error: upsertErr, count } = await supabase
+          const { error: upsertErr } = await supabase
             .from("cloud_incidents")
             .upsert(incidents, {
               onConflict: "provider,title,started_at",
@@ -214,7 +191,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Log ingestion
     await supabase.from("feed_ingestions").insert({
       source: "cloud_status",
       status: errors.length === 0 ? "success" : "partial",
